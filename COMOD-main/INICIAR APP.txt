@@ -1,0 +1,4 @@
+cd "C:\Users\Usuario\Desktop\Sistema de gestion odontologica\python_app"
+Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
+.\.venv\Scripts\Activate.ps1
+python app.py

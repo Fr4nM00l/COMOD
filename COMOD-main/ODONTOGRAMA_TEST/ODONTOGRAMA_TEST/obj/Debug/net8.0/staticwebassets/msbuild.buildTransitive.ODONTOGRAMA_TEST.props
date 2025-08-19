@@ -1,0 +1,3 @@
+﻿<Project>
+  <Import Project="..\buildMultiTargeting\ODONTOGRAMA_TEST.props" />
+</Project>

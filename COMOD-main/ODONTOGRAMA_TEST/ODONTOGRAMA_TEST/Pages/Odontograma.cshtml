@@ -1,0 +1,174 @@
+﻿@page
+@model OdontogramaModel
+@{
+    ViewData["Title"] = "Odontograma Visual";
+}
+
+@if (!string.IsNullOrEmpty(Model.NombrePaciente))
+{
+    <h2>Odontograma de @Model.NombrePaciente</h2>
+}
+
+<p>Fecha: @Model.Odontograma?.Fecha.ToShortDateString()</p>
+
+<form method="post">
+    <input asp-for="DNI" placeholder="DNI del paciente" />
+    <button type="submit">Buscar</button>
+</form>
+
+@if (!string.IsNullOrEmpty(Model.ErrorMensaje))
+{
+    <div style="color:red; margin-top:10px;">@Model.ErrorMensaje</div>
+}
+
+
+@if (Model.Odontograma != null)
+{
+    <style>
+
+        .diente {
+            width: 60px;
+            height: 90px;
+            border: 1px solid #ccc;
+            border-radius: 10px;
+            padding: 5px;
+            text-align: center;
+            background-color: #fff;
+            transition: transform 0.2s ease;
+        }
+
+            .diente:hover {
+                transform: scale(1.05);
+            }
+
+            .diente svg {
+                margin: 4px 0;
+            }
+
+        .diente-con-afeccion {
+            color: #d9534f; /* rojo */
+            border-color: #d9534f;
+            background-color: #fff5f5;
+        }
+
+        .diente-sano {
+            color: #5cb85c; /* verde */
+            border-color: #5cb85c;
+            background-color: #f5fff5;
+        }
+
+
+        .odontograma {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+            font-family: sans-serif;
+        }
+
+        .fila-dientes {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 4px;
+        }
+
+        .diente {
+            width: 50px;
+            height: 70px;
+            border: 1px solid #000;
+            border-radius: 10px;
+            text-align: center;
+            padding: 2px;
+            font-size: 12px;
+            background-color: #f9f9f9;
+            position: relative;
+        }
+
+            .diente .numero {
+                font-weight: bold;
+                font-size: 14px;
+            }
+
+            .diente .afeccion {
+                font-size: 10px;
+                color: #d00;
+                margin-top: 4px;
+            }
+
+    </style>
+
+    <div class="odontograma">
+
+        <h3>Dientes Superiores</h3>
+        <div class="fila-dientes">
+            @{
+  
+                var dientesSuperiores = Enumerable.Range(11, 8).Reverse()
+                .Concat(Enumerable.Range(21, 8));
+                @foreach (var num in dientesSuperiores)
+                {
+                    var diente = Model.Odontograma.Dientes.FirstOrDefault(d => d.Numero == num);
+                    bool tieneAfecciones = diente?.Afecciones.Any() == true;
+                    string claseColor = tieneAfecciones ? "diente-con-afeccion" : "diente-sano";
+                    <div class="diente @claseColor">
+                        <div class="numero">@num</div>
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="30" height="30" fill="currentColor">
+                            <path d="M32 2C22 2 16 14 16 22s6 24 6 32 4 8 10 8 10 0 10-8 6-24 6-32S42 2 32 2z" />
+                        </svg>
+                        @if (tieneAfecciones)
+                        {
+                            foreach (var af in diente.Afecciones)
+                            {
+                                <div class="afeccion">@af.Nombre<br /><small>@af.ZonaDiente</small></div>
+                            }
+                        }
+                        else
+                        {
+                            <div class="afeccion" style="color: #aaa;">Sin afecciones</div>
+                        }
+                    </div>
+                }
+
+            }
+        </div>
+        <div class="my-3">
+
+        </div>
+        <h3>Dientes Inferiores</h3>
+        <div class="fila-dientes">
+            @{
+   
+                var dientesInferiores = Enumerable.Range(31, 8).Reverse()
+                .Concat(Enumerable.Range(41, 8));
+                @foreach (var num in dientesInferiores)
+                {
+                    var diente = Model.Odontograma.Dientes.FirstOrDefault(d => d.Numero == num);
+                    bool tieneAfecciones = diente?.Afecciones.Any() == true;
+                    string claseColor = tieneAfecciones ? "diente-con-afeccion" : "diente-sano";
+                    <div class="diente @claseColor">
+                        <div class="numero">@num</div>
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="30" height="30" fill="currentColor">
+                            <path d="M32 2C22 2 16 14 16 22s6 24 6 32 4 8 10 8 10 0 10-8 6-24 6-32S42 2 32 2z" />
+                        </svg>
+                        @if (tieneAfecciones)
+                        {
+                            foreach (var af in diente.Afecciones)
+                            {
+                                <div class="afeccion">@af.Nombre<br /><small>@af.ZonaDiente</small></div>
+                            }
+                        }
+                        else
+                        {
+                            <div class="afeccion" style="color: #aaa;">Sin afecciones</div>
+                        }
+                    </div>
+                }
+
+            }
+        </div>
+    </div>
+}
+
+
+

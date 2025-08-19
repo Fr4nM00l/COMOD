@@ -1,0 +1,271 @@
+/* Paleta profesional-teal para salud */
+:root { 
+  --bs-primary: #0ea5a0; 
+  --bs-success: #10b981;
+  --bs-warning: #f59e0b;
+  --bs-danger: #ef4444;
+  --bs-info: #06b6d4;
+}
+
+body { 
+  background: linear-gradient(135deg, #f0fdfa 0%, #f8fafc 100%);
+  color: #1f2937; 
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+.card { 
+  border-radius: 1rem; 
+  border: none;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  transition: all 0.3s ease;
+}
+
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+}
+
+.navbar-brand { 
+  font-weight: 700; 
+  font-size: 1.25rem;
+}
+
+/* Botones y navbar con el nuevo primario */
+.btn-primary { 
+  background: linear-gradient(135deg, #0ea5a0 0%, #0891b2 100%);
+  border: none;
+  border-radius: 0.75rem;
+  padding: 0.75rem 1.5rem;
+  font-weight: 600;
+  transition: all 0.3s ease;
+}
+
+.btn-primary:hover { 
+  background: linear-gradient(135deg, #0b837f 0%, #0e7490 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(14, 165, 160, 0.3);
+}
+
+.bg-primary { 
+  background: linear-gradient(135deg, #0ea5a0 0%, #0891b2 100%) !important; 
+}
+
+/* Página de autenticación */
+.auth-bg {
+  background: linear-gradient(135deg, #e8f6f6 0%, #ffffff 100%);
+  border-radius: 1.5rem;
+  padding: 2rem;
+  margin: 1rem;
+}
+
+.brand-badge { 
+  display: inline-flex; 
+  align-items: center; 
+  gap: 0.75rem; 
+  font-weight: 700; 
+  color: #0ea5a0; 
+  font-size: 1.5rem;
+  padding: 1rem 1.5rem;
+  background: rgba(14, 165, 160, 0.1);
+  border-radius: 1rem;
+  border: 2px solid rgba(14, 165, 160, 0.2);
+}
+
+.brand-badge .badge-icon { 
+  width: 32px; 
+  height: 32px; 
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
+}
+
+.card-auth {
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  backdrop-filter: blur(10px);
+  background: rgba(255, 255, 255, 0.95);
+}
+
+/* Inputs accesibles y agradables */
+.form-label { 
+  font-weight: 600; 
+  color: #334155; 
+  margin-bottom: 0.5rem;
+  font-size: 0.875rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.form-control, .form-select {
+  padding: 0.875rem 1rem;
+  border-radius: 0.75rem;
+  border: 2px solid #e5e7eb;
+  font-size: 1rem;
+  transition: all 0.3s ease;
+  background: #ffffff;
+}
+
+.form-control:focus, .form-select:focus {
+  border-color: #0ea5a0;
+  box-shadow: 0 0 0 3px rgba(14, 165, 160, 0.1);
+  background: #ffffff;
+}
+
+/* Alertas mejoradas */
+.alert {
+  border: none;
+  border-radius: 1rem;
+  padding: 1rem 1.5rem;
+  font-weight: 500;
+  position: relative;
+  overflow: hidden;
+}
+
+.alert::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  background: currentColor;
+}
+
+.alert-danger {
+  background: linear-gradient(135deg, #fef2f2 0%, #fecaca 100%);
+  color: #dc2626;
+  border-left: 4px solid #dc2626;
+}
+
+.alert-success {
+  background: linear-gradient(135deg, #f0fdf4 0%, #bbf7d0 100%);
+  color: #16a34a;
+  border-left: 4px solid #16a34a;
+}
+
+.alert-warning {
+  background: linear-gradient(135deg, #fffbeb 0%, #fed7aa 100%);
+  color: #d97706;
+  border-left: 4px solid #d97706;
+}
+
+.alert-info {
+  background: linear-gradient(135deg, #eff6ff 0%, #bfdbfe 100%);
+  color: #2563eb;
+  border-left: 4px solid #2563eb;
+}
+
+/* Iconos en las alertas */
+.alert-icon {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 600;
+}
+
+/* Dashboard cards */
+.dashboard-card {
+  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+  border: 1px solid #e5e7eb;
+  border-radius: 1rem;
+  padding: 1.5rem;
+  transition: all 0.3s ease;
+}
+
+.dashboard-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+}
+
+.stat-card {
+  background: linear-gradient(135deg, #0ea5a0 0%, #0891b2 100%);
+  color: white;
+  border-radius: 1rem;
+  padding: 1.5rem;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.stat-card::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  right: -50%;
+  width: 100%;
+  height: 100%;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 50%;
+  transform: rotate(45deg);
+}
+
+.stat-number {
+  font-size: 2.5rem;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+}
+
+.stat-label {
+  font-size: 0.875rem;
+  opacity: 0.9;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* Tablas mejoradas */
+.table {
+  border-radius: 0.75rem;
+  overflow: hidden;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+.table thead th {
+  background: linear-gradient(135deg, #0ea5a0 0%, #0891b2 100%);
+  color: white;
+  border: none;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-size: 0.875rem;
+}
+
+.table tbody tr {
+  transition: background-color 0.3s ease;
+}
+
+.table tbody tr:hover {
+  background-color: rgba(14, 165, 160, 0.05);
+}
+
+/* Animaciones */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.fade-in-up {
+  animation: fadeInUp 0.6s ease-out;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .auth-bg {
+    margin: 0.5rem;
+    padding: 1rem;
+  }
+  
+  .brand-badge {
+    font-size: 1.25rem;
+    padding: 0.75rem 1rem;
+  }
+  
+  .stat-number {
+    font-size: 2rem;
+  }
+}
+
+
