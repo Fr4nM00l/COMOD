@@ -1,5 +1,7 @@
-Flask==3.0.3
-python-dotenv==1.0.1
-mysql-connector-python==9.0.0
+Flask==2.3.3
+mysql-connector-python==8.1.0
+python-dotenv==1.0.0
+Werkzeug==2.3.7
+Flask-Moment==1.0.5
 
 

@@ -1,0 +1,334 @@
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="mb-0"><i class="bi bi-file-medical me-2"></i>Historias Clínicas</h5>
+        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#clinicalHistoryModal">
+            <i class="bi bi-plus me-2"></i>Nueva Historia Clínica
+        </button>
+    </div>
+    <div class="card-body">
+        <!-- Search and Filter -->
+        <div class="row mb-4">
+            <div class="col-md-4">
+                <div class="input-group">
+                    <input type="text" class="form-control" id="historySearch" placeholder="Buscar por paciente...">
+                    <button class="btn btn-outline-secondary" type="button">
+                        <i class="bi bi-search"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <select class="form-select" id="historyFilter">
+                    <option value="">Todos los pacientes</option>
+                    <option value="con_historia">Con historia clínica</option>
+                    <option value="sin_historia">Sin historia clínica</option>
+                </select>
+            </div>
+            <div class="col-md-4 text-end">
+                <span class="badge bg-primary">{{ clinical_histories|length }} historias clínicas</span>
+            </div>
+        </div>
+
+        {% if clinical_histories %}
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>Paciente</th>
+                        <th>Fecha</th>
+                        <th>Obra Social</th>
+                        <th>Alergias</th>
+                        <th>Enfermedades</th>
+                        <th>Última Actualización</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for history in clinical_histories %}
+                    <tr>
+                        <td>
+                            <div class="d-flex align-items-center">
+                                <div class="avatar-sm me-2">
+                                    <i class="bi bi-person-circle" style="font-size: 2rem; color: #0d6efd;"></i>
+                                </div>
+                                <div>
+                                    <strong>{{ history.Paciente }}</strong>
+                                    <br><small class="text-muted">DNI: {{ history.paciente_dni }}</small>
+                                </div>
+                            </div>
+                        </td>
+                        <td>
+                            <span class="badge bg-info">{{ history.Fecha.strftime('%d/%m/%Y') }}</span>
+                        </td>
+                        <td>
+                            {% if history.ObraSocial %}
+                            <span class="badge bg-success">{{ history.ObraSocial }}</span>
+                            {% if history.NumAfiliado %}
+                            <br><small class="text-muted">{{ history.NumAfiliado }}</small>
+                            {% endif %}
+                            {% else %}
+                            <span class="text-muted">No especificada</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if history.Alergias %}
+                            <span class="badge bg-warning">{{ history.Alergias }}</span>
+                            {% else %}
+                            <span class="badge bg-light text-dark">Ninguna</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if history.Enfermedades %}
+                            <span class="badge bg-danger">{{ history.Enfermedades }}</span>
+                            {% else %}
+                            <span class="badge bg-light text-dark">Ninguna</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <small class="text-muted">
+                                <i class="bi bi-clock me-1"></i>
+                                {{ history.Fecha.strftime('%d/%m/%Y %H:%M') }}
+                            </small>
+                        </td>
+                        <td>
+                            <div class="btn-group" role="group">
+                                <button class="btn btn-sm btn-outline-primary" onclick="editClinicalHistory({{ history.id }})" title="Editar">
+                                    <i class="bi bi-pencil"></i>
+                                </button>
+                                <button class="btn btn-sm btn-outline-info" onclick="viewClinicalHistory({{ history.id }})" title="Ver Detalles">
+                                    <i class="bi bi-eye"></i>
+                                </button>
+                                <button class="btn btn-sm btn-outline-success" onclick="createOdontograma({{ history.Paciente_id }})" title="Crear Odontograma">
+                                    <i class="bi bi-tooth"></i>
+                                </button>
+                                <button class="btn btn-sm btn-outline-danger" onclick="deleteClinicalHistory({{ history.id }})" title="Eliminar">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="text-center py-5">
+            <i class="bi bi-file-medical" style="font-size: 3rem; color: #6c757d;" class="mb-3"></i>
+            <h5 class="text-muted">No hay historias clínicas registradas</h5>
+            <p class="text-muted">Comience agregando la primera historia clínica al sistema</p>
+            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#clinicalHistoryModal">
+                <i class="bi bi-plus me-2"></i>Agregar Primera Historia Clínica
+            </button>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Patients without Clinical History -->
+<div class="card mt-4">
+    <div class="card-header">
+        <h6 class="mb-0"><i class="bi bi-exclamation-triangle me-2"></i>Pacientes Sin Historia Clínica</h6>
+    </div>
+    <div class="card-body">
+        {% if patients_without_history %}
+        <div class="table-responsive">
+            <table class="table table-sm">
+                <thead>
+                    <tr>
+                        <th>Paciente</th>
+                        <th>DNI</th>
+                        <th>Fecha de Registro</th>
+                        <th>Acción</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for patient in patients_without_history %}
+                    <tr class="table-warning">
+                        <td>
+                            <div class="d-flex align-items-center">
+                                <i class="bi bi-person-circle" style="font-size: 1.5rem; color: #ffc107;" class="me-2"></i>
+                                <strong>{{ patient.Nombre }}</strong>
+                            </div>
+                        </td>
+                        <td><span class="badge bg-light text-dark">{{ patient.DNI }}</span></td>
+                        <td>
+                            <small class="text-muted">
+                                {% if patient.fecha_registro %}
+                                {{ patient.fecha_registro.strftime('%d/%m/%Y') }}
+                                {% else %}
+                                No especificada
+                                {% endif %}
+                            </small>
+                        </td>
+                        <td>
+                            <button class="btn btn-sm btn-primary" onclick="createClinicalHistoryForPatient({{ patient.id }})">
+                                <i class="bi bi-plus me-1"></i>Crear Historia
+                            </button>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="text-center py-3">
+            <i class="bi bi-check-circle" style="font-size: 2rem; color: #198754;" class="mb-2"></i>
+            <p class="text-muted mb-0">Todos los pacientes tienen historia clínica registrada</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+// Search functionality
+document.getElementById('historySearch').addEventListener('input', function() {
+    const searchTerm = this.value.toLowerCase();
+    const rows = document.querySelectorAll('tbody tr');
+    
+    rows.forEach(row => {
+        const text = row.textContent.toLowerCase();
+        row.style.display = text.includes(searchTerm) ? '' : 'none';
+    });
+});
+
+// Filter functionality
+document.getElementById('historyFilter').addEventListener('change', function() {
+    const filterValue = this.value;
+    const rows = document.querySelectorAll('tbody tr');
+    
+    if (filterValue === '') {
+        rows.forEach(row => row.style.display = '');
+        return;
+    }
+    
+    // This would need to be implemented based on your data structure
+    // For now, just show all rows
+    rows.forEach(row => row.style.display = '');
+});
+
+// Clinical history form submission
+document.getElementById('clinicalHistoryForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    const data = Object.fromEntries(formData);
+    
+    // Convert form data to match database structure
+    const historyData = {
+        paciente_id: data.paciente_id,
+        fecha: data.fecha,
+        obra_social: data.obra_social,
+        num_afiliado: data.num_afiliado,
+        alergias: data.alergias,
+        enfermedades: data.enfermedades,
+        fuma: data.fuma === '1',
+        drogas: data.drogas,
+        medicamentos: data.medicamentos,
+        nivel_dolor: data.nivel_dolor ? parseInt(data.nivel_dolor) : null,
+        calmante: data.calmante,
+        golpe_en_dientes: data.golpe_en_dientes === '1',
+        fecha_golpe: data.fecha_golpe || null
+    };
+    
+    fetch('/secretario/historia-clinica', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(historyData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        } else {
+            alert('Error al guardar la historia clínica: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error al guardar la historia clínica');
+    });
+});
+
+function editClinicalHistory(id) {
+    // Load clinical history data and populate modal
+    fetch(`/secretario/historia-clinica/${id}`)
+        .then(response => response.json())
+        .then(data => {
+            // Populate form fields
+            document.getElementById('clinicalHistoryPatient').value = data.paciente_id;
+            document.getElementById('clinicalHistoryDate').value = data.fecha;
+            document.getElementById('clinicalHistoryObraSocial').value = data.obra_social || '';
+            document.getElementById('clinicalHistoryNumAfiliado').value = data.num_afiliado || '';
+            document.getElementById('clinicalHistoryAlergias').value = data.alergias || '';
+            document.getElementById('clinicalHistoryEnfermedades').value = data.enfermedades || '';
+            document.getElementById('clinicalHistoryFuma').value = data.fuma ? '1' : '0';
+            document.getElementById('clinicalHistoryDrogas').value = data.drogas || '';
+            document.getElementById('clinicalHistoryMedicamentos').value = data.medicamentos || '';
+            document.getElementById('clinicalHistoryNivelDolor').value = data.nivel_dolor || '';
+            document.getElementById('clinicalHistoryCalmante').value = data.calmante || '';
+            document.getElementById('clinicalHistoryGolpeEnDientes').value = data.golpe_en_dientes ? '1' : '0';
+            document.getElementById('clinicalHistoryFechaGolpe').value = data.fecha_golpe || '';
+            
+            // Show/hide golpe details row
+            const golpeDetailsRow = document.getElementById('golpeDetailsRow');
+            if (data.golpe_en_dientes) {
+                golpeDetailsRow.style.display = 'block';
+            } else {
+                golpeDetailsRow.style.display = 'none';
+            }
+            
+            // Update modal title and form action
+            document.getElementById('clinicalHistoryModalLabel').innerHTML = '<i class="bi bi-pencil me-2"></i>Editar Historia Clínica';
+            document.getElementById('clinicalHistoryForm').setAttribute('data-history-id', id);
+            
+            // Show modal
+            new bootstrap.Modal(document.getElementById('clinicalHistoryModal')).show();
+        });
+}
+
+function viewClinicalHistory(id) {
+    // Redirect to detailed view
+    window.location.href = `/secretario/historia-clinica/${id}/detalle`;
+}
+
+function createOdontograma(pacienteId) {
+    // Redirect to create odontograma
+    window.location.href = `/secretario/paciente/${pacienteId}/odontograma/nuevo`;
+}
+
+function deleteClinicalHistory(id) {
+    if (confirm('¿Está seguro de que desea eliminar esta historia clínica? Esta acción no se puede deshacer.')) {
+        fetch(`/secretario/historia-clinica/${id}`, { method: 'DELETE' })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    location.reload();
+                } else {
+                    alert('Error al eliminar la historia clínica: ' + data.message);
+                }
+            });
+    }
+}
+
+function createClinicalHistoryForPatient(pacienteId) {
+    // Pre-select patient in clinical history modal
+    document.getElementById('clinicalHistoryPatient').value = pacienteId;
+    new bootstrap.Modal(document.getElementById('clinicalHistoryModal')).show();
+}
+
+// Load patients for form dropdown
+document.addEventListener('DOMContentLoaded', function() {
+    fetch('/secretario/pacientes/lista')
+        .then(response => response.json())
+        .then(patients => {
+            const select = document.getElementById('clinicalHistoryPatient');
+            patients.forEach(patient => {
+                const option = document.createElement('option');
+                option.value = patient.id;
+                option.textContent = `${patient.Nombre} - ${patient.DNI}`;
+                select.appendChild(option);
+            });
+        });
+});
+</script>

@@ -1,0 +1,82 @@
+<!-- Appointment Modal -->
+<div class="modal fade" id="appointmentModal" tabindex="-1" aria-labelledby="appointmentModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="appointmentModalLabel">
+                    <i class="bi bi-calendar-plus me-2"></i>Nuevo Turno
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="appointmentForm">
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="appointmentPatient" class="form-label">Paciente *</label>
+                                <select class="form-select" id="appointmentPatient" name="paciente_id" required>
+                                    <option value="">Seleccionar paciente...</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="appointmentDentist" class="form-label">Odontólogo *</label>
+                                <select class="form-select" id="appointmentDentist" name="odontologo_id" required>
+                                    <option value="">Seleccionar odontólogo...</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="appointmentDate" class="form-label">Fecha *</label>
+                                <input type="date" class="form-control" id="appointmentDate" name="fecha" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="appointmentTime" class="form-label">Hora *</label>
+                                <input type="time" class="form-control" id="appointmentTime" name="hora" required>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="appointmentType" class="form-label">Tipo de Consulta</label>
+                                <select class="form-select" id="appointmentType" name="tipo_consulta">
+                                    <option value="">Seleccionar tipo...</option>
+                                    <option value="consulta_general">Consulta General</option>
+                                    <option value="limpieza">Limpieza Dental</option>
+                                    <option value="extraccion">Extracción</option>
+                                    <option value="endodoncia">Endodoncia</option>
+                                    <option value="ortodoncia">Ortodoncia</option>
+                                    <option value="implante">Implante</option>
+                                    <option value="control">Control</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="appointmentDuration" class="form-label">Duración (minutos)</label>
+                                <input type="number" class="form-control" id="appointmentDuration" name="duracion" min="15" step="15" value="30">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="appointmentNotes" class="form-label">Observaciones</label>
+                        <textarea class="form-control" id="appointmentNotes" name="observaciones" rows="3" placeholder="Notas adicionales sobre el turno..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-save me-2"></i>Guardar Turno
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

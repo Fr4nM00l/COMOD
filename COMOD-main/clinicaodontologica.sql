@@ -116,7 +116,11 @@ CREATE TABLE `detalleturno` (
   `Odontologo_id` int(11) NOT NULL,
   `Paciente_id` int(11) NOT NULL,
   `FechaTurno` date NOT NULL,
-  `HoraTurno` time NOT NULL
+  `HoraTurno` time NOT NULL,
+  `tipo_consulta` varchar(100) DEFAULT NULL,
+  `duracion` int(11) DEFAULT 30,
+  `observaciones` text DEFAULT NULL,
+  `estado` enum('pendiente','en_curso','completado','cancelado') DEFAULT 'pendiente'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- --------------------------------------------------------
@@ -205,7 +209,12 @@ CREATE TABLE `paciente` (
   `id` int(11) NOT NULL,
   `Nombre` varchar(100) NOT NULL,
   `FechaNacimiento` date DEFAULT NULL,
-  `DNI` varchar(15) DEFAULT NULL
+  `DNI` varchar(15) DEFAULT NULL,
+  `telefono` varchar(20) DEFAULT NULL,
+  `email` varchar(100) DEFAULT NULL,
+  `direccion` text DEFAULT NULL,
+  `contacto_emergencia` varchar(100) DEFAULT NULL,
+  `telefono_emergencia` varchar(20) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
@@ -239,6 +248,51 @@ CREATE TABLE `secretario` (
 INSERT INTO `secretario` (`id`, `Nombre`, `FechaNacimiento`, `DNI`, `Usuario`, `Contraseña`) VALUES
 (1, 'Laura Martínez', '1985-04-12', '30123456', 'lauram', 'sec123'),
 (2, 'Verónica Gómez', '1990-08-25', '31234567', 'verog', 'sec456');
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `procedimientos`
+-- Catálogo de procedimientos dentales posibles de aplicar a un diente
+--
+
+CREATE TABLE `procedimientos` (
+  `id` int(11) NOT NULL,
+  `CodigoSNOMED` varchar(50) DEFAULT NULL,
+  `NombreProcedimiento` varchar(100) NOT NULL,
+  `Descripcion` text DEFAULT NULL,
+  `DuracionMinutos` smallint(6) DEFAULT NULL,
+  `Costo` decimal(10,2) DEFAULT NULL,
+  `Activo` tinyint(1) NOT NULL DEFAULT 1
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Volcado de datos para la tabla `procedimientos`
+--
+INSERT INTO `procedimientos` (`id`, `CodigoSNOMED`, `NombreProcedimiento`, `Descripcion`, `DuracionMinutos`, `Costo`, `Activo`) VALUES
+(1, '234849007', 'Obturación (empaste) resina', 'Restauración de caries con resina compuesta', 45, 12000.00, 1),
+(2, '234936006', 'Tratamiento de conducto', 'Endodoncia de diente afectado', 90, 45000.00, 1),
+(3, '234952009', 'Extracción simple', 'Extracción no quirúrgica de pieza dentaria', 30, 18000.00, 1),
+(4, '310627008', 'Limpieza profesional', 'Profilaxis y remoción de sarro', 30, 10000.00, 1),
+(5, '234965007', 'Corona provisoria', 'Colocación de corona temporal', 60, 30000.00, 1);
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `detalleprocedimiento`
+-- Relación de procedimientos planificados/realizados por diente
+--
+
+CREATE TABLE `detalleprocedimiento` (
+  `id` int(11) NOT NULL,
+  `DetalleDiente_id` int(11) NOT NULL,
+  `Procedimiento_id` int(11) NOT NULL,
+  `Odontologo_id` int(11) DEFAULT NULL,
+  `Fecha` date DEFAULT NULL,
+  `ZonaDiente` varchar(50) DEFAULT NULL,
+  `Estado` enum('pendiente','realizado','cancelado') DEFAULT 'pendiente',
+  `Observaciones` text DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
 -- Índices para tablas volcadas
@@ -312,6 +366,23 @@ ALTER TABLE `secretario`
   ADD UNIQUE KEY `Usuario` (`Usuario`);
 
 --
+-- Indices de la tabla `procedimientos`
+--
+ALTER TABLE `procedimientos`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `CodigoSNOMED` (`CodigoSNOMED`),
+  ADD UNIQUE KEY `NombreProcedimiento` (`NombreProcedimiento`);
+
+--
+-- Indices de la tabla `detalleprocedimiento`
+--
+ALTER TABLE `detalleprocedimiento`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `DetalleDiente_id` (`DetalleDiente_id`),
+  ADD KEY `Procedimiento_id` (`Procedimiento_id`),
+  ADD KEY `Odontologo_id` (`Odontologo_id`);
+
+--
 -- AUTO_INCREMENT de las tablas volcadas
 --
 
@@ -370,6 +441,18 @@ ALTER TABLE `secretario`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
+-- AUTO_INCREMENT de la tabla `procedimientos`
+--
+ALTER TABLE `procedimientos`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
+
+--
+-- AUTO_INCREMENT de la tabla `detalleprocedimiento`
+--
+ALTER TABLE `detalleprocedimiento`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
 -- Restricciones para tablas volcadas
 --
 
@@ -404,6 +487,14 @@ ALTER TABLE `historiaclinica`
 --
 ALTER TABLE `odontograma`
   ADD CONSTRAINT `odontograma_ibfk_1` FOREIGN KEY (`HistoriaClinica_id`) REFERENCES `historiaclinica` (`id`) ON DELETE CASCADE;
+
+--
+-- Filtros para la tabla `detalleprocedimiento`
+--
+ALTER TABLE `detalleprocedimiento`
+  ADD CONSTRAINT `detalleprocedimiento_ibfk_1` FOREIGN KEY (`DetalleDiente_id`) REFERENCES `detallediente` (`id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `detalleprocedimiento_ibfk_2` FOREIGN KEY (`Procedimiento_id`) REFERENCES `procedimientos` (`id`),
+  ADD CONSTRAINT `detalleprocedimiento_ibfk_3` FOREIGN KEY (`Odontologo_id`) REFERENCES `odontologo` (`id`) ON DELETE SET NULL;
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;

@@ -1,0 +1,79 @@
+<!-- Patient Modal -->
+<div class="modal fade" id="patientModal" tabindex="-1" aria-labelledby="patientModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="patientModalLabel">
+                    <i class="bi bi-person-plus me-2"></i>Nuevo Paciente
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="patientForm">
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="patientName" class="form-label">Nombre Completo *</label>
+                                <input type="text" class="form-control" id="patientName" name="nombre" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="patientDNI" class="form-label">DNI *</label>
+                                <input type="text" class="form-control" id="patientDNI" name="dni" required>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="patientBirthDate" class="form-label">Fecha de Nacimiento</label>
+                                <input type="date" class="form-control" id="patientBirthDate" name="fecha_nacimiento">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="patientPhone" class="form-label">Teléfono</label>
+                                <input type="tel" class="form-control" id="patientPhone" name="telefono">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="patientEmail" class="form-label">Email</label>
+                                <input type="email" class="form-control" id="patientEmail" name="email">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="patientAddress" class="form-label">Dirección</label>
+                                <input type="text" class="form-control" id="patientAddress" name="direccion">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="patientEmergencyContact" class="form-label">Contacto de Emergencia</label>
+                                <input type="text" class="form-control" id="patientEmergencyContact" name="contacto_emergencia">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="patientEmergencyPhone" class="form-label">Teléfono de Emergencia</label>
+                                <input type="tel" class="form-control" id="patientEmergencyPhone" name="telefono_emergencia">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-save me-2"></i>Guardar Paciente
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

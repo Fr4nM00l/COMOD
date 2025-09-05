@@ -1,0 +1,140 @@
+<!-- Clinical History Modal -->
+<div class="modal fade" id="clinicalHistoryModal" tabindex="-1" aria-labelledby="clinicalHistoryModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="clinicalHistoryModalLabel">
+                    <i class="bi bi-file-medical me-2"></i>Historia Clínica
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="clinicalHistoryForm">
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="clinicalHistoryPatient" class="form-label">Paciente *</label>
+                                <select class="form-select" id="clinicalHistoryPatient" name="paciente_id" required>
+                                    <option value="">Seleccionar paciente...</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="clinicalHistoryDate" class="form-label">Fecha *</label>
+                                <input type="date" class="form-control" id="clinicalHistoryDate" name="fecha" required>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="clinicalHistoryObraSocial" class="form-label">Obra Social</label>
+                                <input type="text" class="form-control" id="clinicalHistoryObraSocial" name="obra_social" placeholder="Ej: OSDE, Galeno, etc.">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="clinicalHistoryNumAfiliado" class="form-label">Número de Afiliado</label>
+                                <input type="text" class="form-control" id="clinicalHistoryNumAfiliado" name="num_afiliado">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="clinicalHistoryAlergias" class="form-label">Alergias</label>
+                                <textarea class="form-control" id="clinicalHistoryAlergias" name="alergias" rows="2" placeholder="Listar alergias conocidas..."></textarea>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="clinicalHistoryEnfermedades" class="form-label">Enfermedades</label>
+                                <textarea class="form-control" id="clinicalHistoryEnfermedades" name="enfermedades" rows="2" placeholder="Enfermedades crónicas o relevantes..."></textarea>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="clinicalHistoryFuma" class="form-label">¿Fuma?</label>
+                                <select class="form-select" id="clinicalHistoryFuma" name="fuma">
+                                    <option value="0">No</option>
+                                    <option value="1">Sí</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="clinicalHistoryDrogas" class="form-label">Consumo de Drogas</label>
+                                <textarea class="form-control" id="clinicalHistoryDrogas" name="drogas" rows="2" placeholder="Especificar si corresponde..."></textarea>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="clinicalHistoryMedicamentos" class="form-label">Medicamentos</label>
+                                <textarea class="form-control" id="clinicalHistoryMedicamentos" name="medicamentos" rows="2" placeholder="Medicamentos que toma regularmente..."></textarea>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="clinicalHistoryNivelDolor" class="form-label">Nivel de Dolor (1-10)</label>
+                                <input type="number" class="form-control" id="clinicalHistoryNivelDolor" name="nivel_dolor" min="1" max="10">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="clinicalHistoryCalmante" class="form-label">Calmante Preferido</label>
+                                <input type="text" class="form-control" id="clinicalHistoryCalmante" name="calmante" placeholder="Ej: Ibuprofeno, Paracetamol...">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="clinicalHistoryGolpeEnDientes" class="form-label">¿Golpe en Dientes?</label>
+                                <select class="form-select" id="clinicalHistoryGolpeEnDientes" name="golpe_en_dientes">
+                                    <option value="0">No</option>
+                                    <option value="1">Sí</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row" id="golpeDetailsRow" style="display: none;">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="clinicalHistoryFechaGolpe" class="form-label">Fecha del Golpe</label>
+                                <input type="date" class="form-control" id="clinicalHistoryFechaGolpe" name="fecha_golpe">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-save me-2"></i>Guardar Historia Clínica
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+document.getElementById('clinicalHistoryGolpeEnDientes').addEventListener('change', function() {
+    const golpeDetailsRow = document.getElementById('golpeDetailsRow');
+    if (this.value === '1') {
+        golpeDetailsRow.style.display = 'block';
+    } else {
+        golpeDetailsRow.style.display = 'none';
+    }
+});
+</script>

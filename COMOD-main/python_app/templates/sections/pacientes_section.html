@@ -1,0 +1,196 @@
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="mb-0"><i class="bi bi-people me-2"></i>Gestión de Pacientes</h5>
+        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#patientModal">
+            <i class="bi bi-person-plus me-2"></i>Nuevo Paciente
+        </button>
+    </div>
+    <div class="card-body">
+        <div class="row mb-3">
+            <div class="col-md-6">
+                <div class="input-group">
+                    <input type="text" class="form-control" id="patientSearch" placeholder="Buscar pacientes...">
+                    <button class="btn btn-outline-secondary" type="button">
+                        <i class="bi bi-search"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="col-md-6 text-end">
+                <span class="badge bg-primary">{{ patients|length }} pacientes registrados</span>
+            </div>
+        </div>
+
+        {% if patients %}
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>Nombre</th>
+                        <th>DNI</th>
+                        <th>Fecha Nacimiento</th>
+                        <th>Teléfono</th>
+                        <th>Email</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for patient in patients %}
+                    <tr>
+                        <td>
+                            <div class="d-flex align-items-center">
+                                <div class="avatar-sm me-2">
+                                    <i class="bi bi-person-circle" style="font-size: 2rem; color: #0d6efd;"></i>
+                                </div>
+                                <div>
+                                    <strong>{{ patient.Nombre }}</strong>
+                                    {% if patient.telefono %}
+                                    <br><small class="text-muted">{{ patient.telefono }}</small>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </td>
+                        <td><span class="badge bg-light text-dark">{{ patient.DNI }}</span></td>
+                        <td>
+                            {% if patient.FechaNacimiento %}
+                            {{ patient.FechaNacimiento.strftime('%d/%m/%Y') }}
+                            {% else %}
+                            <span class="text-muted">No especificada</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if patient.telefono %}
+                            <i class="bi bi-telephone me-1 text-success"></i>{{ patient.telefono }}
+                            {% else %}
+                            <span class="text-muted">No especificado</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if patient.email %}
+                            <i class="bi bi-envelope me-1 text-info"></i>{{ patient.email }}
+                            {% else %}
+                            <span class="text-muted">No especificado</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div class="btn-group" role="group">
+                                <button class="btn btn-sm btn-outline-primary" onclick="editPatient({{ patient.id }})" title="Editar">
+                                    <i class="bi bi-pencil"></i>
+                                </button>
+                                <button class="btn btn-sm btn-outline-info" onclick="viewPatientHistory({{ patient.id }})" title="Ver Historia">
+                                    <i class="bi bi-file-medical"></i>
+                                </button>
+                                <button class="btn btn-sm btn-outline-success" onclick="createAppointment({{ patient.id }})" title="Crear Turno">
+                                    <i class="bi bi-calendar-plus"></i>
+                                </button>
+                                <button class="btn btn-sm btn-outline-danger" onclick="deletePatient({{ patient.id }})" title="Eliminar">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="text-center py-5">
+            <i class="bi bi-people" style="font-size: 3rem; color: #6c757d;" class="mb-3"></i>
+            <h5 class="text-muted">No hay pacientes registrados</h5>
+            <p class="text-muted">Comience agregando el primer paciente al sistema</p>
+            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#patientModal">
+                <i class="bi bi-person-plus me-2"></i>Agregar Primer Paciente
+            </button>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+// Patient search functionality
+document.getElementById('patientSearch').addEventListener('input', function() {
+    const searchTerm = this.value.toLowerCase();
+    const rows = document.querySelectorAll('tbody tr');
+    
+    rows.forEach(row => {
+        const text = row.textContent.toLowerCase();
+        row.style.display = text.includes(searchTerm) ? '' : 'none';
+    });
+});
+
+// Patient form submission
+document.getElementById('patientForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    const data = Object.fromEntries(formData);
+    
+    fetch('/secretario/paciente', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        } else {
+            alert('Error al guardar el paciente: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error al guardar el paciente');
+    });
+});
+
+function editPatient(id) {
+    // Load patient data and populate modal
+    fetch(`/secretario/paciente/${id}`)
+        .then(response => response.json())
+        .then(data => {
+            // Populate form fields
+            document.getElementById('patientName').value = data.nombre;
+            document.getElementById('patientDNI').value = data.dni;
+            document.getElementById('patientBirthDate').value = data.fecha_nacimiento;
+            document.getElementById('patientPhone').value = data.telefono || '';
+            document.getElementById('patientEmail').value = data.email || '';
+            document.getElementById('patientAddress').value = data.direccion || '';
+            document.getElementById('patientEmergencyContact').value = data.contacto_emergencia || '';
+            document.getElementById('patientEmergencyPhone').value = data.telefono_emergencia || '';
+            
+            // Update modal title and form action
+            document.getElementById('patientModalLabel').innerHTML = '<i class="bi bi-person-gear me-2"></i>Editar Paciente';
+            document.getElementById('patientForm').setAttribute('data-patient-id', id);
+            
+            // Show modal
+            new bootstrap.Modal(document.getElementById('patientModal')).show();
+        });
+}
+
+function viewPatientHistory(id) {
+    // Redirect to patient history view
+    window.location.href = `/secretario/paciente/${id}/historia`;
+}
+
+function createAppointment(id) {
+    // Pre-select patient in appointment modal
+    document.getElementById('appointmentPatient').value = id;
+    new bootstrap.Modal(document.getElementById('appointmentModal')).show();
+}
+
+function deletePatient(id) {
+    if (confirm('¿Está seguro de que desea eliminar este paciente? Esta acción no se puede deshacer.')) {
+        fetch(`/secretario/paciente/${id}`, { method: 'DELETE' })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    location.reload();
+                } else {
+                    alert('Error al eliminar el paciente: ' + data.message);
+                }
+            });
+    }
+}
+</script>
