@@ -1,0 +1,1134 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Turnos Online - Centro Odontológico COMOD</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #20c997;
+            --secondary-color: #fd7e14;
+            --dark-color: #2c3e50;
+            --light-color: #f8f9fa;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f8f9fa;
+        }
+
+        .header {
+            background: linear-gradient(135deg, var(--primary-color), #17a2b8);
+            color: white;
+            padding: 2rem 0;
+            text-align: center;
+        }
+
+
+        .main-container {
+            display: flex;
+            min-height: calc(100vh - 120px);
+        }
+
+        .progress-sidebar {
+            background: var(--primary-color);
+            color: white;
+            padding: 2rem;
+            width: 300px;
+            min-height: calc(100vh - 120px);
+        }
+
+        .step-item {
+            display: flex;
+            align-items: flex-start;
+            margin-bottom: 2rem;
+            position: relative;
+        }
+
+        .step-item:not(:last-child):after {
+            content: '';
+            position: absolute;
+            left: 15px;
+            top: 40px;
+            width: 2px;
+            height: calc(100% + 1rem);
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        .step-icon {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 1rem;
+            flex-shrink: 0;
+        }
+
+        .step-icon.completed {
+            background: #28a745;
+        }
+
+        .step-icon.active {
+            background: #17a2b8;
+        }
+
+        .step-icon.pending {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        .step-content h6 {
+            margin: 0 0 0.5rem 0;
+            font-weight: 600;
+        }
+
+        .step-content p {
+            margin: 0;
+            font-size: 0.9rem;
+            opacity: 0.9;
+        }
+
+        .content-area {
+            flex: 1;
+            background: white;
+            padding: 2rem;
+        }
+
+        .step-panel {
+            display: none;
+        }
+
+        .step-panel.active {
+            display: block;
+        }
+
+        .specialty-card {
+            border: 2px solid #e9ecef;
+            border-radius: 10px;
+            padding: 1.5rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-bottom: 1rem;
+        }
+
+        .specialty-card:hover {
+            border-color: var(--primary-color);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .specialty-card.selected {
+            border-color: var(--primary-color);
+            background: rgba(32, 201, 151, 0.1);
+        }
+
+        .specialty-icon {
+            font-size: 2.5rem;
+            color: var(--secondary-color);
+            margin-bottom: 1rem;
+        }
+
+        .doctor-card {
+            border: 2px solid #e9ecef;
+            border-radius: 10px;
+            padding: 1.5rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-bottom: 1rem;
+        }
+
+        .doctor-card:hover {
+            border-color: var(--primary-color);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .doctor-card.selected {
+            border-color: var(--primary-color);
+            background: rgba(32, 201, 151, 0.1);
+        }
+
+        .doctor-icon {
+            font-size: 2rem;
+            color: var(--secondary-color);
+            margin-bottom: 1rem;
+        }
+
+        .calendar-container {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .calendar-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .calendar-nav {
+            background: none;
+            border: none;
+            font-size: 1.2rem;
+            color: var(--primary-color);
+            cursor: pointer;
+        }
+
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 0.5rem;
+        }
+
+        .calendar-day {
+            aspect-ratio: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 500;
+        }
+
+        .calendar-day:hover {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        .calendar-day.selected {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        .calendar-day.other-month {
+            color: #adb5bd;
+        }
+
+        .time-slots {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+            gap: 0.5rem;
+            margin-top: 1rem;
+        }
+
+        .time-slot {
+            padding: 0.75rem;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: white;
+        }
+
+        .time-slot:hover {
+            border-color: var(--primary-color);
+            background: rgba(32, 201, 151, 0.1);
+        }
+
+        .time-slot.selected {
+            border-color: var(--primary-color);
+            background: var(--primary-color);
+            color: white;
+        }
+
+        .time-slot.unavailable {
+            background: #f8f9fa;
+            color: #adb5bd;
+            cursor: not-allowed;
+        }
+
+        .form-tabs {
+            border-bottom: 2px solid #e9ecef;
+            margin-bottom: 2rem;
+        }
+
+        .form-tab {
+            background: none;
+            border: none;
+            padding: 1rem 2rem;
+            cursor: pointer;
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s ease;
+        }
+
+        .form-tab.active {
+            border-bottom-color: var(--primary-color);
+            color: var(--primary-color);
+            font-weight: 600;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-control {
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            padding: 0.75rem;
+            transition: all 0.3s ease;
+        }
+
+        .form-control:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 0.2rem rgba(32, 201, 151, 0.25);
+        }
+
+        .radio-group {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .radio-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .confirmation-card {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .confirmation-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 0.75rem 0;
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        .confirmation-item:last-child {
+            border-bottom: none;
+            font-weight: 600;
+            font-size: 1.1rem;
+        }
+
+        .btn-primary {
+            background: var(--primary-color);
+            border: none;
+            padding: 0.75rem 2rem;
+            border-radius: 8px;
+            font-weight: 600;
+        }
+
+        .btn-secondary {
+            background: var(--secondary-color);
+            border: none;
+            padding: 0.75rem 2rem;
+            border-radius: 8px;
+            font-weight: 600;
+        }
+
+        .btn-primary:hover {
+            background: #1aa085;
+        }
+
+        .btn-secondary:hover {
+            background: #e8650e;
+        }
+
+        .navigation-buttons {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 2rem;
+        }
+
+        .search-box {
+            position: relative;
+            margin-bottom: 1.5rem;
+        }
+
+        .search-box i {
+            position: absolute;
+            left: 1rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #6c757d;
+        }
+
+        .search-box input {
+            padding-left: 3rem;
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <div class="header">
+        <div class="container">
+            <h1 class="display-4 fw-bold">Turnos Online</h1>
+        </div>
+    </div>
+
+    <!-- Main Container -->
+    <div class="main-container">
+        <!-- Progress Sidebar -->
+        <div class="progress-sidebar">
+            <div class="step-item">
+                <div class="step-icon completed" id="step-icon-1">
+                    <i class="bi bi-check text-white"></i>
+                </div>
+                <div class="step-content">
+                    <h6>Elige una especialidad</h6>
+                    <p>Por favor, seleccione un servicio de debajo de las opciones de</p>
+                </div>
+            </div>
+
+            <div class="step-item">
+                <div class="step-icon completed" id="step-icon-2">
+                    <i class="bi bi-check text-white"></i>
+                </div>
+                <div class="step-content">
+                    <h6>Elige un doctor/a</h6>
+                    <p>Elige un médico para realizar el turno</p>
+                </div>
+            </div>
+
+            <div class="step-item">
+                <div class="step-icon active" id="step-icon-3">
+                    <i class="bi bi-circle-fill text-white"></i>
+                </div>
+                <div class="step-content">
+                    <h6>Seleccione la fecha y la hora</h6>
+                    <p>Seleccione la fecha para ver una línea de tiempo de los turnos disponibles</p>
+                </div>
+            </div>
+
+            <div class="step-item">
+                <div class="step-icon pending" id="step-icon-4">
+                    <i class="bi bi-circle-fill text-white"></i>
+                </div>
+                <div class="step-content">
+                    <h6>Usuario Información Detallada</h6>
+                    <p>Por favor proporcione detalles de contacto</p>
+                </div>
+            </div>
+
+            <div class="step-item">
+                <div class="step-icon pending" id="step-icon-5">
+                    <i class="bi bi-circle-fill text-white"></i>
+                </div>
+                <div class="step-content">
+                    <h6>Confirmación</h6>
+                    <p>La confirmación de su turno online</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Content Area -->
+        <div class="content-area">
+            <!-- Step 1: Especialidad -->
+            <div class="step-panel active" id="panel-1">
+                <h4 class="mb-4">Seleccione una especialidad</h4>
+                <div class="search-box">
+                    <i class="bi bi-search"></i>
+                    <input type="text" class="form-control" id="specialtySearch" placeholder="odon">
+                </div>
+                <div class="row" id="specialtiesList">
+                    <!-- Las especialidades se cargarán aquí -->
+                </div>
+            </div>
+
+            <!-- Step 2: Doctor -->
+            <div class="step-panel" id="panel-2">
+                <h4 class="mb-4">Seleccione un Medico/a</h4>
+                <div class="search-box">
+                    <i class="bi bi-search"></i>
+                    <input type="text" class="form-control" id="doctorSearch" placeholder="La búsqueda de...">
+                </div>
+                <div id="doctorsList">
+                    <!-- Los doctores se cargarán aquí -->
+                </div>
+            </div>
+
+            <!-- Step 3: Fecha y Hora -->
+            <div class="step-panel" id="panel-3">
+                <h4 class="mb-4">Seleccione la fecha y la hora</h4>
+                <div class="calendar-container">
+                    <div class="calendar-header">
+                        <button class="calendar-nav" id="prevMonth">
+                            <i class="bi bi-chevron-left"></i>
+                        </button>
+                        <h5 id="currentMonth">Septiembre 2025</h5>
+                        <button class="calendar-nav" id="nextMonth">
+                            <i class="bi bi-chevron-right"></i>
+                        </button>
+                    </div>
+                    <div class="calendar-grid" id="calendarGrid">
+                        <!-- El calendario se generará aquí -->
+                    </div>
+                </div>
+                <div class="mt-3">
+                    <small class="text-muted">Time Zone: UTC+00:00</small>
+                </div>
+                <div class="mt-3">
+                    <h6>Horarios disponibles</h6>
+                    <div class="time-slots" id="timeSlots">
+                        <!-- Los horarios se cargarán aquí -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Step 4: Información del Usuario -->
+            <div class="step-panel" id="panel-4">
+                <h4 class="mb-4">Ingrese sus datos personales</h4>
+                <div class="form-tabs">
+                    <button class="form-tab active" id="tab-registro">Registro</button>
+                    <button class="form-tab" id="tab-login">Inicio de sesión</button>
+                </div>
+
+                <!-- Formulario de Registro -->
+                <div id="form-registro">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label class="form-label">Nombre *</label>
+                                <input type="text" class="form-control" id="nombre" placeholder="Ingresa tu nombre">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label class="form-label">Apellido *</label>
+                                <input type="text" class="form-control" id="apellido" placeholder="Ingresa tu apellido">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Email *</label>
+                        <input type="email" class="form-control" id="email" placeholder="Introduzca su correo electrónico">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Teléfono de contacto *</label>
+                        <div class="row">
+                            <div class="col-3">
+                                <select class="form-control" id="codigoPais">
+                                    <option value="+54">+54</option>
+                                    <option value="+1">+1</option>
+                                    <option value="+55">+55</option>
+                                </select>
+                            </div>
+                            <div class="col-9">
+                                <input type="tel" class="form-control" id="telefono" placeholder="Introduzca su número de contacto">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Género *</label>
+                        <div class="radio-group">
+                            <div class="radio-item">
+                                <input type="radio" name="genero" value="masculino" id="masculino">
+                                <label for="masculino">Masculino</label>
+                            </div>
+                            <div class="radio-item">
+                                <input type="radio" name="genero" value="femenino" id="femenino">
+                                <label for="femenino">Femenino</label>
+                            </div>
+                            <div class="radio-item">
+                                <input type="radio" name="genero" value="otros" id="otros">
+                                <label for="otros">Otros</label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Formulario de Login -->
+                <div id="form-login" style="display: none;">
+                    <div class="form-group">
+                        <label class="form-label">Email</label>
+                        <input type="email" class="form-control" id="loginEmail" placeholder="Introduzca su correo electrónico">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Contraseña</label>
+                        <input type="password" class="form-control" id="loginPassword" placeholder="Introduzca su contraseña">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Step 5: Confirmación -->
+            <div class="step-panel" id="panel-5">
+                <h4 class="mb-4">Confirmación de Turno</h4>
+                <div class="confirmation-card">
+                    <div class="confirmation-item">
+                        <span>Especialidad:</span>
+                        <span id="confirmEspecialidad">-</span>
+                    </div>
+                    <div class="confirmation-item">
+                        <span>Doctor:</span>
+                        <span id="confirmDoctor">-</span>
+                    </div>
+                    <div class="confirmation-item">
+                        <span>Fecha:</span>
+                        <span id="confirmFecha">-</span>
+                    </div>
+                    <div class="confirmation-item">
+                        <span>Hora:</span>
+                        <span id="confirmHora">-</span>
+                    </div>
+                    <div class="confirmation-item">
+                        <span>Paciente:</span>
+                        <span id="confirmPaciente">-</span>
+                    </div>
+                    <div class="confirmation-item">
+                        <span>Total:</span>
+                        <span id="confirmTotal">$0</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Navigation Buttons -->
+            <div class="navigation-buttons">
+                <button class="btn btn-secondary" id="btnBack" style="display: none;">
+                    VOLVER
+                </button>
+                <button class="btn btn-primary" id="btnNext">
+                    SIG
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Variables globales
+        let currentStep = 1;
+        let selectedSpecialty = null;
+        let selectedDoctor = null;
+        let selectedDate = null;
+        let selectedTime = null;
+        let specialties = [];
+        let doctors = [];
+        let currentMonth = new Date().getMonth();
+        let currentYear = new Date().getFullYear();
+
+        // Inicializar la aplicación
+        document.addEventListener('DOMContentLoaded', function() {
+            loadSpecialties();
+            loadDoctors();
+            setupEventListeners();
+            updateCalendar();
+        });
+
+        // Configurar event listeners
+        function setupEventListeners() {
+            // Navegación
+            document.getElementById('btnNext').addEventListener('click', nextStep);
+            document.getElementById('btnBack').addEventListener('click', prevStep);
+
+            // Búsquedas
+            document.getElementById('specialtySearch').addEventListener('input', filterSpecialties);
+            document.getElementById('doctorSearch').addEventListener('input', filterDoctors);
+
+            // Calendario
+            document.getElementById('prevMonth').addEventListener('click', () => {
+                currentMonth--;
+                if (currentMonth < 0) {
+                    currentMonth = 11;
+                    currentYear--;
+                }
+                updateCalendar();
+            });
+
+            document.getElementById('nextMonth').addEventListener('click', () => {
+                currentMonth++;
+                if (currentMonth > 11) {
+                    currentMonth = 0;
+                    currentYear++;
+                }
+                updateCalendar();
+            });
+
+            // Tabs del formulario
+            document.getElementById('tab-registro').addEventListener('click', () => switchForm('registro'));
+            document.getElementById('tab-login').addEventListener('click', () => switchForm('login'));
+        }
+
+        // Cargar especialidades desde la API
+        function loadSpecialties() {
+            fetch('/api/online/specialties')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        specialties = data.specialties.map((s, index) => ({
+                            id: index + 1,
+                            name: s.name,
+                            icon: s.icon,
+                            description: s.description
+                        }));
+                        renderSpecialties();
+                    } else {
+                        console.error('Error al cargar especialidades:', data.error);
+                        // Usar datos por defecto si hay error
+                        loadDefaultSpecialties();
+                    }
+                })
+                .catch(error => {
+                    console.error('Error al cargar especialidades:', error);
+                    loadDefaultSpecialties();
+                });
+        }
+
+        // Cargar especialidades por defecto
+        function loadDefaultSpecialties() {
+            specialties = [
+                { id: 1, name: 'Odontología', icon: 'bi-tooth', description: 'Consultas generales y limpiezas' },
+                { id: 2, name: 'Ortodoncia', icon: 'bi-braces', description: 'Tratamientos de ortodoncia' },
+                { id: 3, name: 'Cirugía Oral', icon: 'bi-scissors', description: 'Cirugías y extracciones' }
+            ];
+            renderSpecialties();
+        }
+
+        // Renderizar especialidades
+        function renderSpecialties() {
+            const container = document.getElementById('specialtiesList');
+            container.innerHTML = '';
+
+            specialties.forEach(specialty => {
+                const card = document.createElement('div');
+                card.className = 'col-md-4';
+                card.innerHTML = `
+                    <div class="specialty-card" data-id="${specialty.id}">
+                        <div class="specialty-icon">
+                            <i class="bi ${specialty.icon}"></i>
+                        </div>
+                        <h5>${specialty.name}</h5>
+                        <p class="text-muted">${specialty.description}</p>
+                    </div>
+                `;
+                card.addEventListener('click', () => selectSpecialty(specialty.id));
+                container.appendChild(card);
+            });
+        }
+
+        // Seleccionar especialidad
+        function selectSpecialty(id) {
+            selectedSpecialty = specialties.find(s => s.id === id);
+            document.querySelectorAll('.specialty-card').forEach(card => {
+                card.classList.remove('selected');
+            });
+            document.querySelector(`[data-id="${id}"]`).classList.add('selected');
+            
+            // Cargar doctores para esta especialidad
+            loadDoctors();
+        }
+
+        // Filtrar especialidades
+        function filterSpecialties() {
+            const searchTerm = document.getElementById('specialtySearch').value.toLowerCase();
+            const filtered = specialties.filter(s => 
+                s.name.toLowerCase().includes(searchTerm) || 
+                s.description.toLowerCase().includes(searchTerm)
+            );
+            // Re-renderizar con filtros
+            renderSpecialties();
+        }
+
+        // Cargar doctores desde la API
+        function loadDoctors() {
+            const specialty = selectedSpecialty ? selectedSpecialty.name : null;
+            let url = '/api/online/doctors';
+            if (specialty) {
+                url += `?specialty=${encodeURIComponent(specialty)}`;
+            }
+            
+            fetch(url)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        doctors = data.doctors;
+                        renderDoctors();
+                    } else {
+                        console.error('Error al cargar doctores:', data.error);
+                        loadDefaultDoctors();
+                    }
+                })
+                .catch(error => {
+                    console.error('Error al cargar doctores:', error);
+                    loadDefaultDoctors();
+                });
+        }
+
+        // Cargar doctores por defecto
+        function loadDefaultDoctors() {
+            doctors = [
+                { id: 1, name: 'Agostina Acosta', specialty: 'ODONTOLOGÍA', icon: 'bi-person-badge' },
+                { id: 2, name: 'Dr. Juan Pérez', specialty: 'ODONTOLOGÍA', icon: 'bi-person-badge' },
+                { id: 3, name: 'Dra. María García', specialty: 'ORTODONCIA', icon: 'bi-person-badge' }
+            ];
+            renderDoctors();
+        }
+
+        // Renderizar doctores
+        function renderDoctors() {
+            const container = document.getElementById('doctorsList');
+            container.innerHTML = '';
+
+            doctors.forEach(doctor => {
+                const card = document.createElement('div');
+                card.className = 'doctor-card';
+                card.innerHTML = `
+                    <div class="d-flex align-items-center">
+                        <div class="doctor-icon me-3">
+                            <i class="bi ${doctor.icon}"></i>
+                        </div>
+                        <div>
+                            <h5 class="mb-1">${doctor.name}</h5>
+                            <p class="text-muted mb-0">${doctor.specialty}</p>
+                        </div>
+                    </div>
+                `;
+                card.addEventListener('click', () => selectDoctor(doctor.id));
+                container.appendChild(card);
+            });
+        }
+
+        // Seleccionar doctor
+        function selectDoctor(id) {
+            selectedDoctor = doctors.find(d => d.id === id);
+            document.querySelectorAll('.doctor-card').forEach(card => {
+                card.classList.remove('selected');
+            });
+            event.currentTarget.classList.add('selected');
+        }
+
+        // Filtrar doctores
+        function filterDoctors() {
+            const searchTerm = document.getElementById('doctorSearch').value.toLowerCase();
+            const filtered = doctors.filter(d => 
+                d.name.toLowerCase().includes(searchTerm) || 
+                d.specialty.toLowerCase().includes(searchTerm)
+            );
+            // Re-renderizar con filtros
+            renderDoctors();
+        }
+
+        // Actualizar calendario
+        function updateCalendar() {
+            const monthNames = [
+                'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+                'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
+            ];
+
+            document.getElementById('currentMonth').textContent = `${monthNames[currentMonth]} ${currentYear}`;
+
+            const firstDay = new Date(currentYear, currentMonth, 1);
+            const lastDay = new Date(currentYear, currentMonth + 1, 0);
+            const daysInMonth = lastDay.getDate();
+            const startingDay = firstDay.getDay();
+
+            const grid = document.getElementById('calendarGrid');
+            grid.innerHTML = '';
+
+            // Días de la semana
+            const dayNames = ['Dom', 'Lun', 'Mar', 'Mie', 'Jue', 'Vie', 'Sab'];
+            dayNames.forEach(day => {
+                const dayHeader = document.createElement('div');
+                dayHeader.className = 'text-center fw-bold text-muted';
+                dayHeader.textContent = day;
+                grid.appendChild(dayHeader);
+            });
+
+            // Días del mes anterior
+            const prevMonth = new Date(currentYear, currentMonth, 0);
+            const daysInPrevMonth = prevMonth.getDate();
+            for (let i = startingDay - 1; i >= 0; i--) {
+                const day = document.createElement('div');
+                day.className = 'calendar-day other-month';
+                day.textContent = daysInPrevMonth - i;
+                grid.appendChild(day);
+            }
+
+            // Días del mes actual
+            for (let day = 1; day <= daysInMonth; day++) {
+                const dayElement = document.createElement('div');
+                dayElement.className = 'calendar-day';
+                dayElement.textContent = day;
+                dayElement.addEventListener('click', () => selectDate(day));
+                grid.appendChild(dayElement);
+            }
+
+            // Días del mes siguiente
+            const remainingDays = 42 - (startingDay + daysInMonth);
+            for (let day = 1; day <= remainingDays; day++) {
+                const dayElement = document.createElement('div');
+                dayElement.className = 'calendar-day other-month';
+                dayElement.textContent = day;
+                grid.appendChild(dayElement);
+            }
+        }
+
+        // Seleccionar fecha
+        function selectDate(day) {
+            selectedDate = new Date(currentYear, currentMonth, day);
+            document.querySelectorAll('.calendar-day').forEach(el => {
+                el.classList.remove('selected');
+            });
+            event.currentTarget.classList.add('selected');
+            loadTimeSlots();
+        }
+
+        // Cargar horarios disponibles desde la API
+        function loadTimeSlots() {
+            if (!selectedDate || !selectedDoctor) return;
+
+            const fecha = selectedDate.toISOString().split('T')[0];
+            const doctor_id = selectedDoctor.id;
+            
+            fetch(`/api/online/available-times?doctor_id=${doctor_id}&fecha=${fecha}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        renderTimeSlots(data.slots);
+                    } else {
+                        console.error('Error al cargar horarios:', data.error);
+                        loadDefaultTimeSlots();
+                    }
+                })
+                .catch(error => {
+                    console.error('Error al cargar horarios:', error);
+                    loadDefaultTimeSlots();
+                });
+        }
+
+        // Renderizar horarios
+        function renderTimeSlots(slots) {
+            const container = document.getElementById('timeSlots');
+            container.innerHTML = '';
+
+            slots.forEach(slot => {
+                const slotElement = document.createElement('div');
+                slotElement.className = `time-slot ${!slot.available ? 'unavailable' : ''}`;
+                slotElement.textContent = slot.time;
+                if (slot.available) {
+                    slotElement.addEventListener('click', () => selectTime(slot.time));
+                }
+                container.appendChild(slotElement);
+            });
+        }
+
+        // Cargar horarios por defecto
+        function loadDefaultTimeSlots() {
+            const slots = [
+                { time: '8:00', available: true },
+                { time: '8:30', available: true },
+                { time: '9:00', available: true },
+                { time: '9:30', available: true },
+                { time: '10:00', available: true },
+                { time: '10:30', available: true },
+                { time: '11:00', available: true },
+                { time: '11:30', available: true },
+                { time: '12:00', available: true },
+                { time: '12:30', available: true },
+                { time: '13:00', available: true },
+                { time: '13:30', available: true },
+                { time: '14:00', available: true },
+                { time: '14:30', available: true },
+                { time: '15:00', available: true },
+                { time: '15:30', available: true },
+                { time: '16:00', available: true },
+                { time: '16:30', available: true },
+                { time: '17:00', available: true }
+            ];
+            renderTimeSlots(slots);
+        }
+
+        // Seleccionar hora
+        function selectTime(time) {
+            selectedTime = time;
+            document.querySelectorAll('.time-slot').forEach(el => {
+                el.classList.remove('selected');
+            });
+            event.currentTarget.classList.add('selected');
+        }
+
+        // Cambiar formulario
+        function switchForm(type) {
+            document.querySelectorAll('.form-tab').forEach(tab => tab.classList.remove('active'));
+            document.getElementById(`tab-${type}`).classList.add('active');
+            
+            document.getElementById('form-registro').style.display = type === 'registro' ? 'block' : 'none';
+            document.getElementById('form-login').style.display = type === 'login' ? 'block' : 'none';
+        }
+
+        // Siguiente paso
+        function nextStep() {
+            if (validateCurrentStep()) {
+                if (currentStep < 5) {
+                    currentStep++;
+                    showStep(currentStep);
+                } else {
+                    confirmAppointment();
+                }
+            }
+        }
+
+        // Paso anterior
+        function prevStep() {
+            if (currentStep > 1) {
+                currentStep--;
+                showStep(currentStep);
+            }
+        }
+
+        // Mostrar paso
+        function showStep(step) {
+            // Ocultar todos los paneles
+            document.querySelectorAll('.step-panel').forEach(panel => {
+                panel.classList.remove('active');
+            });
+
+            // Mostrar panel actual
+            document.getElementById(`panel-${step}`).classList.add('active');
+
+            // Actualizar iconos de progreso
+            for (let i = 1; i <= 5; i++) {
+                const icon = document.getElementById(`step-icon-${i}`);
+                if (i < step) {
+                    icon.className = 'step-icon completed';
+                    icon.innerHTML = '<i class="bi bi-check text-white"></i>';
+                } else if (i === step) {
+                    icon.className = 'step-icon active';
+                    icon.innerHTML = '<i class="bi bi-circle-fill text-white"></i>';
+                } else {
+                    icon.className = 'step-icon pending';
+                    icon.innerHTML = '<i class="bi bi-circle-fill text-white"></i>';
+                }
+            }
+
+            // Mostrar/ocultar botones
+            document.getElementById('btnBack').style.display = step > 1 ? 'block' : 'none';
+            document.getElementById('btnNext').textContent = step === 5 ? 'CONFIRMAR' : 'SIG';
+
+            // Actualizar confirmación si es el paso 5
+            if (step === 5) {
+                updateConfirmation();
+            }
+        }
+
+        // Validar paso actual
+        function validateCurrentStep() {
+            switch (currentStep) {
+                case 1:
+                    if (!selectedSpecialty) {
+                        alert('Por favor seleccione una especialidad');
+                        return false;
+                    }
+                    break;
+                case 2:
+                    if (!selectedDoctor) {
+                        alert('Por favor seleccione un doctor');
+                        return false;
+                    }
+                    break;
+                case 3:
+                    if (!selectedDate || !selectedTime) {
+                        alert('Por favor seleccione fecha y hora');
+                        return false;
+                    }
+                    break;
+                case 4:
+                    // Validar formulario según el tab activo
+                    const activeTab = document.querySelector('.form-tab.active').id;
+                    if (activeTab === 'tab-registro') {
+                        if (!document.getElementById('nombre').value || 
+                            !document.getElementById('apellido').value ||
+                            !document.getElementById('email').value ||
+                            !document.getElementById('telefono').value ||
+                            !document.querySelector('input[name="genero"]:checked')) {
+                            alert('Por favor complete todos los campos obligatorios');
+                            return false;
+                        }
+                    } else {
+                        if (!document.getElementById('loginEmail').value || 
+                            !document.getElementById('loginPassword').value) {
+                            alert('Por favor complete email y contraseña');
+                            return false;
+                        }
+                    }
+                    break;
+            }
+            return true;
+        }
+
+        // Actualizar confirmación
+        function updateConfirmation() {
+            document.getElementById('confirmEspecialidad').textContent = selectedSpecialty?.name || '-';
+            document.getElementById('confirmDoctor').textContent = selectedDoctor?.name || '-';
+            document.getElementById('confirmFecha').textContent = selectedDate ? 
+                selectedDate.toLocaleDateString('es-ES') : '-';
+            document.getElementById('confirmHora').textContent = selectedTime || '-';
+            
+            const activeTab = document.querySelector('.form-tab.active').id;
+            if (activeTab === 'tab-registro') {
+                const nombre = document.getElementById('nombre').value;
+                const apellido = document.getElementById('apellido').value;
+                document.getElementById('confirmPaciente').textContent = `${nombre} ${apellido}`;
+            } else {
+                document.getElementById('confirmPaciente').textContent = document.getElementById('loginEmail').value;
+            }
+            
+            document.getElementById('confirmTotal').textContent = '$50.000';
+        }
+
+        // Confirmar turno
+        function confirmAppointment() {
+            const patientData = {
+                nombre: document.getElementById('nombre').value,
+                apellido: document.getElementById('apellido').value,
+                email: document.getElementById('email').value,
+                telefono: document.getElementById('telefono').value,
+                genero: document.querySelector('input[name="genero"]:checked')?.value || 'no especificado'
+            };
+
+            const appointmentData = {
+                doctor_id: selectedDoctor.id,
+                fecha: selectedDate.toISOString().split('T')[0],
+                hora: selectedTime,
+                patient_data: patientData
+            };
+
+            fetch('/api/online/create-appointment', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(appointmentData)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('¡Turno confirmado exitosamente! Recibirás una confirmación por email.');
+                    
+                    // Resetear formulario
+                    currentStep = 1;
+                    selectedSpecialty = null;
+                    selectedDoctor = null;
+                    selectedDate = null;
+                    selectedTime = null;
+                    showStep(1);
+                    
+                    // Limpiar formulario
+                    document.getElementById('nombre').value = '';
+                    document.getElementById('apellido').value = '';
+                    document.getElementById('email').value = '';
+                    document.getElementById('telefono').value = '';
+                    document.querySelectorAll('input[name="genero"]').forEach(radio => radio.checked = false);
+                } else {
+                    alert('Error al crear el turno: ' + data.error);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error al crear el turno. Por favor intenta de nuevo.');
+            });
+        }
+    </script>
+</body>
+</html>

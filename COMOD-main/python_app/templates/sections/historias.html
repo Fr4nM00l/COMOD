@@ -1,0 +1,178 @@
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="mb-0"><i class="bi bi-file-medical me-2"></i>Historias Clínicas</h5>
+        <button class="btn btn-primary" onclick="showHistoryModal()">
+            <i class="bi bi-file-plus me-2"></i>Nueva Historia
+        </button>
+    </div>
+    <div class="card-body">
+        <div class="row mb-3">
+            <div class="col-md-6">
+                <div class="input-group">
+                    <input type="text" class="form-control" id="historySearch" placeholder="Buscar historias por paciente...">
+                    <button class="btn btn-outline-secondary" type="button" onclick="searchHistories()">
+                        <i class="bi bi-search"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="col-md-6 text-end">
+                <span class="badge bg-primary" id="historyCount">0 historias registradas</span>
+            </div>
+        </div>
+
+        <div id="historiesTableContainer">
+            <div class="text-center py-4">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Cargando...</span>
+                </div>
+                <p class="mt-2">Cargando historias clínicas...</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let histories = [];
+
+// Cargar historias al inicializar la página
+document.addEventListener('DOMContentLoaded', function() {
+    loadHistories();
+});
+
+// Función para cargar la lista de historias
+function loadHistories() {
+    fetch('/api/histories')
+        .then(response => response.json())
+        .then(data => {
+            if (data.histories) {
+                histories = data.histories;
+                renderHistoriesTable(histories);
+                updateHistoryCount(histories.length);
+            } else {
+                showError('Error al cargar historias: ' + (data.error || 'Error desconocido'));
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showError('Error al cargar historias clínicas');
+        });
+}
+
+// Función para renderizar la tabla de historias
+function renderHistoriesTable(historiesList) {
+    const container = document.getElementById('historiesTableContainer');
+    
+    if (historiesList.length === 0) {
+        container.innerHTML = `
+            <div class="text-center py-5">
+                <i class="bi bi-file-medical" style="font-size: 3rem; color: #6c757d;" class="mb-3"></i>
+                <h5 class="text-muted">No hay historias clínicas registradas</h5>
+                <p class="text-muted">Comience agregando la primera historia clínica</p>
+                <button class="btn btn-primary" onclick="showHistoryModal()">
+                    <i class="bi bi-file-plus me-2"></i>Agregar Primera Historia
+                </button>
+            </div>
+        `;
+        return;
+    }
+
+    let tableHTML = `
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>Paciente</th>
+                        <th>Fecha</th>
+                        <th>Diagnóstico</th>
+                        <th>Tratamiento</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+    `;
+
+    historiesList.forEach(history => {
+        const date = history.fecha ? 
+            new Date(history.fecha).toLocaleDateString('es-ES') : 
+            'No especificada';
+        
+        tableHTML += `
+            <tr>
+                <td>
+                    <div class="d-flex align-items-center">
+                        <div class="avatar-sm me-2">
+                            <i class="bi bi-person-circle" style="font-size: 2rem; color: #0d6efd;"></i>
+                        </div>
+                        <div>
+                            <strong>${history.paciente_nombre || 'Sin nombre'}</strong>
+                        </div>
+                    </div>
+                </td>
+                <td>${date}</td>
+                <td>${history.diagnostico || 'No especificado'}</td>
+                <td>${history.tratamiento || 'No especificado'}</td>
+                <td>
+                    <div class="btn-group" role="group">
+                        <button class="btn btn-sm btn-outline-primary" onclick="viewHistory(${history.id})" title="Ver">
+                            <i class="bi bi-eye"></i>
+                        </button>
+                        <button class="btn btn-sm btn-outline-warning" onclick="editHistory(${history.id})" title="Editar">
+                            <i class="bi bi-pencil"></i>
+                        </button>
+                    </div>
+                </td>
+            </tr>
+        `;
+    });
+
+    tableHTML += `
+                </tbody>
+            </table>
+        </div>
+    `;
+
+    container.innerHTML = tableHTML;
+}
+
+// Función para actualizar el contador de historias
+function updateHistoryCount(count) {
+    document.getElementById('historyCount').textContent = `${count} historias registradas`;
+}
+
+// Función para mostrar el modal de historia
+function showHistoryModal() {
+    alert('Función de nueva historia clínica - En desarrollo');
+}
+
+// Función para buscar historias
+function searchHistories() {
+    const searchTerm = document.getElementById('historySearch').value.toLowerCase();
+    const filteredHistories = histories.filter(history => 
+        (history.paciente_nombre && history.paciente_nombre.toLowerCase().includes(searchTerm))
+    );
+    renderHistoriesTable(filteredHistories);
+    updateHistoryCount(filteredHistories.length);
+}
+
+// Event listener para búsqueda en tiempo real
+document.getElementById('historySearch').addEventListener('input', searchHistories);
+
+// Función para mostrar mensaje de error
+function showError(message) {
+    const container = document.getElementById('historiesTableContainer');
+    container.innerHTML = `
+        <div class="alert alert-danger" role="alert">
+            <i class="bi bi-exclamation-triangle me-2"></i>${message}
+        </div>
+    `;
+}
+
+// Funciones de acciones (placeholder para futuras implementaciones)
+function viewHistory(id) {
+    alert('Función de ver historia clínica - En desarrollo');
+}
+
+function editHistory(id) {
+    alert('Función de editar historia clínica - En desarrollo');
+}
+</script>

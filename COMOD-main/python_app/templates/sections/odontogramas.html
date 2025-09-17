@@ -1,0 +1,178 @@
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="mb-0"><i class="bi bi-tooth me-2"></i>Odontogramas</h5>
+        <button class="btn btn-primary" onclick="showOdontogramModal()">
+            <i class="bi bi-plus-circle me-2"></i>Nuevo Odontograma
+        </button>
+    </div>
+    <div class="card-body">
+        <div class="row mb-3">
+            <div class="col-md-6">
+                <div class="input-group">
+                    <input type="text" class="form-control" id="odontogramSearch" placeholder="Buscar odontogramas por paciente...">
+                    <button class="btn btn-outline-secondary" type="button" onclick="searchOdontograms()">
+                        <i class="bi bi-search"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="col-md-6 text-end">
+                <span class="badge bg-primary" id="odontogramCount">0 odontogramas registrados</span>
+            </div>
+        </div>
+
+        <div id="odontogramsTableContainer">
+            <div class="text-center py-4">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Cargando...</span>
+                </div>
+                <p class="mt-2">Cargando odontogramas...</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let odontograms = [];
+
+// Cargar odontogramas al inicializar la página
+document.addEventListener('DOMContentLoaded', function() {
+    loadOdontograms();
+});
+
+// Función para cargar la lista de odontogramas
+function loadOdontograms() {
+    fetch('/api/odontograms')
+        .then(response => response.json())
+        .then(data => {
+            if (data.odontograms) {
+                odontograms = data.odontograms;
+                renderOdontogramsTable(odontograms);
+                updateOdontogramCount(odontograms.length);
+            } else {
+                showError('Error al cargar odontogramas: ' + (data.error || 'Error desconocido'));
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showError('Error al cargar odontogramas');
+        });
+}
+
+// Función para renderizar la tabla de odontogramas
+function renderOdontogramsTable(odontogramsList) {
+    const container = document.getElementById('odontogramsTableContainer');
+    
+    if (odontogramsList.length === 0) {
+        container.innerHTML = `
+            <div class="text-center py-5">
+                <i class="bi bi-tooth" style="font-size: 3rem; color: #6c757d;" class="mb-3"></i>
+                <h5 class="text-muted">No hay odontogramas registrados</h5>
+                <p class="text-muted">Comience agregando el primer odontograma</p>
+                <button class="btn btn-primary" onclick="showOdontogramModal()">
+                    <i class="bi bi-plus-circle me-2"></i>Agregar Primer Odontograma
+                </button>
+            </div>
+        `;
+        return;
+    }
+
+    let tableHTML = `
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>Paciente</th>
+                        <th>Fecha</th>
+                        <th>Estado</th>
+                        <th>Observaciones</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+    `;
+
+    odontogramsList.forEach(odontogram => {
+        const date = odontogram.fecha ? 
+            new Date(odontogram.fecha).toLocaleDateString('es-ES') : 
+            'No especificada';
+        
+        tableHTML += `
+            <tr>
+                <td>
+                    <div class="d-flex align-items-center">
+                        <div class="avatar-sm me-2">
+                            <i class="bi bi-person-circle" style="font-size: 2rem; color: #0d6efd;"></i>
+                        </div>
+                        <div>
+                            <strong>${odontogram.paciente_nombre || 'Sin nombre'}</strong>
+                        </div>
+                    </div>
+                </td>
+                <td>${date}</td>
+                <td><span class="badge bg-success">Completado</span></td>
+                <td>${odontogram.observaciones || 'Sin observaciones'}</td>
+                <td>
+                    <div class="btn-group" role="group">
+                        <button class="btn btn-sm btn-outline-primary" onclick="viewOdontogram(${odontogram.id})" title="Ver">
+                            <i class="bi bi-eye"></i>
+                        </button>
+                        <button class="btn btn-sm btn-outline-warning" onclick="editOdontogram(${odontogram.id})" title="Editar">
+                            <i class="bi bi-pencil"></i>
+                        </button>
+                    </div>
+                </td>
+            </tr>
+        `;
+    });
+
+    tableHTML += `
+                </tbody>
+            </table>
+        </div>
+    `;
+
+    container.innerHTML = tableHTML;
+}
+
+// Función para actualizar el contador de odontogramas
+function updateOdontogramCount(count) {
+    document.getElementById('odontogramCount').textContent = `${count} odontogramas registrados`;
+}
+
+// Función para mostrar el modal de odontograma
+function showOdontogramModal() {
+    alert('Función de nuevo odontograma - En desarrollo');
+}
+
+// Función para buscar odontogramas
+function searchOdontograms() {
+    const searchTerm = document.getElementById('odontogramSearch').value.toLowerCase();
+    const filteredOdontograms = odontograms.filter(odontogram => 
+        (odontogram.paciente_nombre && odontogram.paciente_nombre.toLowerCase().includes(searchTerm))
+    );
+    renderOdontogramsTable(filteredOdontograms);
+    updateOdontogramCount(filteredOdontograms.length);
+}
+
+// Event listener para búsqueda en tiempo real
+document.getElementById('odontogramSearch').addEventListener('input', searchOdontograms);
+
+// Función para mostrar mensaje de error
+function showError(message) {
+    const container = document.getElementById('odontogramsTableContainer');
+    container.innerHTML = `
+        <div class="alert alert-danger" role="alert">
+            <i class="bi bi-exclamation-triangle me-2"></i>${message}
+        </div>
+    `;
+}
+
+// Funciones de acciones (placeholder para futuras implementaciones)
+function viewOdontogram(id) {
+    alert('Función de ver odontograma - En desarrollo');
+}
+
+function editOdontogram(id) {
+    alert('Función de editar odontograma - En desarrollo');
+}
+</script>

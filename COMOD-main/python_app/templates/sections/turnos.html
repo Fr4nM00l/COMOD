@@ -1,0 +1,1195 @@
+<!-- Wizard de Turnos -->
+<div class="card">
+    <div class="card-header">
+        <h5 class="mb-0"><i class="bi bi-calendar3 me-2"></i>Agendar Nuevo Turno</h5>
+        <p class="text-muted mb-0">Complete los pasos para agendar un turno de forma sencilla</p>
+    </div>
+    <div class="card-body">
+        <!-- Progress Steps -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div class="step-item active" id="step-1">
+                        <div class="step-circle">1</div>
+                        <div class="step-text">
+                            <strong>Especialidad</strong>
+                            <small>Elegir especialidad</small>
+                        </div>
+                    </div>
+                    <div class="step-line"></div>
+                    <div class="step-item" id="step-2">
+                        <div class="step-circle">2</div>
+                        <div class="step-text">
+                            <strong>Doctor</strong>
+                            <small>Seleccionar doctor</small>
+                        </div>
+                    </div>
+                    <div class="step-line"></div>
+                    <div class="step-item" id="step-3">
+                        <div class="step-circle">3</div>
+                        <div class="step-text">
+                            <strong>Fecha y Hora</strong>
+                            <small>Elegir horario</small>
+                        </div>
+                    </div>
+                    <div class="step-line"></div>
+                    <div class="step-item" id="step-4">
+                        <div class="step-circle">4</div>
+                        <div class="step-text">
+                            <strong>Paciente y Confirmar</strong>
+                            <small>Datos del paciente y confirmar</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Step Content -->
+        <div class="step-content">
+            <!-- Step 1: Seleccionar Especialidad -->
+            <div class="step-panel active" id="panel-1">
+                <h6 class="mb-3">Seleccione una Especialidad</h6>
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="specialty-card" data-specialty="odontologia">
+                            <div class="specialty-icon">
+                                <i class="bi bi-tooth"></i>
+                            </div>
+                            <h6>Odontología General</h6>
+                            <p class="text-muted">Consultas generales y limpiezas</p>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="specialty-card" data-specialty="ortodoncia">
+                            <div class="specialty-icon">
+                                <i class="bi bi-braces"></i>
+                            </div>
+                            <h6>Ortodoncia</h6>
+                            <p class="text-muted">Tratamientos de ortodoncia</p>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="specialty-card" data-specialty="cirugia">
+                            <div class="specialty-icon">
+                                <i class="bi bi-scissors"></i>
+                            </div>
+                            <h6>Cirugía Oral</h6>
+                            <p class="text-muted">Cirugías y extracciones</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Step 2: Seleccionar Doctor -->
+            <div class="step-panel" id="panel-2">
+                <h6 class="mb-3">Seleccione un Doctor</h6>
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="input-group mb-3">
+                            <input type="text" class="form-control" id="doctorSearch" placeholder="Buscar doctor...">
+                            <button class="btn btn-outline-secondary" type="button">
+                                <i class="bi bi-search"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div id="doctorsList" class="row">
+                    <!-- Lista de doctores se cargará aquí -->
+                </div>
+            </div>
+
+            <!-- Step 3: Seleccionar Fecha y Hora -->
+            <div class="step-panel" id="panel-3">
+                <h6 class="mb-3">Seleccione Fecha y Hora</h6>
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="calendar-container">
+                            <div id="appointmentCalendar"></div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <h6>Horarios Disponibles</h6>
+                        <div id="timeSlots" class="time-slots-container">
+                            <!-- Horarios se cargarán aquí -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Step 4: Datos del Paciente y Confirmación -->
+            <div class="step-panel" id="panel-4">
+                <h6 class="mb-3">Datos del Paciente y Confirmación</h6>
+                <p class="text-muted mb-4">Complete los datos del paciente y confirme el turno</p>
+                
+                <!-- Datos del Paciente -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h6 class="mb-0">Datos del Paciente</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="patientName" class="form-label">Nombre Completo <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="patientName" placeholder="Ingrese el nombre completo del paciente" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="patientDNI" class="form-label">DNI <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="patientDNI" placeholder="Ingrese el DNI del paciente" required>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="patientPhone" class="form-label">Teléfono</label>
+                                <input type="tel" class="form-control" id="patientPhone" placeholder="Ingrese el teléfono de contacto">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="patientEmail" class="form-label">Email</label>
+                                <input type="email" class="form-control" id="patientEmail" placeholder="Ingrese el email del paciente">
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="patientBirthDate" class="form-label">Fecha de Nacimiento</label>
+                                <input type="date" class="form-control" id="patientBirthDate">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="patientAddress" class="form-label">Dirección</label>
+                                <input type="text" class="form-control" id="patientAddress" placeholder="Ingrese la dirección del paciente">
+                            </div>
+                        </div>
+                        
+                        <div class="alert alert-info">
+                            <i class="bi bi-info-circle me-2"></i>
+                            <strong>Nota:</strong> Si el paciente ya existe en el sistema, se utilizará su información existente. Si no existe, se creará un nuevo registro.
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Resumen del Turno -->
+                <div class="card">
+                    <div class="card-header">
+                        <h6 class="mb-0">Resumen del Turno</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="summary-item">
+                                    <strong>Especialidad:</strong>
+                                    <span id="summary-specialty">-</span>
+                                </div>
+                                <div class="summary-item">
+                                    <strong>Doctor:</strong>
+                                    <span id="summary-doctor">-</span>
+                                </div>
+                                <div class="summary-item">
+                                    <strong>Fecha:</strong>
+                                    <span id="summary-date">-</span>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="summary-item">
+                                    <strong>Hora:</strong>
+                                    <span id="summary-time">-</span>
+                                </div>
+                                <div class="summary-item">
+                                    <strong>Motivo:</strong>
+                                    <span id="summary-reason">-</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mt-3">
+                            <label for="appointmentReason" class="form-label">Motivo de la Consulta</label>
+                            <textarea class="form-control" id="appointmentReason" rows="3" placeholder="Describa el motivo de la consulta..."></textarea>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Navigation Buttons -->
+        <div class="d-flex justify-content-between mt-4">
+            <button class="btn btn-outline-secondary" id="prevBtn" onclick="changeStep(-1)" style="display: none;">
+                <i class="bi bi-arrow-left me-2"></i>Anterior
+            </button>
+            <div class="ms-auto">
+                <button class="btn btn-outline-secondary me-2" onclick="resetWizard()">
+                    <i class="bi bi-x-circle me-2"></i>Cancelar
+                </button>
+                <button class="btn btn-primary" id="nextBtn" onclick="changeStep(1)">
+                    Siguiente<i class="bi bi-arrow-right ms-2"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Lista de Turnos Existentes -->
+<div class="card mt-4">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="mb-0"><i class="bi bi-list-ul me-2"></i>Turnos Programados</h5>
+        <div class="d-flex gap-2 align-items-center flex-wrap">
+            <button class="btn btn-danger btn-sm" onclick="clearAllAppointments()" title="Eliminar todos los turnos" style="white-space: nowrap; font-weight: bold;">
+                <i class="bi bi-trash me-1"></i>🗑️ Limpiar Todos
+            </button>
+            <div class="vr"></div>
+            <select class="form-select form-select-sm" id="dentistFilter" style="width: auto;">
+                <option value="">Todos los odontólogos</option>
+            </select>
+            <input type="date" class="form-control form-control-sm" id="dateFilter" style="width: auto;">
+        </div>
+    </div>
+    <div class="card-body">
+        <div id="appointmentsTableContainer">
+            <div class="text-center py-4">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Cargando...</span>
+                </div>
+                <p class="mt-2">Cargando turnos...</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+/* Estilos para el wizard de turnos */
+.step-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    flex: 1;
+    position: relative;
+}
+
+.step-circle {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background-color: #e9ecef;
+    color: #6c757d;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    margin-bottom: 8px;
+    transition: all 0.3s ease;
+}
+
+.step-item.active .step-circle {
+    background-color: #0d6efd;
+    color: white;
+}
+
+.step-item.completed .step-circle {
+    background-color: #198754;
+    color: white;
+}
+
+.step-item.completed .step-circle::before {
+    content: "✓";
+}
+
+.step-text {
+    font-size: 0.875rem;
+}
+
+.step-text strong {
+    display: block;
+    margin-bottom: 2px;
+}
+
+.step-text small {
+    color: #6c757d;
+}
+
+.step-line {
+    position: absolute;
+    top: 20px;
+    left: 50%;
+    right: -50%;
+    height: 2px;
+    background-color: #e9ecef;
+    z-index: -1;
+}
+
+.step-item.completed + .step-line {
+    background-color: #198754;
+}
+
+.step-panel {
+    display: none;
+    min-height: 400px;
+}
+
+.step-panel.active {
+    display: block;
+}
+
+.specialty-card {
+    border: 2px solid #e9ecef;
+    border-radius: 12px;
+    padding: 20px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    height: 100%;
+}
+
+.specialty-card:hover {
+    border-color: #0d6efd;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(13, 110, 253, 0.15);
+}
+
+.specialty-card.selected {
+    border-color: #0d6efd;
+    background-color: #f8f9ff;
+}
+
+.specialty-icon {
+    font-size: 2.5rem;
+    color: #0d6efd;
+    margin-bottom: 12px;
+}
+
+.doctor-card {
+    border: 2px solid #e9ecef;
+    border-radius: 12px;
+    padding: 20px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    height: 100%;
+}
+
+.doctor-card:hover {
+    border-color: #0d6efd;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(13, 110, 253, 0.15);
+}
+
+.doctor-card.selected {
+    border-color: #0d6efd;
+    background-color: #f8f9ff;
+}
+
+.doctor-avatar {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background-color: #0d6efd;
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    margin: 0 auto 12px;
+}
+
+.patient-card {
+    border: 2px solid #e9ecef;
+    border-radius: 12px;
+    padding: 20px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    height: 100%;
+}
+
+.patient-card:hover {
+    border-color: #0d6efd;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(13, 110, 253, 0.15);
+}
+
+.patient-card.selected {
+    border-color: #0d6efd;
+    background-color: #f8f9ff;
+}
+
+.patient-avatar {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background-color: #198754;
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    margin: 0 auto 12px;
+}
+
+.time-slot {
+    border: 2px solid #e9ecef;
+    border-radius: 8px;
+    padding: 12px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    margin-bottom: 8px;
+}
+
+.time-slot:hover {
+    border-color: #0d6efd;
+    background-color: #f8f9ff;
+}
+
+.time-slot.selected {
+    border-color: #0d6efd;
+    background-color: #0d6efd;
+    color: white;
+}
+
+.time-slot.occupied {
+    border-color: #dc3545;
+    background-color: #f8d7da;
+    color: #721c24;
+    cursor: not-allowed;
+}
+
+.appointment-summary {
+    background-color: #f8f9fa;
+    border-radius: 12px;
+    padding: 20px;
+}
+
+.summary-item {
+    margin-bottom: 12px;
+    padding: 8px 0;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.summary-item:last-child {
+    border-bottom: none;
+}
+
+.calendar-container {
+    border: 1px solid #e9ecef;
+    border-radius: 12px;
+    padding: 20px;
+    background-color: #f8f9fa;
+}
+
+#appointmentCalendar {
+    min-height: 300px;
+}
+
+.time-slots-container {
+    max-height: 300px;
+    overflow-y: auto;
+}
+</style>
+
+<script>
+// Las variables globales del wizard están definidas en secretario_dashboard.html
+// No es necesario redeclararlas aquí
+
+// Configurar event listeners
+function setupEventListeners() {
+    // Especialidades
+    document.querySelectorAll('.specialty-card').forEach(card => {
+        card.addEventListener('click', function() {
+            selectSpecialty(this);
+        });
+    });
+    
+    // Búsqueda de doctores
+    document.getElementById('doctorSearch').addEventListener('input', filterDoctors);
+    
+    // Filtros de turnos existentes
+    document.getElementById('dentistFilter').addEventListener('change', filterAppointments);
+    document.getElementById('dateFilter').addEventListener('change', filterAppointments);
+}
+
+// Seleccionar especialidad
+function selectSpecialty(card) {
+    // Remover selección anterior
+    document.querySelectorAll('.specialty-card').forEach(c => c.classList.remove('selected'));
+    
+    // Seleccionar nueva especialidad
+    card.classList.add('selected');
+    selectedSpecialty = card.dataset.specialty;
+    
+    console.log('Especialidad seleccionada:', selectedSpecialty);
+}
+
+// Cambiar paso del wizard
+function changeStep(direction) {
+    const totalSteps = 4;
+    const newStep = currentStep + direction;
+    
+    if (newStep < 1 || newStep > totalSteps) return;
+    
+    // Validar paso actual antes de avanzar
+    if (direction > 0 && !validateCurrentStep()) {
+        return;
+    }
+    
+    // Ocultar panel actual
+    document.getElementById(`panel-${currentStep}`).classList.remove('active');
+    document.getElementById(`step-${currentStep}`).classList.remove('active');
+    
+    // Mostrar nuevo panel
+    currentStep = newStep;
+    document.getElementById(`panel-${currentStep}`).classList.add('active');
+    document.getElementById(`step-${currentStep}`).classList.add('active');
+    
+    // Actualizar botones de navegación
+    updateNavigationButtons();
+    
+    // Cargar datos específicos del paso
+    loadStepData();
+}
+
+// Validar paso actual
+function validateCurrentStep() {
+    switch (currentStep) {
+        case 1:
+            if (!selectedSpecialty) {
+                alert('Debe seleccionar una especialidad');
+                return false;
+            }
+            break;
+        case 2:
+            if (!selectedDoctor) {
+                alert('Debe seleccionar un doctor');
+                return false;
+            }
+            break;
+        case 3:
+            if (!selectedDate || !selectedTime) {
+                alert('Debe seleccionar fecha y hora');
+                return false;
+            }
+            break;
+        case 4:
+            const patientName = document.getElementById('patientName').value.trim();
+            const patientDNI = document.getElementById('patientDNI').value.trim();
+            
+            if (!patientName) {
+                alert('Debe ingresar el nombre del paciente');
+                document.getElementById('patientName').focus();
+                return false;
+            }
+            
+            if (!patientDNI) {
+                alert('Debe ingresar el DNI del paciente');
+                document.getElementById('patientDNI').focus();
+                return false;
+            }
+            
+            // Validar formato de DNI (solo números)
+            if (!/^\d+$/.test(patientDNI)) {
+                alert('El DNI debe contener solo números');
+                document.getElementById('patientDNI').focus();
+                return false;
+            }
+            break;
+    }
+    return true;
+}
+
+// Actualizar botones de navegación
+function updateNavigationButtons() {
+    const prevBtn = document.getElementById('prevBtn');
+    const nextBtn = document.getElementById('nextBtn');
+    
+    prevBtn.style.display = currentStep > 1 ? 'block' : 'none';
+    
+    if (currentStep === 4) {
+        nextBtn.innerHTML = '<i class="bi bi-check-lg me-2"></i>Confirmar Turno';
+        nextBtn.onclick = confirmAppointment;
+    } else {
+        nextBtn.innerHTML = 'Siguiente<i class="bi bi-arrow-right ms-2"></i>';
+        nextBtn.onclick = () => changeStep(1);
+    }
+}
+
+// Cargar datos específicos del paso
+function loadStepData() {
+    switch (currentStep) {
+        case 1:
+            // No necesitamos cargar nada, las especialidades están listas
+            break;
+        case 2:
+            renderDoctorsList();
+            break;
+        case 3:
+            loadCalendar();
+            break;
+        case 4:
+            updateSummary();
+            break;
+    }
+}
+
+
+// Cargar doctores
+function loadDentists() {
+    fetch('/api/dentists')
+        .then(response => response.json())
+        .then(data => {
+            if (data.dentists) {
+                dentists = data.dentists;
+                renderDoctorsList();
+                populateDentistFilter();
+            }
+        })
+        .catch(error => {
+            console.error('Error al cargar doctores:', error);
+        });
+}
+
+
+// Renderizar lista de doctores
+function renderDoctorsList() {
+    const container = document.getElementById('doctorsList');
+    const searchTerm = document.getElementById('doctorSearch').value.toLowerCase();
+    
+    let filteredDoctors = dentists;
+    if (searchTerm) {
+        filteredDoctors = dentists.filter(dentist => 
+            dentist.Nombre.toLowerCase().includes(searchTerm)
+        );
+    }
+    
+    if (filteredDoctors.length === 0) {
+        container.innerHTML = `
+            <div class="col-12 text-center py-4">
+                <i class="bi bi-person-x" style="font-size: 3rem; color: #6c757d;"></i>
+                <h5 class="text-muted">No se encontraron doctores</h5>
+                <p class="text-muted">Intente con otro término de búsqueda</p>
+            </div>
+        `;
+        return;
+    }
+    
+    let html = '';
+    filteredDoctors.forEach(doctor => {
+        const isSelected = selectedDoctor && selectedDoctor.id === doctor.id;
+        html += `
+            <div class="col-md-6 mb-3">
+                <div class="doctor-card ${isSelected ? 'selected' : ''}" onclick="selectDoctor(${doctor.id})">
+                    <div class="doctor-avatar">
+                        <i class="bi bi-person-badge"></i>
+                    </div>
+                    <h6>Dr./Dra. ${doctor.Nombre}</h6>
+                    <p class="text-muted mb-0">Odontólogo</p>
+                </div>
+            </div>
+        `;
+    });
+    
+    container.innerHTML = html;
+}
+
+// Seleccionar doctor
+function selectDoctor(doctorId) {
+    selectedDoctor = dentists.find(d => d.id === doctorId);
+    renderDoctorsList();
+}
+
+// Filtrar doctores
+function filterDoctors() {
+    renderDoctorsList();
+}
+
+// Cargar calendario
+function loadCalendar() {
+    const calendarContainer = document.getElementById('appointmentCalendar');
+    const today = new Date();
+    const currentMonth = today.getMonth();
+    const currentYear = today.getFullYear();
+    
+    // Crear calendario simple
+    const monthNames = [
+        'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+        'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
+    ];
+    
+    const firstDay = new Date(currentYear, currentMonth, 1);
+    const lastDay = new Date(currentYear, currentMonth + 1, 0);
+    const daysInMonth = lastDay.getDate();
+    
+    let calendarHTML = `
+        <div class="calendar-header d-flex justify-content-between align-items-center mb-3">
+            <h6 class="mb-0">${monthNames[currentMonth]} ${currentYear}</h6>
+        </div>
+        <div class="calendar-grid">
+            <div class="row text-center mb-2">
+                <div class="col">Dom</div>
+                <div class="col">Lun</div>
+                <div class="col">Mar</div>
+                <div class="col">Mié</div>
+                <div class="col">Jue</div>
+                <div class="col">Vie</div>
+                <div class="col">Sáb</div>
+            </div>
+            <div class="row">
+    `;
+    
+    // Días del mes
+    for (let day = 1; day <= daysInMonth; day++) {
+        const date = new Date(currentYear, currentMonth, day);
+        const dayOfWeek = date.getDay();
+        const isToday = day === today.getDate() && currentMonth === today.getMonth() && currentYear === today.getFullYear();
+        const isSelected = selectedDate && selectedDate.getDate() === day && selectedDate.getMonth() === currentMonth && selectedDate.getFullYear() === currentYear;
+        const isPast = date < today;
+        
+        calendarHTML += `
+            <div class="col p-2">
+                <div class="calendar-day ${isToday ? 'today' : ''} ${isSelected ? 'selected' : ''} ${isPast ? 'past' : ''}" 
+                     onclick="${!isPast ? `selectDate(${day}, ${currentMonth}, ${currentYear})` : ''}">
+                    ${day}
+                </div>
+            </div>
+        `;
+    }
+    
+    calendarHTML += `
+            </div>
+        </div>
+    `;
+    
+    calendarContainer.innerHTML = calendarHTML;
+}
+
+// Seleccionar fecha
+function selectDate(day, month, year) {
+    selectedDate = new Date(year, month, day);
+    loadTimeSlots();
+}
+
+// Cargar horarios disponibles
+function loadTimeSlots() {
+    if (!selectedDate || !selectedDoctor) return;
+    
+    const dateStr = selectedDate.toISOString().split('T')[0];
+    
+    fetch(`/api/available-slots?odontologo_id=${selectedDoctor.id}&fecha=${dateStr}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.slots) {
+                renderTimeSlots(data.slots);
+            }
+        })
+        .catch(error => {
+            console.error('Error al cargar horarios:', error);
+        });
+}
+
+// Renderizar horarios
+function renderTimeSlots(slots) {
+    const container = document.getElementById('timeSlots');
+    
+    if (slots.length === 0) {
+        container.innerHTML = '<p class="text-muted">No hay horarios disponibles para esta fecha</p>';
+        return;
+    }
+    
+    let html = '';
+    slots.forEach(slot => {
+        const isSelected = selectedTime === slot.time;
+        const isAvailable = slot.available;
+        
+        html += `
+            <div class="time-slot ${isSelected ? 'selected' : ''} ${!isAvailable ? 'occupied' : ''}" 
+                 onclick="${isAvailable ? `selectTime('${slot.time}')` : ''}">
+                <strong>${slot.time}</strong>
+                ${!isAvailable ? `<br><small>Ocupado</small>` : ''}
+            </div>
+        `;
+    });
+    
+    container.innerHTML = html;
+}
+
+// Seleccionar hora
+function selectTime(time) {
+    selectedTime = time;
+    renderTimeSlots(document.querySelectorAll('.time-slot').length > 0 ? 
+        Array.from(document.querySelectorAll('.time-slot')).map(el => ({
+            time: el.querySelector('strong').textContent,
+            available: !el.classList.contains('occupied')
+        })) : []);
+}
+
+// Actualizar resumen
+function updateSummary() {
+    document.getElementById('summary-specialty').textContent = selectedSpecialty || '-';
+    document.getElementById('summary-doctor').textContent = selectedDoctor ? `Dr./Dra. ${selectedDoctor.Nombre}` : '-';
+    document.getElementById('summary-date').textContent = selectedDate ? selectedDate.toLocaleDateString('es-ES') : '-';
+    document.getElementById('summary-time').textContent = selectedTime || '-';
+    document.getElementById('summary-reason').textContent = document.getElementById('appointmentReason').value || '-';
+}
+
+// Confirmar turno
+function confirmAppointment() {
+    const reason = document.getElementById('appointmentReason').value.trim();
+    
+    if (!reason) {
+        alert('Debe especificar el motivo de la consulta');
+        return;
+    }
+    
+    // Obtener datos del paciente del formulario
+    const patientData = {
+        nombre: document.getElementById('patientName').value.trim(),
+        dni: document.getElementById('patientDNI').value.trim(),
+        telefono: document.getElementById('patientPhone').value.trim(),
+        email: document.getElementById('patientEmail').value.trim(),
+        fecha_nacimiento: document.getElementById('patientBirthDate').value,
+        direccion: document.getElementById('patientAddress').value.trim()
+    };
+    
+    const appointmentData = {
+        paciente: patientData,
+        odontologo_id: selectedDoctor.id,
+        fecha: selectedDate.toISOString().split('T')[0],
+        hora: selectedTime,
+        motivo_consulta: reason
+    };
+    
+    // Mostrar indicador de carga
+    const nextBtn = document.getElementById('nextBtn');
+    const originalContent = nextBtn.innerHTML;
+    nextBtn.disabled = true;
+    nextBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Programando...';
+    
+    fetch('/api/appointments-with-patient', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(appointmentData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showSuccess(data.message);
+            resetWizard();
+            loadAppointments();
+        } else {
+            alert('Error: ' + data.error);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error al programar el turno');
+    })
+    .finally(() => {
+        nextBtn.disabled = false;
+        nextBtn.innerHTML = originalContent;
+    });
+}
+
+// Resetear wizard
+function resetWizard() {
+    currentStep = 1;
+    selectedSpecialty = null;
+    selectedDoctor = null;
+    selectedDate = null;
+    selectedTime = null;
+    
+    // Resetear pasos
+    for (let i = 1; i <= 4; i++) {
+        document.getElementById(`panel-${i}`).classList.remove('active');
+        document.getElementById(`step-${i}`).classList.remove('active', 'completed');
+    }
+    
+    // Mostrar primer paso
+    document.getElementById('panel-1').classList.add('active');
+    document.getElementById('step-1').classList.add('active');
+    
+    // Limpiar formularios
+    document.getElementById('patientName').value = '';
+    document.getElementById('patientDNI').value = '';
+    document.getElementById('patientPhone').value = '';
+    document.getElementById('patientEmail').value = '';
+    document.getElementById('patientBirthDate').value = '';
+    document.getElementById('patientAddress').value = '';
+    document.getElementById('doctorSearch').value = '';
+    document.getElementById('appointmentReason').value = '';
+    
+    // Limpiar selecciones
+    document.querySelectorAll('.specialty-card').forEach(card => card.classList.remove('selected'));
+    document.querySelectorAll('.doctor-card').forEach(card => card.classList.remove('selected'));
+    document.querySelectorAll('.time-slot').forEach(slot => slot.classList.remove('selected'));
+    
+    // Actualizar botones
+    updateNavigationButtons();
+    
+    // Recargar datos
+    loadStepData();
+}
+
+// Mostrar mensaje de éxito
+function showSuccess(message) {
+    const alertDiv = document.createElement('div');
+    alertDiv.className = 'alert alert-success alert-dismissible fade show';
+    alertDiv.innerHTML = `
+        <i class="bi bi-check-circle me-2"></i>${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    
+    const container = document.querySelector('.card-body');
+    container.insertBefore(alertDiv, container.firstChild);
+    
+    setTimeout(() => {
+        if (alertDiv.parentNode) {
+            alertDiv.remove();
+        }
+    }, 5000);
+}
+
+// Cargar turnos existentes
+function loadAppointments() {
+    fetch('/api/appointments')
+        .then(response => response.json())
+        .then(data => {
+            if (data.appointments) {
+                renderAppointmentsTable(data.appointments);
+            }
+        })
+        .catch(error => {
+            console.error('Error al cargar turnos:', error);
+        });
+}
+
+// Renderizar tabla de turnos
+function renderAppointmentsTable(appointments) {
+    const container = document.getElementById('appointmentsTableContainer');
+    
+    if (appointments.length === 0) {
+        container.innerHTML = `
+            <div class="text-center py-4">
+                <i class="bi bi-calendar-x" style="font-size: 3rem; color: #6c757d;"></i>
+                <h5 class="text-muted">No hay turnos programados</h5>
+                <p class="text-muted">Use el wizard de arriba para programar el primer turno</p>
+            </div>
+        `;
+        return;
+    }
+    
+    let tableHTML = `
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>Fecha</th>
+                        <th>Hora</th>
+                        <th>Paciente</th>
+                        <th>Odontólogo</th>
+                        <th>Motivo</th>
+                        <th>Estado</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+    `;
+    
+    appointments.forEach(appointment => {
+        const date = new Date(appointment.FechaTurno).toLocaleDateString('es-ES');
+        const statusClass = getStatusClass(appointment.Estado);
+        const statusText = getStatusText(appointment.Estado);
+        
+        tableHTML += `
+            <tr>
+                <td>${date}</td>
+                <td>${appointment.HoraTurno}</td>
+                <td>${appointment.PacienteNombre}</td>
+                <td>${appointment.OdontologoNombre}</td>
+                <td>${appointment.MotivoConsulta}</td>
+                <td><span class="badge ${statusClass}">${statusText}</span></td>
+                <td>
+                    <div class="btn-group" role="group">
+                        <button class="btn btn-sm btn-outline-danger" onclick="cancelAppointment(${appointment.id})" title="Cancelar">
+                            <i class="bi bi-x-circle"></i>
+                        </button>
+                    </div>
+                </td>
+            </tr>
+        `;
+    });
+    
+    tableHTML += `
+                </tbody>
+            </table>
+        </div>
+    `;
+    
+    container.innerHTML = tableHTML;
+}
+
+// Obtener clase CSS del estado
+function getStatusClass(status) {
+    const classes = {
+        'programado': 'bg-primary',
+        'en_curso': 'bg-warning',
+        'completado': 'bg-success',
+        'cancelado': 'bg-danger'
+    };
+    return classes[status] || 'bg-secondary';
+}
+
+// Obtener texto del estado
+function getStatusText(status) {
+    const texts = {
+        'programado': 'Programado',
+        'en_curso': 'En Curso',
+        'completado': 'Completado',
+        'cancelado': 'Cancelado'
+    };
+    return texts[status] || status;
+}
+
+// Poblar filtro de odontólogos
+function populateDentistFilter() {
+    const select = document.getElementById('dentistFilter');
+    select.innerHTML = '<option value="">Todos los odontólogos</option>';
+    
+    dentists.forEach(dentist => {
+        const option = document.createElement('option');
+        option.value = dentist.id;
+        option.textContent = dentist.Nombre;
+        select.appendChild(option);
+    });
+}
+
+// Filtrar turnos
+function filterAppointments() {
+    // Implementar filtrado si es necesario
+    loadAppointments();
+}
+
+// Cancelar turno
+function cancelAppointment(id) {
+    if (confirm('¿Está seguro de que desea cancelar este turno?')) {
+        fetch(`/api/appointments/${id}/cancel`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showSuccess(data.message);
+                // Recargar la página después de 1 segundo para mostrar los cambios
+                setTimeout(() => {
+                    window.location.reload();
+                }, 1000);
+            } else {
+                alert('Error: ' + data.error);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error al cancelar el turno');
+        });
+    }
+}
+
+// Eliminar turno
+function deleteTurno(id) {
+    if (confirm('¿Está seguro de que desea eliminar este turno? Esta acción no se puede deshacer.')) {
+        fetch(`/api/appointments/${id}`, {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showSuccess(data.message);
+                // Recargar la página después de 1 segundo para mostrar los cambios
+                setTimeout(() => {
+                    window.location.reload();
+                }, 1000);
+            } else {
+                alert('Error: ' + data.error);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error al eliminar el turno');
+        });
+    }
+}
+
+// Editar turno
+function editTurno(id) {
+    // Por ahora, mostrar un mensaje de que la funcionalidad está en desarrollo
+    alert('La funcionalidad de editar turnos está en desarrollo. Por favor, cancele el turno actual y cree uno nuevo.');
+    
+    // TODO: Implementar modal de edición de turnos
+    // fetch(`/api/appointments/${id}`)
+    //     .then(response => response.json())
+    //     .then(data => {
+    //         if (data.success) {
+    //             // Mostrar modal con datos del turno para editar
+    //             showEditAppointmentModal(data.appointment);
+    //         } else {
+    //             alert('Error: ' + data.error);
+    //         }
+    //     })
+    //     .catch(error => {
+    //         console.error('Error:', error);
+    //         alert('Error al cargar los datos del turno');
+    //     });
+}
+
+// Limpiar todos los turnos
+function clearAllAppointments() {
+    console.log('clearAllAppointments() ejecutada');
+    alert('Función clearAllAppointments() ejecutada correctamente!');
+    
+    if (confirm('¿Está seguro de que desea eliminar TODOS los turnos? Esta acción no se puede deshacer.')) {
+        if (confirm('Esta acción eliminará permanentemente todos los turnos del sistema. ¿Continuar?')) {
+            fetch('/api/appointments/clear-all', {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showSuccess(data.message);
+                    // Recargar la página después de 1 segundo para mostrar los cambios
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 1000);
+                } else {
+                    alert('Error: ' + data.error);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error al eliminar los turnos');
+            });
+        }
+    }
+}
+
+// Asegurar que la función esté disponible globalmente
+window.clearAllAppointments = clearAllAppointments;
+
+// Event listeners para especialidades
+document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('.specialty-card').forEach(card => {
+        card.addEventListener('click', function() {
+            // Remover selección anterior
+            document.querySelectorAll('.specialty-card').forEach(c => c.classList.remove('selected'));
+            
+            // Seleccionar actual
+            this.classList.add('selected');
+            selectedSpecialty = this.dataset.specialty;
+        });
+    });
+});
+</script>

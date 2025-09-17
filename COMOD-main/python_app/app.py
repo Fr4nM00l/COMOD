@@ -849,6 +849,176 @@ def create_app() -> Flask:
             except Exception:
                 pass
 
+    @app.route("/api/appointments/<int:appointment_id>", methods=["GET"])
+    def api_get_appointment(appointment_id):
+        """Obtener un turno específico via API"""
+        if session.get("role") != "secretario":
+            return jsonify({"success": False, "message": "Acceso no autorizado"}), 403
+
+        try:
+            connection = get_db_connection()
+            cursor = connection.cursor(dictionary=True)
+            
+            cursor.execute("""
+                SELECT dt.id, dt.FechaTurno, dt.HoraTurno, 
+                       dt.tipo_consulta, dt.estado, dt.observaciones,
+                       p.Nombre AS PacienteNombre, p.DNI AS PacienteDNI,
+                       o.Nombre AS OdontologoNombre
+                FROM detalleturno dt
+                JOIN paciente p ON dt.Paciente_id = p.id
+                JOIN odontologo o ON dt.Odontologo_id = o.id
+                WHERE dt.id = %s
+            """, (appointment_id,))
+            
+            appointment = cursor.fetchone()
+            
+            if not appointment:
+                return jsonify({"success": False, "message": "Turno no encontrado"}), 404
+            
+            # Formatear hora
+            if appointment['HoraTurno']:
+                if hasattr(appointment['HoraTurno'], 'seconds'):
+                    hours = appointment['HoraTurno'].seconds // 3600
+                    minutes = (appointment['HoraTurno'].seconds % 3600) // 60
+                    appointment['HoraTurno'] = f"{hours:02d}:{minutes:02d}"
+                else:
+                    appointment['HoraTurno'] = str(appointment['HoraTurno'])
+            
+            return jsonify({
+                "success": True,
+                "appointment": appointment
+            })
+            
+        except Exception as e:
+            return jsonify({"success": False, "message": f"Error al obtener turno: {str(e)}"}), 500
+        finally:
+            try:
+                cursor.close()
+            except Exception:
+                pass
+            try:
+                connection.close()
+            except Exception:
+                pass
+
+    @app.route("/api/appointments/<int:appointment_id>", methods=["PUT"])
+    def api_update_appointment(appointment_id):
+        """Actualizar un turno via API"""
+        if session.get("role") != "secretario":
+            return jsonify({"success": False, "message": "Acceso no autorizado"}), 403
+
+        data = request.get_json()
+        
+        # Validar campos obligatorios
+        required_fields = ['fecha', 'hora']
+        if not data or not all(key in data for key in required_fields):
+            return jsonify({"success": False, "message": "Datos incompletos"}), 400
+
+        try:
+            connection = get_db_connection()
+            cursor = connection.cursor()
+            
+            # Convertir hora a formato de base de datos
+            from datetime import timedelta
+            hora_parts = data['hora'].split(':')
+            hora_timedelta = timedelta(
+                hours=int(hora_parts[0]),
+                minutes=int(hora_parts[1])
+            )
+            
+            cursor.execute("""
+                UPDATE detalleturno 
+                SET FechaTurno = %s, HoraTurno = %s, tipo_consulta = %s, estado = %s
+                WHERE id = %s
+            """, (
+                data['fecha'],
+                hora_timedelta,
+                data.get('tipo_consulta', ''),
+                data.get('estado', 'programado'),
+                appointment_id
+            ))
+            
+            if cursor.rowcount == 0:
+                return jsonify({"success": False, "message": "Turno no encontrado"}), 404
+            
+            connection.commit()
+            
+            return jsonify({
+                "success": True,
+                "message": "Turno actualizado exitosamente"
+            })
+            
+        except Exception as e:
+            return jsonify({"success": False, "message": f"Error al actualizar turno: {str(e)}"}), 500
+        finally:
+            try:
+                cursor.close()
+            except Exception:
+                pass
+            try:
+                connection.close()
+            except Exception:
+                pass
+
+    @app.route("/api/appointments/<int:appointment_id>", methods=["DELETE"])
+    def api_delete_appointment(appointment_id):
+        """Eliminar un turno via API"""
+        if session.get("role") != "secretario":
+            return jsonify({"success": False, "message": "Acceso no autorizado"}), 403
+
+        try:
+            connection = get_db_connection()
+            cursor = connection.cursor()
+            cursor.execute("DELETE FROM detalleturno WHERE id = %s", (appointment_id,))
+            connection.commit()
+            
+            return jsonify({"success": True, "message": "Turno eliminado exitosamente"})
+        except Exception as e:
+            return jsonify({"success": False, "message": f"Error al eliminar turno: {str(e)}"}), 500
+        finally:
+            try:
+                cursor.close()
+            except Exception:
+                pass
+            try:
+                connection.close()
+            except Exception:
+                pass
+
+    @app.route("/api/appointments/clear-all", methods=["DELETE"])
+    def api_clear_all_appointments():
+        """Eliminar todos los turnos via API"""
+        if session.get("role") != "secretario":
+            return jsonify({"success": False, "message": "Acceso no autorizado"}), 403
+
+        try:
+            connection = get_db_connection()
+            cursor = connection.cursor()
+            
+            # Obtener el número de turnos antes de eliminarlos
+            cursor.execute("SELECT COUNT(*) FROM detalleturno")
+            count = cursor.fetchone()[0]
+            
+            # Eliminar todos los turnos
+            cursor.execute("DELETE FROM detalleturno")
+            connection.commit()
+            
+            return jsonify({
+                "success": True, 
+                "message": f"Se eliminaron {count} turnos exitosamente"
+            })
+        except Exception as e:
+            return jsonify({"success": False, "message": f"Error al eliminar turnos: {str(e)}"}), 500
+        finally:
+            try:
+                cursor.close()
+            except Exception:
+                pass
+            try:
+                connection.close()
+            except Exception:
+                pass
+
     @app.route("/secretario/turno/<int:appointment_id>/estado", methods=["PUT"])
     def update_appointment_status(appointment_id):
         if session.get("role") != "secretario":
@@ -1002,6 +1172,241 @@ def create_app() -> Flask:
                 pass
             try:
                 connection.close()
+            except Exception:
+                pass
+
+    # ===== RUTAS PARA TURNOS ONLINE =====
+    
+    @app.route("/turnos-online")
+    def turnos_online():
+        """Página principal de turnos online"""
+        return render_template("turnos_online.html")
+    
+    @app.route("/api/online/specialties", methods=["GET"])
+    def api_online_specialties():
+        """Obtener especialidades disponibles para turnos online"""
+        try:
+            connection = get_db_connection()
+            cursor = connection.cursor(dictionary=True)
+            
+            # Obtener especialidades desde la base de datos
+            # Como no hay columna especialidad, usar datos por defecto
+            specialties = [
+                {"name": "Odontología", "icon": "bi-tooth", "description": "Consultas generales y limpiezas"},
+                {"name": "Ortodoncia", "icon": "bi-braces", "description": "Tratamientos de ortodoncia"},
+                {"name": "Cirugía Oral", "icon": "bi-scissors", "description": "Cirugías y extracciones"}
+            ]
+            
+            return jsonify({
+                "success": True,
+                "specialties": specialties
+            })
+            
+        except Exception as e:
+            return jsonify({"error": f"Error al obtener especialidades: {str(e)}"}), 500
+        finally:
+            try:
+                if 'cursor' in locals():
+                    cursor.close()
+            except Exception:
+                pass
+            try:
+                if 'connection' in locals():
+                    connection.close()
+            except Exception:
+                pass
+    
+    @app.route("/api/online/doctors", methods=["GET"])
+    def api_online_doctors():
+        """Obtener doctores disponibles para turnos online"""
+        specialty = request.args.get('specialty')
+        
+        try:
+            connection = get_db_connection()
+            cursor = connection.cursor(dictionary=True)
+            
+            query = """
+                SELECT id, Nombre as name, 'Odontología' as specialty, 
+                       'bi-person-badge' as icon
+                FROM odontologo 
+                WHERE 1=1
+            """
+            params = []
+            
+            # Como no hay columna especialidad, no filtrar por especialidad
+            query += " ORDER BY Nombre"
+            
+            cursor.execute(query, params)
+            doctors = cursor.fetchall()
+            
+            return jsonify({
+                "success": True,
+                "doctors": doctors
+            })
+            
+        except Exception as e:
+            return jsonify({"error": f"Error al obtener doctores: {str(e)}"}), 500
+        finally:
+            try:
+                if 'cursor' in locals():
+                    cursor.close()
+            except Exception:
+                pass
+            try:
+                if 'connection' in locals():
+                    connection.close()
+            except Exception:
+                pass
+    
+    @app.route("/api/online/available-times", methods=["GET"])
+    def api_online_available_times():
+        """Obtener horarios disponibles para un doctor en una fecha específica"""
+        doctor_id = request.args.get('doctor_id')
+        fecha = request.args.get('fecha')
+        
+        if not doctor_id or not fecha:
+            return jsonify({"error": "doctor_id y fecha son requeridos"}), 400
+        
+        try:
+            connection = get_db_connection()
+            cursor = connection.cursor()
+            
+            # Obtener horarios ocupados para esa fecha y doctor
+            cursor.execute("""
+                SELECT HoraTurno 
+                FROM detalleturno 
+                WHERE Odontologo_id = %s AND FechaTurno = %s AND estado != 'cancelado'
+            """, (doctor_id, fecha))
+            
+            occupied_times_raw = cursor.fetchall()
+            occupied_times = []
+            for row in occupied_times_raw:
+                if row[0]:
+                    hours = row[0].seconds // 3600
+                    minutes = (row[0].seconds % 3600) // 60
+                    time_str = f"{hours:02d}:{minutes:02d}"
+                    occupied_times.append(time_str)
+            
+            # Generar horarios disponibles (8:00 a 17:00, cada 30 minutos)
+            available_slots = []
+            start_hour = 8
+            end_hour = 17
+            
+            for hour in range(start_hour, end_hour + 1):
+                for minute in [0, 30]:
+                    if hour == end_hour and minute > 0:
+                        break
+                    
+                    time_str = f"{hour:02d}:{minutes:02d}"
+                    is_available = time_str not in occupied_times
+                    
+                    available_slots.append({
+                        "time": time_str,
+                        "available": is_available
+                    })
+            
+            return jsonify({
+                "success": True,
+                "slots": available_slots
+            })
+            
+        except Exception as e:
+            return jsonify({"error": f"Error al obtener horarios: {str(e)}"}), 500
+        finally:
+            try:
+                if 'cursor' in locals():
+                    cursor.close()
+            except Exception:
+                pass
+            try:
+                if 'connection' in locals():
+                    connection.close()
+            except Exception:
+                pass
+    
+    @app.route("/api/online/create-appointment", methods=["POST"])
+    def api_online_create_appointment():
+        """Crear un turno online"""
+        data = request.get_json()
+        
+        # Validar campos obligatorios
+        required_fields = ['doctor_id', 'fecha', 'hora', 'patient_data']
+        if not data or not all(key in data for key in required_fields):
+            return jsonify({"error": "Datos incompletos"}), 400
+        
+        try:
+            connection = get_db_connection()
+            cursor = connection.cursor()
+            
+            # Crear o buscar paciente
+            patient_data = data['patient_data']
+            
+            # Verificar si el paciente ya existe por email
+            cursor.execute("SELECT id FROM paciente WHERE email = %s", (patient_data['email'],))
+            existing_patient = cursor.fetchone()
+            
+            if existing_patient:
+                patient_id = existing_patient[0]
+            else:
+                # Crear nuevo paciente
+                cursor.execute("""
+                    INSERT INTO paciente (Nombre, DNI, FechaNacimiento, telefono, email, direccion)
+                    VALUES (%s, %s, %s, %s, %s, %s)
+                """, (
+                    f"{patient_data['nombre']} {patient_data['apellido']}",
+                    patient_data.get('dni', '00000000'),
+                    patient_data.get('fecha_nacimiento', '1990-01-01'),
+                    patient_data['telefono'],
+                    patient_data['email'],
+                    patient_data.get('direccion', 'No especificada')
+                ))
+                patient_id = cursor.lastrowid
+            
+            # Crear el turno
+            fecha = data['fecha']
+            hora = data['hora']
+            
+            # Convertir hora a formato de base de datos
+            from datetime import timedelta
+            hora_parts = hora.split(':')
+            hora_timedelta = timedelta(
+                hours=int(hora_parts[0]),
+                minutes=int(hora_parts[1])
+            )
+            
+            cursor.execute("""
+                INSERT INTO detalleturno (Paciente_id, Odontologo_id, FechaTurno, HoraTurno, tipo_consulta, estado)
+                VALUES (%s, %s, %s, %s, %s, %s)
+            """, (
+                patient_id,
+                data['doctor_id'],
+                fecha,
+                hora_timedelta,
+                'Consulta Online',
+                'programado'
+            ))
+            
+            connection.commit()
+            
+            return jsonify({
+                "success": True,
+                "message": "Turno creado exitosamente",
+                "appointment_id": cursor.lastrowid
+            })
+            
+        except Exception as e:
+            if 'connection' in locals():
+                connection.rollback()
+            return jsonify({"error": f"Error al crear turno: {str(e)}"}), 500
+        finally:
+            try:
+                if 'cursor' in locals():
+                    cursor.close()
+            except Exception:
+                pass
+            try:
+                if 'connection' in locals():
+                    connection.close()
             except Exception:
                 pass
 

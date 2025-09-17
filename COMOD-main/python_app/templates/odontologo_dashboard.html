@@ -4,11 +4,18 @@
 
 {% block content %}
 <div class="fade-in-up">
-    <div class="d-flex align-items-center mb-4">
-        <i class="bi bi-person-heart text-primary me-3" style="font-size: 2rem;"></i>
+    <div class="d-flex align-items-center justify-content-between mb-4">
+        <div class="d-flex align-items-center">
+            <i class="bi bi-person-heart text-primary me-3" style="font-size: 2rem;"></i>
+            <div>
+                <h3 class="mb-1">Bienvenido/a, {{ nombre }}</h3>
+                <p class="text-muted mb-0">Panel de Odontólogo</p>
+            </div>
+        </div>
         <div>
-            <h3 class="mb-1">Bienvenido/a, {{ nombre }}</h3>
-            <p class="text-muted mb-0">Panel de Odontólogo</p>
+            <button class="btn btn-outline-primary" onclick="showTurnosOnline()">
+                <i class="bi bi-globe me-2"></i>Turnos Online
+            </button>
         </div>
     </div>
 
@@ -47,7 +54,40 @@
             {% endif %}
         </div>
     </div>
+
+    <!-- Sección de Turnos Online (oculta por defecto) -->
+    <div id="turnos-online-section" style="display: none;">
+        <div class="card dashboard-card">
+            <div class="card-body p-0">
+                <div class="d-flex justify-content-between align-items-center p-3 border-bottom">
+                    <h4 class="mb-0">
+                        <i class="bi bi-globe me-2"></i>Turnos Online
+                    </h4>
+                    <button class="btn btn-outline-secondary btn-sm" onclick="hideTurnosOnline()">
+                        <i class="bi bi-x-lg me-1"></i>Cerrar
+                    </button>
+                </div>
+                <iframe src="/turnos-online" width="100%" height="700px" frameborder="0"></iframe>
+            </div>
+        </div>
+    </div>
 </div>
 {% endblock %}
+
+<script>
+function showTurnosOnline() {
+    // Ocultar el contenido principal
+    document.querySelector('.card.dashboard-card').style.display = 'none';
+    // Mostrar la sección de turnos online
+    document.getElementById('turnos-online-section').style.display = 'block';
+}
+
+function hideTurnosOnline() {
+    // Mostrar el contenido principal
+    document.querySelector('.card.dashboard-card').style.display = 'block';
+    // Ocultar la sección de turnos online
+    document.getElementById('turnos-online-section').style.display = 'none';
+}
+</script>
 
 
