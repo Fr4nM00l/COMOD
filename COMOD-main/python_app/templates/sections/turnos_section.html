@@ -6,302 +6,200 @@
         </button>
     </div>
     <div class="card-body">
-        <!-- Date Filter and Stats -->
-        <div class="row mb-4">
-            <div class="col-md-4">
-                <label for="appointmentDateFilter" class="form-label">Filtrar por Fecha</label>
-                <input type="date" class="form-control" id="appointmentDateFilter" value="{{ today }}">
-            </div>
-            <div class="col-md-8">
-                <div class="d-flex gap-3">
-                    <div class="text-center">
-                        <div class="h4 text-primary mb-0">{{ appointments|length }}</div>
-                        <small class="text-muted">Total Turnos</small>
+        <!-- Simple Turnos List -->
+        <div class="row">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h6 class="mb-0"><i class="bi bi-list me-2"></i>Lista de Turnos</h6>
                     </div>
-                    <div class="text-center">
-                        <div class="h4 text-success mb-0">{{ appointments|selectattr('estado', 'equalto', 'completado')|list|length }}</div>
-                        <small class="text-muted">Completados</small>
-                    </div>
-                    <div class="text-center">
-                        <div class="h4 text-warning mb-0">{{ appointments|selectattr('estado', 'equalto', 'pendiente')|list|length }}</div>
-                        <small class="text-muted">Pendientes</small>
-                    </div>
-                    <div class="text-center">
-                        <div class="h4 text-danger mb-0">{{ appointments|selectattr('estado', 'equalto', 'cancelado')|list|length }}</div>
-                        <small class="text-muted">Cancelados</small>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Fecha</th>
+                                        <th>Hora</th>
+                                        <th>Paciente</th>
+                                        <th>Odontólogo</th>
+                                        <th>Estado</th>
+                                        <th>Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="turnos-table-body">
+                                    {% if next_appointments %}
+                                        {% for appointment in next_appointments %}
+                                        <tr>
+                                            <td>{{ appointment.FechaTurno.strftime('%d/%m/%Y') }}</td>
+                                            <td>{{ appointment.HoraTurno }}</td>
+                                            <td>{{ appointment.Paciente }}</td>
+                                            <td>{{ appointment.Odontologo }}</td>
+                                            <td><span class="badge bg-success">Programado</span></td>
+                                            <td>
+                                                <button class="btn btn-sm btn-outline-primary me-1" onclick="editTurno({{ appointment.id }})">
+                                                    <i class="bi bi-pencil"></i>
+                                                </button>
+                                                <button class="btn btn-sm btn-outline-danger" onclick="deleteTurno({{ appointment.id }})">
+                                                    <i class="bi bi-trash"></i>
+                                                </button>
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    {% else %}
+                                        <tr>
+                                            <td colspan="6" class="text-center text-muted">
+                                                <i class="bi bi-calendar-x me-2"></i>
+                                                No hay turnos registrados
+                                            </td>
+                                        </tr>
+                                    {% endif %}
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
-
-        {% if appointments %}
-        <div class="table-responsive">
-            <table class="table table-hover">
-                <thead>
-                    <tr>
-                        <th>Fecha</th>
-                        <th>Hora</th>
-                        <th>Paciente</th>
-                        <th>Odontólogo</th>
-                        <th>Tipo</th>
-                        <th>Duración</th>
-                        <th>Estado</th>
-                        <th>Acciones</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for appointment in appointments %}
-                    <tr class="{% if appointment.estado == 'cancelado' %}table-danger{% elif appointment.estado == 'completado' %}table-success{% elif appointment.estado == 'en_curso' %}table-warning{% endif %}">
-                        <td>
-                            <div class="d-flex align-items-center">
-                                <i class="bi bi-calendar-event me-2 text-primary"></i>
-                                {{ appointment['FechaTurno'].strftime('%d/%m/%Y') }}
-                            </div>
-                        </td>
-                        <td>
-                            <div class="d-flex align-items-center">
-                                <i class="bi bi-clock me-2 text-info"></i>
-                                {{ appointment['HoraTurno'].strftime('%H:%M') }}
-                            </div>
-                        </td>
-                        <td>
-                            <div class="d-flex align-items-center">
-                                <i class="bi bi-person me-2 text-success"></i>
-                                <div>
-                                    <strong>{{ appointment.Paciente }}</strong>
-                                    {% if appointment.paciente_telefono %}
-                                    <br><small class="text-muted">{{ appointment.paciente_telefono }}</small>
-                                    {% endif %}
-                                </div>
-                            </div>
-                        </td>
-                        <td>
-                            <div class="d-flex align-items-center">
-                                <i class="bi bi-person-heart me-2 text-warning"></i>
-                                {{ appointment.Odontologo }}
-                            </div>
-                        </td>
-                        <td>
-                            {% if appointment.tipo_consulta %}
-                            <span class="badge bg-info">{{ appointment.tipo_consulta|title }}</span>
-                            {% else %}
-                            <span class="text-muted">No especificado</span>
-                            {% endif %}
-                        </td>
-                        <td>
-                            {% if appointment.duracion %}
-                            <span class="badge bg-secondary">{{ appointment.duracion }} min</span>
-                            {% else %}
-                            <span class="text-muted">30 min</span>
-                            {% endif %}
-                        </td>
-                        <td>
-                            {% set status_colors = {
-                                'pendiente': 'bg-warning',
-                                'en_curso': 'bg-info',
-                                'completado': 'bg-success',
-                                'cancelado': 'bg-danger'
-                            } %}
-                            <span class="badge {{ status_colors.get(appointment.estado, 'bg-secondary') }}">
-                                {{ appointment.estado|title }}
-                            </span>
-                        </td>
-                        <td>
-                            <div class="btn-group" role="group">
-                                <div class="btn-group" role="group">
-                                    <button class="btn btn-sm btn-outline-primary" onclick="editAppointment({{ appointment.id }})" title="Editar">
-                                        <i class="bi bi-pencil"></i>
-                                    </button>
-                                    <button class="btn btn-sm btn-outline-success" onclick="updateAppointmentStatus({{ appointment.id }}, 'completado')" title="Marcar Completado">
-                                        <i class="bi bi-check"></i>
-                                    </button>
-                                    <button class="btn btn-sm btn-outline-warning" onclick="updateAppointmentStatus({{ appointment.id }}, 'en_curso')" title="Marcar En Curso">
-                                        <i class="bi bi-play"></i>
-                                    </button>
-                                    <button class="btn btn-sm btn-outline-danger" onclick="updateAppointmentStatus({{ appointment.id }}, 'cancelado')" title="Cancelar">
-                                        <i class="bi bi-x"></i>
-                                    </button>
-                                    <button class="btn btn-sm btn-outline-danger" onclick="deleteAppointment({{ appointment.id }})" title="Eliminar">
-                                        <i class="bi bi-trash"></i>
-                                    </button>
-                                </div>
-                                
-                            </div>
-                            
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-        {% else %}
-        <div class="text-center py-5">
-            <i class="bi bi-calendar-x" style="font-size: 3rem; color: #6c757d;" class="mb-3"></i>
-            <h5 class="text-muted">No hay turnos programados</h5>
-            <p class="text-muted">Comience agregando el primer turno al sistema</p>
-            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#appointmentModal">
-                <i class="bi bi-calendar-plus me-2"></i>Agregar Primer Turno
-            </button>
-        </div>
-        {% endif %}
     </div>
 </div>
 
-<!-- Calendar View -->
-<div class="card mt-4">
-    <div class="card-header">
-        <h6 class="mb-0"><i class="bi bi-calendar-week me-2"></i>Vista de Calendario</h6>
-    </div>
-    <div class="card-body">
-        <div id="calendar"></div>
-    </div>
-</div>
+<style>
+.card {
+    border: none;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.table th {
+    background-color: #f8f9fa;
+    border-top: none;
+    font-weight: 600;
+}
+
+.btn-sm {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.875rem;
+}
+</style>
 
 <script>
-// Date filter functionality
-document.getElementById('appointmentDateFilter').addEventListener('change', function() {
-    const selectedDate = this.value;
-    // Reload appointments for selected date
-    loadAppointmentsForDate(selectedDate);
-});
-
-function loadAppointmentsForDate(date) {
-    fetch(`/secretario/turnos/fecha/${date}`)
-        .then(response => response.text())
-        .then(html => {
-            document.getElementById('turnos-section').innerHTML = html;
-        });
-}
-
-// Appointment form submission
-document.getElementById('appointmentForm').addEventListener('submit', function(e) {
-    e.preventDefault();
+function editTurno(id) {
+    console.log('Edit turno:', id);
     
-    const formData = new FormData(this);
-    const data = Object.fromEntries(formData);
-    
-    // Convert form data to match database structure
-    const appointmentData = {
-        paciente_id: data.paciente_id,
-        odontologo_id: data.odontologo_id,
-        fecha: data.fecha,
-        hora: data.hora,
-        tipo_consulta: data.tipo_consulta,
-        duracion: data.duracion,
-        observaciones: data.observaciones
-    };
-    
-    fetch('/secretario/turno', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(appointmentData)
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            location.reload();
-        } else {
-            alert('Error al guardar el turno: ' + data.message);
-        }
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        alert('Error al guardar el turno');
-    });
-});
-
-function editAppointment(id) {
-    // Load appointment data and populate modal
+    // Load appointment data
     fetch(`/secretario/turno/${id}`)
-        .then(response => response.json())
-        .then(data => {
-            // Populate form fields
-            document.getElementById('appointmentPatient').value = data.paciente_id;
-            document.getElementById('appointmentDentist').value = data.odontologo_id;
-            document.getElementById('appointmentDate').value = data.fecha;
-            document.getElementById('appointmentTime').value = data.hora;
-            document.getElementById('appointmentType').value = data.tipo_consulta || '';
-            document.getElementById('appointmentDuration').value = data.duracion || 30;
-            document.getElementById('appointmentNotes').value = data.observaciones || '';
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`Error ${response.status}: ${response.statusText}`);
+            }
+            return response.json();
+        })
+        .then(appointment => {
+            // Populate the appointment modal with existing data
+            populateAppointmentModal(appointment);
             
-            // Update modal title and form action
-            document.getElementById('appointmentModalLabel').innerHTML = '<i class="bi bi-calendar-event me-2"></i>Editar Turno';
-            document.getElementById('appointmentForm').setAttribute('data-appointment-id', id);
-            
-            // Show modal
-            new bootstrap.Modal(document.getElementById('appointmentModal')).show();
+            // Show the modal
+            const modal = new bootstrap.Modal(document.getElementById('appointmentModal'));
+            modal.show();
+        })
+        .catch(error => {
+            console.error('Error loading appointment:', error);
+            showAlert('danger', 'Error al cargar los datos del turno: ' + error.message);
         });
 }
 
-function updateAppointmentStatus(id, status) {
-    const statusLabels = {
-        'pendiente': 'pendiente',
-        'en_curso': 'en curso',
-        'completado': 'completado',
-        'cancelado': 'cancelado'
-    };
+function populateAppointmentModal(appointment) {
+    // Update modal title
+    document.getElementById('appointmentModalLabel').innerHTML = 
+        '<i class="bi bi-pencil-square me-2"></i>Editar Turno';
     
-    if (confirm(`¿Está seguro de que desea marcar este turno como ${statusLabels[status]}?`)) {
-        fetch(`/secretario/turno/${id}/estado`, {
-            method: 'PUT',
+    // Set form data
+    document.getElementById('appointmentPatient').value = appointment.Paciente_id || '';
+    document.getElementById('appointmentDentist').value = appointment.Odontologo_id || '';
+    document.getElementById('appointmentDate').value = appointment.FechaTurno || '';
+    document.getElementById('appointmentTime').value = appointment.HoraTurno || '';
+    document.getElementById('appointmentDuration').value = appointment.duracion || 30;
+    document.getElementById('appointmentType').value = appointment.tipo_consulta || '';
+    document.getElementById('appointmentNotes').value = appointment.observaciones || '';
+    
+    // Set the appointment ID for update
+    document.getElementById('appointmentForm').setAttribute('data-appointment-id', appointment.id);
+    
+    // Change submit button text
+    const submitBtn = document.querySelector('#appointmentModal button[type="submit"]');
+    if (submitBtn) {
+        submitBtn.innerHTML = '<i class="bi bi-check-circle me-2"></i>Actualizar Turno';
+    }
+}
+
+function deleteTurno(id) {
+    // Show confirmation dialog with more details
+    if (confirm('¿Estás seguro de que quieres eliminar este turno?\n\nEsta acción no se puede deshacer.')) {
+        console.log('Delete turno:', id);
+        
+        // Show loading state
+        const deleteBtn = event.target;
+        const originalContent = deleteBtn.innerHTML;
+        deleteBtn.innerHTML = '<i class="bi bi-hourglass-split"></i>';
+        deleteBtn.disabled = true;
+        
+        fetch(`/secretario/turno/${id}`, {
+            method: 'DELETE',
             headers: {
                 'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ estado: status })
+            }
         })
-        .then(response => response.json())
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`Error ${response.status}: ${response.statusText}`);
+            }
+            return response.json();
+        })
         .then(data => {
             if (data.success) {
-                location.reload();
+                // Show success message
+                showAlert('success', data.message || 'Turno eliminado correctamente');
+                
+                // Reload the page to refresh the appointments list
+                setTimeout(() => {
+                    window.location.reload();
+                }, 1500);
             } else {
-                alert('Error al actualizar el estado: ' + data.message);
+                showAlert('danger', 'Error al eliminar el turno: ' + data.message);
+                // Restore button
+                deleteBtn.innerHTML = originalContent;
+                deleteBtn.disabled = false;
             }
+        })
+        .catch(error => {
+            console.error('Error deleting turno:', error);
+            showAlert('danger', 'Error al eliminar el turno: ' + error.message);
+            // Restore button
+            deleteBtn.innerHTML = originalContent;
+            deleteBtn.disabled = false;
         });
     }
 }
 
-function deleteAppointment(id) {
-    if (confirm('¿Está seguro de que desea eliminar este turno? Esta acción no se puede deshacer.')) {
-        fetch(`/secretario/turno/${id}`, { method: 'DELETE' })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    location.reload();
-                } else {
-                    alert('Error al eliminar el turno: ' + data.message);
-                }
-            });
-    }
-}
-
-// Load patients and dentists for form dropdowns
-document.addEventListener('DOMContentLoaded', function() {
-    // Load patients
-    fetch('/secretario/pacientes/lista')
-        .then(response => response.json())
-        .then(patients => {
-            const select = document.getElementById('appointmentPatient');
-            patients.forEach(patient => {
-                const option = document.createElement('option');
-                option.value = patient.id;
-                option.textContent = `${patient.Nombre} - ${patient.DNI}`;
-                select.appendChild(option);
-            });
-        });
+function showAlert(type, message) {
+    // Create alert element
+    const alertDiv = document.createElement('div');
+    alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
+    alertDiv.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
     
-    // Load dentists
-    fetch('/secretario/odontologos/lista')
-        .then(response => response.json())
-        .then(dentists => {
-            const select = document.getElementById('appointmentDentist');
-            dentists.forEach(dentist => {
-                const option = document.createElement('option');
-                option.value = dentist.id;
-                option.textContent = dentist.Nombre;
-                select.appendChild(option);
-            });
-        });
-});
+    // Insert at the top of the card body
+    const cardBody = document.querySelector('.card-body');
+    if (cardBody) {
+        cardBody.insertBefore(alertDiv, cardBody.firstChild);
+        
+        // Auto-dismiss after 5 seconds
+        setTimeout(() => {
+            if (alertDiv.parentNode) {
+                alertDiv.remove();
+            }
+        }, 5000);
+    }
+}
 </script>

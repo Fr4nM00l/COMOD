@@ -1,52 +1,79 @@
 <!-- Appointment Modal -->
 <div class="modal fade" id="appointmentModal" tabindex="-1" aria-labelledby="appointmentModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg">
+    <div class="modal-dialog modal-xl">
         <div class="modal-content">
-            <div class="modal-header">
+            <div class="modal-header bg-primary text-white">
                 <h5 class="modal-title" id="appointmentModalLabel">
                     <i class="bi bi-calendar-plus me-2"></i>Nuevo Turno
                 </h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <form id="appointmentForm">
-                <div class="modal-body">
+                <div class="modal-body p-4">
+                    <!-- Quick Appointment Form -->
                     <div class="row">
                         <div class="col-md-6">
                             <div class="mb-3">
-                                <label for="appointmentPatient" class="form-label">Paciente *</label>
-                                <select class="form-select" id="appointmentPatient" name="paciente_id" required>
+                                <label for="appointmentPatient" class="form-label">
+                                    <i class="bi bi-person me-2"></i>Paciente *
+                                </label>
+                                <select class="form-select form-select-lg" id="appointmentPatient" name="paciente_id" required>
                                     <option value="">Seleccionar paciente...</option>
                                 </select>
                             </div>
                         </div>
                         <div class="col-md-6">
                             <div class="mb-3">
-                                <label for="appointmentDentist" class="form-label">Odontólogo *</label>
-                                <select class="form-select" id="appointmentDentist" name="odontologo_id" required>
+                                <label for="appointmentDentist" class="form-label">
+                                    <i class="bi bi-person-heart me-2"></i>Odontólogo *
+                                </label>
+                                <select class="form-select form-select-lg" id="appointmentDentist" name="odontologo_id" required>
                                     <option value="">Seleccionar odontólogo...</option>
                                 </select>
                             </div>
                         </div>
                     </div>
+                    
                     <div class="row">
-                        <div class="col-md-6">
+                        <div class="col-md-4">
                             <div class="mb-3">
-                                <label for="appointmentDate" class="form-label">Fecha *</label>
-                                <input type="date" class="form-control" id="appointmentDate" name="fecha" required>
+                                <label for="appointmentDate" class="form-label">
+                                    <i class="bi bi-calendar-date me-2"></i>Fecha *
+                                </label>
+                                <input type="date" class="form-control form-control-lg" id="appointmentDate" name="fecha" required min="">
                             </div>
                         </div>
-                        <div class="col-md-6">
+                        <div class="col-md-4">
                             <div class="mb-3">
-                                <label for="appointmentTime" class="form-label">Hora *</label>
-                                <input type="time" class="form-control" id="appointmentTime" name="hora" required>
+                                <label for="appointmentTime" class="form-label">
+                                    <i class="bi bi-clock me-2"></i>Hora *
+                                </label>
+                                <input type="time" class="form-control form-control-lg" id="appointmentTime" name="hora" required>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="appointmentDuration" class="form-label">
+                                    <i class="bi bi-stopwatch me-2"></i>Duración
+                                </label>
+                                <select class="form-select form-select-lg" id="appointmentDuration" name="duracion">
+                                    <option value="30">30 minutos</option>
+                                    <option value="45">45 minutos</option>
+                                    <option value="60">1 hora</option>
+                                    <option value="90">1.5 horas</option>
+                                    <option value="120">2 horas</option>
+                                </select>
                             </div>
                         </div>
                     </div>
+                    
                     <div class="row">
                         <div class="col-md-6">
                             <div class="mb-3">
-                                <label for="appointmentType" class="form-label">Tipo de Consulta</label>
-                                <select class="form-select" id="appointmentType" name="tipo_consulta">
+                                <label for="appointmentType" class="form-label">
+                                    <i class="bi bi-clipboard-pulse me-2"></i>Tipo de Consulta
+                                </label>
+                                <select class="form-select form-select-lg" id="appointmentType" name="tipo_consulta">
                                     <option value="">Seleccionar tipo...</option>
                                     <option value="consulta_general">Consulta General</option>
                                     <option value="limpieza">Limpieza Dental</option>
@@ -55,28 +82,120 @@
                                     <option value="ortodoncia">Ortodoncia</option>
                                     <option value="implante">Implante</option>
                                     <option value="control">Control</option>
+                                    <option value="urgencia">Urgencia</option>
                                 </select>
                             </div>
                         </div>
                         <div class="col-md-6">
                             <div class="mb-3">
-                                <label for="appointmentDuration" class="form-label">Duración (minutos)</label>
-                                <input type="number" class="form-control" id="appointmentDuration" name="duracion" min="15" step="15" value="30">
+                                <label for="appointmentPriority" class="form-label">
+                                    <i class="bi bi-exclamation-triangle me-2"></i>Prioridad
+                                </label>
+                                <select class="form-select form-select-lg" id="appointmentPriority" name="prioridad">
+                                    <option value="normal">Normal</option>
+                                    <option value="alta">Alta</option>
+                                    <option value="urgente">Urgente</option>
+                                </select>
                             </div>
                         </div>
                     </div>
+                    
                     <div class="mb-3">
-                        <label for="appointmentNotes" class="form-label">Observaciones</label>
-                        <textarea class="form-control" id="appointmentNotes" name="observaciones" rows="3" placeholder="Notas adicionales sobre el turno..."></textarea>
+                        <label for="appointmentNotes" class="form-label">
+                            <i class="bi bi-chat-text me-2"></i>Observaciones
+                        </label>
+                        <textarea class="form-control" id="appointmentNotes" name="observaciones" rows="3" 
+                                  placeholder="Notas adicionales sobre el turno, síntomas, historial relevante..."></textarea>
+                    </div>
+                    
+                    <!-- Quick Actions -->
+                    <div class="row mt-4">
+                        <div class="col-12">
+                            <div class="card bg-light">
+                                <div class="card-body">
+                                    <h6 class="card-title">
+                                        <i class="bi bi-lightning me-2"></i>Acciones Rápidas
+                                    </h6>
+                                    <div class="d-flex gap-2 flex-wrap">
+                                        <button type="button" class="btn btn-outline-primary btn-sm" onclick="setToday()">
+                                            <i class="bi bi-calendar-day me-1"></i>Hoy
+                                        </button>
+                                        <button type="button" class="btn btn-outline-primary btn-sm" onclick="setTomorrow()">
+                                            <i class="bi bi-calendar-plus me-1"></i>Mañana
+                                        </button>
+                                        <button type="button" class="btn btn-outline-success btn-sm" onclick="setNextWeek()">
+                                            <i class="bi bi-calendar-week me-1"></i>Próxima Semana
+                                        </button>
+                                        <button type="button" class="btn btn-outline-warning btn-sm" onclick="setUrgent()">
+                                            <i class="bi bi-exclamation-triangle me-1"></i>Urgente
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                    <button type="submit" class="btn btn-primary">
-                        <i class="bi bi-save me-2"></i>Guardar Turno
+                <div class="modal-footer bg-light">
+                    <button type="button" class="btn btn-secondary btn-lg" data-bs-dismiss="modal">
+                        <i class="bi bi-x-circle me-2"></i>Cancelar
+                    </button>
+                    <button type="submit" class="btn btn-primary btn-lg">
+                        <i class="bi bi-calendar-check me-2"></i>Programar Turno
                     </button>
                 </div>
             </form>
         </div>
     </div>
 </div>
+
+<script>
+// Quick action functions
+function setToday() {
+    const today = new Date();
+    const dateString = today.toISOString().split('T')[0];
+    document.getElementById('appointmentDate').value = dateString;
+    
+    // Set next available hour
+    const nextHour = today.getHours() + 1;
+    const timeString = `${String(nextHour).padStart(2, '0')}:00`;
+    document.getElementById('appointmentTime').value = timeString;
+}
+
+function setTomorrow() {
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const dateString = tomorrow.toISOString().split('T')[0];
+    document.getElementById('appointmentDate').value = dateString;
+    
+    // Set morning time
+    document.getElementById('appointmentTime').value = '09:00';
+}
+
+function setNextWeek() {
+    const nextWeek = new Date();
+    nextWeek.setDate(nextWeek.getDate() + 7);
+    const dateString = nextWeek.toISOString().split('T')[0];
+    document.getElementById('appointmentDate').value = dateString;
+    
+    // Set morning time
+    document.getElementById('appointmentTime').value = '10:00';
+}
+
+function setUrgent() {
+    setToday();
+    document.getElementById('appointmentPriority').value = 'urgente';
+    document.getElementById('appointmentType').value = 'urgencia';
+    document.getElementById('appointmentDuration').value = '30';
+}
+
+// Set minimum date when modal opens
+document.addEventListener('DOMContentLoaded', function() {
+    const appointmentModal = document.getElementById('appointmentModal');
+    if (appointmentModal) {
+        appointmentModal.addEventListener('show.bs.modal', function() {
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('appointmentDate').min = today;
+        });
+    }
+});
+</script>

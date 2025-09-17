@@ -1,0 +1,24 @@
+<!-- templates/alta_paciente.html -->
+{% extends "base.html" %}
+{% block title %}Nuevo Paciente{% endblock %}
+{% block content %}
+<div class="container mt-4">
+    <h2>Nuevo Paciente</h2>
+    <form method="POST">
+        <div class="mb-3">
+            <label for="Nombre" class="form-label">Nombre</label>
+            <input type="text" class="form-control" id="Nombre" name="Nombre" required>
+        </div>
+        <div class="mb-3">
+            <label for="DNI" class="form-label">DNI</label>
+            <input type="text" class="form-control" id="DNI" name="DNI" required>
+        </div>
+        <div class="mb-3">
+            <label for="FechaNacimiento" class="form-label">Fecha de Nacimiento</label>
+            <input type="date" class="form-control" id="FechaNacimiento" name="FechaNacimiento" required>
+        </div>
+        <button type="submit" class="btn btn-primary">Guardar</button>
+        <a href="{{ url_for('listar_pacientes') }}" class="btn btn-secondary">Cancelar</a>
+    </form>
+</div>
+{% endblock %}

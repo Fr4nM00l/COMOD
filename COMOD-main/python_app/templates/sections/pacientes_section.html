@@ -7,16 +7,28 @@
     </div>
     <div class="card-body">
         <div class="row mb-3">
-            <div class="col-md-6">
+            <div class="col-md-8">
                 <div class="input-group">
-                    <input type="text" class="form-control" id="patientSearch" placeholder="Buscar pacientes...">
-                    <button class="btn btn-outline-secondary" type="button">
+                    <span class="input-group-text">
                         <i class="bi bi-search"></i>
+                    </span>
+                    <input type="text" class="form-control" id="patientSearch" placeholder="Buscar por nombre, DNI, teléfono o email...">
+                    <button class="btn btn-outline-secondary" type="button" id="clearSearch" style="display: none;">
+                        <i class="bi bi-x-circle"></i>
                     </button>
                 </div>
+                <div class="mt-2">
+                    <small class="text-muted">
+                        <i class="bi bi-info-circle me-1"></i>
+                        Busca por cualquier campo: nombre, DNI, teléfono o email
+                    </small>
+                </div>
             </div>
-            <div class="col-md-6 text-end">
-                <span class="badge bg-primary">{{ patients|length }} pacientes registrados</span>
+            <div class="col-md-4 text-end">
+                <div class="d-flex flex-column align-items-end">
+                    <span class="badge bg-primary mb-1" id="totalPatients">{{ patients|length }} pacientes registrados</span>
+                    <span class="badge bg-success" id="filteredPatients" style="display: none;">0 resultados</span>
+                </div>
             </div>
         </div>
 
@@ -33,7 +45,7 @@
                         <th>Acciones</th>
                     </tr>
                 </thead>
-                <tbody>
+                <tbody id="patientsTableBody">
                     {% for patient in patients %}
                     <tr>
                         <td>
@@ -92,6 +104,16 @@
                 </tbody>
             </table>
         </div>
+        
+        <!-- No results message -->
+        <div id="noResultsMessage" class="text-center py-5" style="display: none;">
+            <i class="bi bi-search" style="font-size: 3rem; color: #6c757d;" class="mb-3"></i>
+            <h5 class="text-muted">No se encontraron pacientes</h5>
+            <p class="text-muted">Intenta con otros términos de búsqueda</p>
+            <button class="btn btn-outline-primary" onclick="clearSearch()">
+                <i class="bi bi-arrow-clockwise me-2"></i>Limpiar búsqueda
+            </button>
+        </div>
         {% else %}
         <div class="text-center py-5">
             <i class="bi bi-people" style="font-size: 3rem; color: #6c757d;" class="mb-3"></i>
@@ -106,69 +128,6 @@
 </div>
 
 <script>
-// Patient search functionality
-document.getElementById('patientSearch').addEventListener('input', function() {
-    const searchTerm = this.value.toLowerCase();
-    const rows = document.querySelectorAll('tbody tr');
-    
-    rows.forEach(row => {
-        const text = row.textContent.toLowerCase();
-        row.style.display = text.includes(searchTerm) ? '' : 'none';
-    });
-});
-
-// Patient form submission
-document.getElementById('patientForm').addEventListener('submit', function(e) {
-    e.preventDefault();
-    
-    const formData = new FormData(this);
-    const data = Object.fromEntries(formData);
-    
-    fetch('/secretario/paciente', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(data)
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            location.reload();
-        } else {
-            alert('Error al guardar el paciente: ' + data.message);
-        }
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        alert('Error al guardar el paciente');
-    });
-});
-
-function editPatient(id) {
-    // Load patient data and populate modal
-    fetch(`/secretario/paciente/${id}`)
-        .then(response => response.json())
-        .then(data => {
-            // Populate form fields
-            document.getElementById('patientName').value = data.nombre;
-            document.getElementById('patientDNI').value = data.dni;
-            document.getElementById('patientBirthDate').value = data.fecha_nacimiento;
-            document.getElementById('patientPhone').value = data.telefono || '';
-            document.getElementById('patientEmail').value = data.email || '';
-            document.getElementById('patientAddress').value = data.direccion || '';
-            document.getElementById('patientEmergencyContact').value = data.contacto_emergencia || '';
-            document.getElementById('patientEmergencyPhone').value = data.telefono_emergencia || '';
-            
-            // Update modal title and form action
-            document.getElementById('patientModalLabel').innerHTML = '<i class="bi bi-person-gear me-2"></i>Editar Paciente';
-            document.getElementById('patientForm').setAttribute('data-patient-id', id);
-            
-            // Show modal
-            new bootstrap.Modal(document.getElementById('patientModal')).show();
-        });
-}
-
 function viewPatientHistory(id) {
     // Redirect to patient history view
     window.location.href = `/secretario/paciente/${id}/historia`;
@@ -179,18 +138,28 @@ function createAppointment(id) {
     document.getElementById('appointmentPatient').value = id;
     new bootstrap.Modal(document.getElementById('appointmentModal')).show();
 }
-
-function deletePatient(id) {
-    if (confirm('¿Está seguro de que desea eliminar este paciente? Esta acción no se puede deshacer.')) {
-        fetch(`/secretario/paciente/${id}`, { method: 'DELETE' })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    location.reload();
-                } else {
-                    alert('Error al eliminar el paciente: ' + data.message);
-                }
-            });
-    }
-}
 </script>
+
+<style>
+/* Search highlight styles */
+.search-highlight {
+    background-color: rgba(13, 110, 253, 0.1) !important;
+    border-left: 3px solid #0d6efd !important;
+}
+
+/* Smooth transitions */
+.table tbody tr {
+    transition: all 0.3s ease;
+}
+
+/* Input group enhancements */
+.input-group .form-control:focus {
+    border-color: #0d6efd;
+    box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
+}
+
+/* Badge animations */
+.badge {
+    transition: all 0.3s ease;
+}
+</style>

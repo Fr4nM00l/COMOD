@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}Listado de Pacientes{% endblock %}
+{% block content %}
+<div class="container mt-4">
+    <h2>Listado de Pacientes</h2>
+    <a href="{{ url_for('alta_paciente') }}" class="btn btn-success mb-3">
+        <i class="bi bi-person-plus"></i> Nuevo Paciente
+    </a>
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Nombre</th>
+                <th>DNI</th>
+                <th>Fecha de Nacimiento</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for p in pacientes %}
+            <tr>
+                <td>{{ p.id }}</td>
+                <td>{{ p.Nombre }}</td>
+                <td>{{ p.DNI }}</td>
+                <td>{{ p.FechaNacimiento }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

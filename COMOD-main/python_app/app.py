@@ -103,7 +103,24 @@ def create_app() -> Flask:
                 """,
                 (odontologo_id,),
             )
-            upcoming_appointments = cursor.fetchall()
+            appointments_raw = cursor.fetchall()
+            
+            # Process appointments to handle timedelta objects
+            upcoming_appointments = []
+            for appointment in appointments_raw:
+                # Convert timedelta to time string if needed
+                hora_turno = appointment['HoraTurno']
+                if hasattr(hora_turno, 'total_seconds'):
+                    # It's a timedelta, convert to time string
+                    total_seconds = int(hora_turno.total_seconds())
+                    hours = total_seconds // 3600
+                    minutes = (total_seconds % 3600) // 60
+                    appointment['HoraTurno'] = f"{hours:02d}:{minutes:02d}"
+                else:
+                    # It's already a time object, convert to string
+                    appointment['HoraTurno'] = str(hora_turno)
+                
+                upcoming_appointments.append(appointment)
         finally:
             try:
                 cursor.close()
@@ -131,7 +148,7 @@ def create_app() -> Flask:
             cursor = connection.cursor(dictionary=True)
             cursor.execute(
                 """
-                SELECT dt.FechaTurno, dt.HoraTurno, p.Nombre AS Paciente, o.Nombre AS Odontologo
+                SELECT dt.FechaTurno, dt.HoraTurno, p.Nombre AS Paciente, o.Nombre AS Odontologo, dt.id
                 FROM detalleturno dt
                 INNER JOIN paciente p ON p.id = dt.Paciente_id
                 INNER JOIN odontologo o ON o.id = dt.Odontologo_id
@@ -140,7 +157,24 @@ def create_app() -> Flask:
                 LIMIT 10
                 """
             )
-            next_appointments = cursor.fetchall()
+            appointments_raw = cursor.fetchall()
+            
+            # Process appointments to handle timedelta objects
+            next_appointments = []
+            for appointment in appointments_raw:
+                # Convert timedelta to time string if needed
+                hora_turno = appointment['HoraTurno']
+                if hasattr(hora_turno, 'total_seconds'):
+                    # It's a timedelta, convert to time string
+                    total_seconds = int(hora_turno.total_seconds())
+                    hours = total_seconds // 3600
+                    minutes = (total_seconds % 3600) // 60
+                    appointment['HoraTurno'] = f"{hours:02d}:{minutes:02d}"
+                else:
+                    # It's already a time object, convert to string
+                    appointment['HoraTurno'] = str(hora_turno)
+                
+                next_appointments.append(appointment)
 
             cursor.execute("SELECT COUNT(*) AS total FROM paciente")
             patient_count = (cursor.fetchone() or {}).get("total", 0)
@@ -205,7 +239,24 @@ def create_app() -> Flask:
                 ORDER BY dt.FechaTurno DESC, dt.HoraTurno DESC
                 """
             )
-            appointments = cursor.fetchall()
+            appointments_raw = cursor.fetchall()
+            
+            # Process appointments to handle timedelta objects
+            next_appointments = []
+            for appointment in appointments_raw:
+                # Convert timedelta to time string if needed
+                hora_turno = appointment['HoraTurno']
+                if hasattr(hora_turno, 'total_seconds'):
+                    # It's a timedelta, convert to time string
+                    total_seconds = int(hora_turno.total_seconds())
+                    hours = total_seconds // 3600
+                    minutes = (total_seconds % 3600) // 60
+                    appointment['HoraTurno'] = f"{hours:02d}:{minutes:02d}"
+                else:
+                    # It's already a time object, convert to string
+                    appointment['HoraTurno'] = str(hora_turno)
+                
+                next_appointments.append(appointment)
         finally:
             try:
                 cursor.close()
@@ -217,8 +268,39 @@ def create_app() -> Flask:
                 pass
 
         return render_template("sections/turnos_section.html", 
-                            appointments=appointments, 
+                            next_appointments=next_appointments, 
                             today=date.today().isoformat())
+
+    @app.route("/secretario/turnos/<int:turno_id>", methods=["DELETE"])
+    def delete_turno(turno_id):
+        if session.get("role") != "secretario":
+            return jsonify({"error": "Acceso no autorizado"}), 403
+
+        try:
+            connection = get_db_connection()
+            cursor = connection.cursor()
+            
+            # Delete the appointment
+            cursor.execute("DELETE FROM detalleturno WHERE id = %s", (turno_id,))
+            
+            if cursor.rowcount == 0:
+                return jsonify({"error": "Turno no encontrado"}), 404
+            
+            connection.commit()
+            return jsonify({"message": "Turno eliminado correctamente"}), 200
+            
+        except Exception as e:
+            print(f"Error deleting turno: {e}")
+            return jsonify({"error": "Error al eliminar el turno"}), 500
+        finally:
+            try:
+                cursor.close()
+            except Exception:
+                pass
+            try:
+                connection.close()
+            except Exception:
+                pass
 
     @app.route("/secretario/historias")
     def secretario_historias():
@@ -248,7 +330,7 @@ def create_app() -> Flask:
                 WHERE hc.id IS NULL
                 ORDER BY p.Nombre
                 """
-            )
+            )  
             patients_without_history = cursor.fetchall()
         finally:
             try:
@@ -332,21 +414,82 @@ def create_app() -> Flask:
             cursor = connection.cursor()
             
             # Check if DNI already exists
-            cursor.execute("SELECT id FROM paciente WHERE DNI = %s", (data["dni"],))
-            if cursor.fetchone():
-                return jsonify({"success": False, "message": "Ya existe un paciente con ese DNI"})
+            cursor.execute("SELECT id, Nombre FROM paciente WHERE DNI = %s", (data["dni"],))
+            existing_patient = cursor.fetchone()
+            if existing_patient:
+                return jsonify({
+                    "success": False, 
+                    "message": f"Ya existe un paciente con el DNI {data['dni']}. Paciente registrado: {existing_patient[1]}"
+                })
 
-            # Insert new patient
+            # Insert new patient with all fields
             cursor.execute(
                 """
-                INSERT INTO paciente (Nombre, FechaNacimiento, DNI) 
-                VALUES (%s, %s, %s)
+                INSERT INTO paciente (Nombre, FechaNacimiento, DNI, telefono, email, direccion, contacto_emergencia, telefono_emergencia) 
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
                 """,
-                (data["nombre"], data.get("fecha_nacimiento"), data["dni"])
+                (data["nombre"], data.get("fecha_nacimiento"), data["dni"], 
+                 data.get("telefono"), data.get("email"), data.get("direccion"),
+                 data.get("contacto_emergencia"), data.get("telefono_emergencia"))
             )
             connection.commit()
             
             return jsonify({"success": True, "message": "Paciente creado exitosamente"})
+        except Exception as e:
+            return jsonify({"success": False, "message": str(e)})
+        finally:
+            try:
+                cursor.close()
+            except Exception:
+                pass
+            try:
+                connection.close()
+            except Exception:
+                pass
+
+    @app.route("/secretario/paciente/<int:patient_id>", methods=["PUT"])
+    def update_patient(patient_id):
+        if session.get("role") != "secretario":
+            return jsonify({"success": False, "message": "Acceso no autorizado"}), 403
+
+        try:
+            data = request.get_json()
+            
+            # Validate required fields
+            if not data.get("nombre") or not data.get("dni"):
+                return jsonify({"success": False, "message": "Nombre y DNI son obligatorios"})
+
+            connection = get_db_connection()
+            cursor = connection.cursor()
+            
+            # Check if DNI already exists for another patient
+            cursor.execute("SELECT id, Nombre FROM paciente WHERE DNI = %s AND id != %s", (data["dni"], patient_id))
+            existing_patient = cursor.fetchone()
+            if existing_patient:
+                return jsonify({
+                    "success": False, 
+                    "message": f"Ya existe otro paciente con el DNI {data['dni']}. Paciente registrado: {existing_patient[1]}"
+                })
+
+            # Update patient with all fields
+            cursor.execute(
+                """
+                UPDATE paciente 
+                SET Nombre = %s, FechaNacimiento = %s, DNI = %s, telefono = %s, 
+                    email = %s, direccion = %s, contacto_emergencia = %s, telefono_emergencia = %s
+                WHERE id = %s
+                """,
+                (data["nombre"], data.get("fecha_nacimiento"), data["dni"], 
+                 data.get("telefono"), data.get("email"), data.get("direccion"),
+                 data.get("contacto_emergencia"), data.get("telefono_emergencia"), patient_id)
+            )
+            
+            if cursor.rowcount == 0:
+                return jsonify({"success": False, "message": "Paciente no encontrado"}), 404
+            
+            connection.commit()
+            
+            return jsonify({"success": True, "message": "Paciente actualizado exitosamente"})
         except Exception as e:
             return jsonify({"success": False, "message": str(e)})
         finally:
@@ -367,15 +510,49 @@ def create_app() -> Flask:
         try:
             connection = get_db_connection()
             cursor = connection.cursor(dictionary=True)
+            
             cursor.execute("SELECT * FROM paciente WHERE id = %s", (patient_id,))
             patient = cursor.fetchone()
             
             if not patient:
                 return jsonify({"success": False, "message": "Paciente no encontrado"}), 404
             
-            return jsonify(patient)
+            return jsonify({"success": True, "patient": patient})
         except Exception as e:
             return jsonify({"success": False, "message": str(e)})
+        finally:
+            try:
+                cursor.close()
+            except Exception:
+                pass
+            try:
+                connection.close()
+            except Exception:
+                pass
+
+    @app.route("/secretario/paciente/check-dni/<dni>")
+    def check_dni_exists(dni):
+        if session.get("role") != "secretario":
+            return jsonify({"exists": False, "message": "Acceso no autorizado"}), 403
+
+        try:
+            connection = get_db_connection()
+            cursor = connection.cursor(dictionary=True)
+            
+            cursor.execute("SELECT id, Nombre FROM paciente WHERE DNI = %s", (dni,))
+            existing_patient = cursor.fetchone()
+            
+            if existing_patient:
+                return jsonify({
+                    "exists": True, 
+                    "message": f"Ya existe un paciente con el DNI {dni}",
+                    "patient_name": existing_patient["Nombre"]
+                })
+            else:
+                return jsonify({"exists": False, "message": "DNI disponible"})
+                
+        except Exception as e:
+            return jsonify({"exists": False, "message": f"Error al verificar DNI: {str(e)}"}), 500
         finally:
             try:
                 cursor.close()
@@ -442,27 +619,81 @@ def create_app() -> Flask:
 
         try:
             data = request.get_json()
+            print(f"📋 Received data: {data}")  # Debug
             
             # Validate required fields
-            if not all([data.get("paciente_id"), data.get("odontologo_id"), data.get("fecha"), data.get("hora")]):
-                return jsonify({"success": False, "message": "Todos los campos son obligatorios"})
+            required_fields = ["paciente_id", "odontologo_id", "fecha", "hora"]
+            missing_fields = [field for field in required_fields if not data.get(field)]
+            
+            if missing_fields:
+                return jsonify({
+                    "success": False, 
+                    "message": f"Campos obligatorios faltantes: {', '.join(missing_fields)}"
+                })
+
+            # Validate date is not in the past
+            try:
+                appointment_date = datetime.strptime(data["fecha"], "%Y-%m-%d").date()
+                today = date.today()
+                
+                if appointment_date < today:
+                    return jsonify({
+                        "success": False, 
+                        "message": "No se pueden programar turnos en fechas pasadas. Por favor, selecciona una fecha actual o futura."
+                    })
+                
+                # Validate time if date is today
+                if appointment_date == today:
+                    appointment_time = datetime.strptime(data["hora"], "%H:%M").time()
+                    now = datetime.now().time()
+                    
+                    if appointment_time <= now:
+                        return jsonify({
+                            "success": False, 
+                            "message": "No se pueden programar turnos en horarios pasados. Por favor, selecciona una hora futura."
+                        })
+                        
+            except ValueError as e:
+                return jsonify({
+                    "success": False, 
+                    "message": f"Formato de fecha u hora inválido: {str(e)}"
+                })
 
             connection = get_db_connection()
             cursor = connection.cursor()
             
-            # Insert new appointment
+            # Insert new appointment with all available fields
             cursor.execute(
                 """
-                INSERT INTO detalleturno (Odontologo_id, Paciente_id, FechaTurno, HoraTurno) 
-                VALUES (%s, %s, %s, %s)
+                INSERT INTO detalleturno 
+                (Odontologo_id, Paciente_id, FechaTurno, HoraTurno, tipo_consulta, duracion, observaciones, estado) 
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
                 """,
-                (data["odontologo_id"], data["paciente_id"], data["fecha"], data["hora"])
+                (
+                    data["odontologo_id"], 
+                    data["paciente_id"], 
+                    data["fecha"], 
+                    data["hora"],
+                    data.get("tipo_consulta"),
+                    data.get("duracion", 30),
+                    data.get("observaciones"),
+                    "pendiente"
+                )
             )
             connection.commit()
             
-            return jsonify({"success": True, "message": "Turno creado exitosamente"})
+            appointment_id = cursor.lastrowid
+            print(f"✅ Appointment created with ID: {appointment_id}")  # Debug
+            
+            return jsonify({
+                "success": True, 
+                "message": "Turno creado exitosamente",
+                "appointment_id": appointment_id
+            })
+            
         except Exception as e:
-            return jsonify({"success": False, "message": str(e)})
+            print(f"❌ Error creating appointment: {e}")  # Debug
+            return jsonify({"success": False, "message": f"Error al crear turno: {str(e)}"}), 500
         finally:
             try:
                 cursor.close()
@@ -490,6 +721,100 @@ def create_app() -> Flask:
             return jsonify(appointment)
         except Exception as e:
             return jsonify({"success": False, "message": str(e)})
+        finally:
+            try:
+                cursor.close()
+            except Exception:
+                pass
+            try:
+                connection.close()
+            except Exception:
+                pass
+
+    @app.route("/secretario/turno/<int:appointment_id>", methods=["PUT"])
+    def update_appointment(appointment_id):
+        if session.get("role") != "secretario":
+            return jsonify({"success": False, "message": "Acceso no autorizado"}), 403
+
+        try:
+            data = request.get_json()
+            print(f"📋 Updating appointment {appointment_id} with data: {data}")  # Debug
+            
+            # Validate required fields
+            required_fields = ["paciente_id", "odontologo_id", "fecha", "hora"]
+            missing_fields = [field for field in required_fields if not data.get(field)]
+            
+            if missing_fields:
+                return jsonify({
+                    "success": False, 
+                    "message": f"Campos obligatorios faltantes: {', '.join(missing_fields)}"
+                })
+
+            # Validate date is not in the past
+            try:
+                appointment_date = datetime.strptime(data["fecha"], "%Y-%m-%d").date()
+                today = date.today()
+                
+                if appointment_date < today:
+                    return jsonify({
+                        "success": False, 
+                        "message": "No se pueden programar turnos en fechas pasadas. Por favor, selecciona una fecha actual o futura."
+                    })
+                
+                # Validate time if date is today
+                if appointment_date == today:
+                    appointment_time = datetime.strptime(data["hora"], "%H:%M").time()
+                    now = datetime.now().time()
+                    
+                    if appointment_time <= now:
+                        return jsonify({
+                            "success": False, 
+                            "message": "No se pueden programar turnos en horarios pasados. Por favor, selecciona una hora futura."
+                        })
+                        
+            except ValueError as e:
+                return jsonify({
+                    "success": False, 
+                    "message": f"Formato de fecha u hora inválido: {str(e)}"
+                })
+
+            connection = get_db_connection()
+            cursor = connection.cursor()
+            
+            # Update appointment
+            cursor.execute(
+                """
+                UPDATE detalleturno 
+                SET Odontologo_id = %s, Paciente_id = %s, FechaTurno = %s, HoraTurno = %s, 
+                    tipo_consulta = %s, duracion = %s, observaciones = %s
+                WHERE id = %s
+                """,
+                (
+                    data["odontologo_id"], 
+                    data["paciente_id"], 
+                    data["fecha"], 
+                    data["hora"],
+                    data.get("tipo_consulta"),
+                    data.get("duracion", 30),
+                    data.get("observaciones"),
+                    appointment_id
+                )
+            )
+            
+            if cursor.rowcount == 0:
+                return jsonify({"success": False, "message": "Turno no encontrado"}), 404
+            
+            connection.commit()
+            print(f"✅ Appointment {appointment_id} updated successfully")  # Debug
+            
+            return jsonify({
+                "success": True, 
+                "message": "Turno actualizado exitosamente"
+            })
+            
+        except Exception as e:
+            print(f"❌ Error updating appointment: {e}")  # Debug
+            return jsonify({"success": False, "message": f"Error al actualizar turno: {str(e)}"}), 500
         finally:
             try:
                 cursor.close()
