@@ -1,0 +1,172 @@
+{# Macros específicos para turnos y citas #}
+
+{% from 'macros/common.html' import form_input, form_row, data_table, action_button_group %}
+
+{# Macro para formulario de turno #}
+{% macro appointment_form(appointment=None, is_edit=false) %}
+<form id="appointmentForm">
+    {{ form_row([
+        {
+            'name': 'paciente_id',
+            'label': 'Paciente',
+            'type': 'select',
+            'required': true,
+            'cols': 6
+        },
+        {
+            'name': 'odontologo_id',
+            'label': 'Odontólogo',
+            'type': 'select',
+            'required': true,
+            'cols': 6
+        }
+    ]) }}
+    
+    {{ form_row([
+        {
+            'name': 'fecha',
+            'label': 'Fecha',
+            'type': 'date',
+            'required': true,
+            'value': appointment.FechaTurno if appointment else '',
+            'cols': 6
+        },
+        {
+            'name': 'hora',
+            'label': 'Hora',
+            'type': 'time',
+            'required': true,
+            'value': appointment.HoraTurno if appointment else '',
+            'cols': 6
+        }
+    ]) }}
+    
+    {{ form_row([
+        {
+            'name': 'tipo_consulta',
+            'label': 'Tipo de Consulta',
+            'placeholder': 'Consulta general, limpieza, etc.',
+            'value': appointment.tipo_consulta if appointment else '',
+            'cols': 6
+        },
+        {
+            'name': 'duracion',
+            'label': 'Duración (minutos)',
+            'type': 'number',
+            'value': appointment.duracion if appointment else '30',
+            'cols': 6
+        }
+    ]) }}
+    
+    {{ form_input('observaciones', 'Observaciones', 'textarea', false, 'Observaciones adicionales...', appointment.observaciones if appointment else '', 'mb-3') }}
+</form>
+{% endmacro %}
+
+{# Macro para tabla de turnos #}
+{% macro appointments_table(appointments) %}
+{% set headers = ['Fecha', 'Hora', 'Paciente', 'Odontólogo', 'Tipo', 'Estado'] %}
+{% set actions = [
+    {
+        'icon': 'bi-pencil',
+        'text': '',
+        'onclick': 'editAppointment({{ appointment.id }})',
+        'color': 'outline-primary',
+        'size': 'sm'
+    },
+    {
+        'icon': 'bi-trash',
+        'text': '',
+        'onclick': 'deleteAppointment({{ appointment.id }})',
+        'color': 'outline-danger',
+        'size': 'sm'
+    }
+] %}
+
+{{ data_table(headers, appointments, actions, 'No hay turnos programados') }}
+{% endmacro %}
+
+{# Macro para card de turno #}
+{% macro appointment_card(appointment) %}
+<div class="card appointment-card mb-3">
+    <div class="card-body">
+        <div class="d-flex justify-content-between align-items-start">
+            <div>
+                <h6 class="mb-1">
+                    <i class="bi bi-calendar-event me-2"></i>
+                    {{ appointment.FechaTurno.strftime('%d/%m/%Y') }}
+                </h6>
+                <p class="mb-1">
+                    <i class="bi bi-clock me-2"></i>
+                    {{ appointment.HoraTurno.strftime('%H:%M') }}
+                </p>
+                <p class="mb-1">
+                    <i class="bi bi-person me-2"></i>
+                    {{ appointment.Paciente }}
+                </p>
+                <p class="mb-0">
+                    <i class="bi bi-person-badge me-2"></i>
+                    {{ appointment.Odontologo }}
+                </p>
+            </div>
+            <div class="text-end">
+                <span class="badge bg-{{ 'success' if appointment.estado == 'completado' else 'warning' if appointment.estado == 'pendiente' else 'danger' }}">
+                    {{ appointment.estado.title() }}
+                </span>
+                {% if appointment.tipo_consulta %}
+                <p class="small text-muted mt-1">{{ appointment.tipo_consulta }}</p>
+                {% endif %}
+            </div>
+        </div>
+        
+        {% if appointment.observaciones %}
+        <div class="mt-2">
+            <small class="text-muted">Observaciones:</small>
+            <p class="small mb-0">{{ appointment.observaciones }}</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endmacro %}
+
+{# Macro para lista de turnos del día #}
+{% macro today_appointments(appointments) %}
+<div class="card">
+    <div class="card-header">
+        <h5 class="mb-0">
+            <i class="bi bi-calendar-day me-2"></i>
+            Turnos de Hoy
+        </h5>
+    </div>
+    <div class="card-body">
+        {% if appointments %}
+            {% for appointment in appointments %}
+                {{ appointment_card(appointment) }}
+            {% endfor %}
+        {% else %}
+            <div class="text-center py-4">
+                <i class="bi bi-calendar-x" style="font-size: 3rem; color: #6c757d;"></i>
+                <h5 class="text-muted mt-3">No hay turnos programados para hoy</h5>
+                <p class="text-muted">Los turnos del día aparecerán aquí</p>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endmacro %}
+
+{# Macro para selector de horarios disponibles #}
+{% macro time_slots_selector(available_slots) %}
+<div class="time-slots-container">
+    <h6 class="mb-3">Horarios Disponibles</h6>
+    <div class="row">
+        {% for slot in available_slots %}
+        <div class="col-md-3 mb-2">
+            <button class="btn btn-outline-{{ 'success' if slot.available else 'secondary' }} w-100 time-slot-btn"
+                    data-time="{{ slot.time }}"
+                    {% if not slot.available %}disabled{% endif %}>
+                {{ slot.time }}
+            </button>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endmacro %}

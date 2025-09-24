@@ -1,0 +1,167 @@
+{# Macros específicos para formularios de pacientes #}
+
+{% from 'macros/common.html' import form_input, form_row %}
+
+{# Macro para formulario completo de paciente #}
+{% macro patient_form(patient=None, is_edit=false) %}
+<form id="patientForm">
+    {{ form_row([
+        {
+            'name': 'nombre',
+            'label': 'Nombre',
+            'required': true,
+            'value': patient.Nombre if patient else '',
+            'cols': 6
+        },
+        {
+            'name': 'apellido',
+            'label': 'Apellido',
+            'required': true,
+            'value': '',
+            'cols': 6
+        }
+    ]) }}
+    
+    {{ form_row([
+        {
+            'name': 'dni',
+            'label': 'DNI',
+            'required': true,
+            'placeholder': '12345678',
+            'value': patient.DNI if patient else '',
+            'extra_classes': 'dni-input',
+            'cols': 6
+        },
+        {
+            'name': 'fecha_nacimiento',
+            'label': 'Fecha de Nacimiento',
+            'type': 'date',
+            'required': true,
+            'value': patient.FechaNacimiento if patient else '',
+            'cols': 6
+        }
+    ]) }}
+    
+    {{ form_row([
+        {
+            'name': 'telefono',
+            'label': 'Teléfono',
+            'type': 'tel',
+            'placeholder': '+54 9 11 1234-5678',
+            'value': patient.telefono if patient else '',
+            'cols': 6
+        },
+        {
+            'name': 'email',
+            'label': 'Email',
+            'type': 'email',
+            'placeholder': 'ejemplo@email.com',
+            'value': patient.email if patient else '',
+            'cols': 6
+        }
+    ]) }}
+    
+    {{ form_input('direccion', 'Dirección', 'text', false, 'Calle 123, Ciudad, Provincia', patient.direccion if patient else '', 'mb-3') }}
+    
+    {{ form_row([
+        {
+            'name': 'contacto_emergencia',
+            'label': 'Contacto de Emergencia',
+            'placeholder': 'Nombre del contacto',
+            'value': patient.contacto_emergencia if patient else '',
+            'cols': 6
+        },
+        {
+            'name': 'telefono_emergencia',
+            'label': 'Teléfono de Emergencia',
+            'type': 'tel',
+            'placeholder': '+54 9 11 1234-5678',
+            'value': patient.telefono_emergencia if patient else '',
+            'cols': 6
+        }
+    ]) }}
+</form>
+{% endmacro %}
+
+{# Macro para tabla de pacientes #}
+{% macro patients_table(patients) %}
+{% from 'macros/common.html' import data_table, action_button_group %}
+
+{% set headers = ['Nombre Completo', 'DNI', 'Fecha Nacimiento', 'Teléfono', 'Email'] %}
+{% set actions = [
+    {
+        'icon': 'bi-pencil',
+        'text': '',
+        'onclick': 'editPatient({{ patient.id }})',
+        'color': 'outline-primary',
+        'size': 'sm'
+    },
+    {
+        'icon': 'bi-trash',
+        'text': '',
+        'onclick': 'deletePatient({{ patient.id }})',
+        'color': 'outline-danger',
+        'size': 'sm'
+    }
+] %}
+
+{{ data_table(headers, patients, actions, 'No hay pacientes registrados') }}
+{% endmacro %}
+
+{# Macro para card de información de paciente #}
+{% macro patient_card(patient) %}
+<div class="card patient-card">
+    <div class="card-body">
+        <div class="d-flex align-items-center mb-3">
+            <div class="avatar-sm me-3">
+                <i class="bi bi-person-circle" style="font-size: 3rem; color: #0d6efd;"></i>
+            </div>
+            <div>
+                <h5 class="mb-1">{{ patient.Nombre }}</h5>
+                <p class="text-muted mb-0">DNI: {{ patient.DNI }}</p>
+            </div>
+        </div>
+        
+        <div class="row">
+            <div class="col-md-6">
+                <small class="text-muted">Fecha de Nacimiento</small>
+                <p class="mb-2">
+                    {% if patient.FechaNacimiento %}
+                        {{ patient.FechaNacimiento.strftime('%d/%m/%Y') }}
+                    {% else %}
+                        <span class="text-muted">No especificada</span>
+                    {% endif %}
+                </p>
+            </div>
+            <div class="col-md-6">
+                <small class="text-muted">Teléfono</small>
+                <p class="mb-2">
+                    {% if patient.telefono %}
+                        <i class="bi bi-telephone me-1 text-success"></i>{{ patient.telefono }}
+                    {% else %}
+                        <span class="text-muted">No especificado</span>
+                    {% endif %}
+                </p>
+            </div>
+        </div>
+        
+        {% if patient.email %}
+        <div class="mb-2">
+            <small class="text-muted">Email</small>
+            <p class="mb-0">
+                <i class="bi bi-envelope me-1 text-info"></i>{{ patient.email }}
+            </p>
+        </div>
+        {% endif %}
+        
+        {% if patient.direccion %}
+        <div class="mb-2">
+            <small class="text-muted">Dirección</small>
+            <p class="mb-0">
+                <i class="bi bi-geo-alt me-1 text-warning"></i>{{ patient.direccion }}
+            </p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endmacro %}

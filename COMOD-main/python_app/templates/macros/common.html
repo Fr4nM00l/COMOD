@@ -1,0 +1,164 @@
+{# Macros para elementos comunes de la aplicación #}
+
+{# Macro para crear cards de estadísticas #}
+{% macro stats_card(icon, value, label, color="primary") %}
+<div class="col-md-3">
+    <div class="card stats-card">
+        <div class="card-body text-center">
+            <i class="bi {{ icon }} fa-2x mb-2 text-{{ color }}"></i>
+            <h4>{{ value }}</h4>
+            <p class="mb-0">{{ label }}</p>
+        </div>
+    </div>
+</div>
+{% endmacro %}
+
+{# Macro para crear botones de acción #}
+{% macro action_button(icon, text, onclick, color="primary", size="sm", extra_classes="") %}
+<button class="btn btn-{{ size }} btn-{{ color }} {{ extra_classes }}" onclick="{{ onclick }}" title="{{ text }}">
+    <i class="bi {{ icon }}"></i>
+    {% if text %}<span class="ms-1">{{ text }}</span>{% endif %}
+</button>
+{% endmacro %}
+
+{# Macro para crear botones de acción en grupo #}
+{% macro action_button_group(buttons) %}
+<div class="btn-group" role="group">
+    {% for button in buttons %}
+        {{ action_button(button.icon, button.text, button.onclick, button.color, button.size, button.extra_classes) }}
+    {% endfor %}
+</div>
+{% endmacro %}
+
+{# Macro para crear formularios de entrada #}
+{% macro form_input(name, label, type="text", required=false, placeholder="", value="", extra_classes="") %}
+<div class="mb-3">
+    <label for="{{ name }}" class="form-label">
+        {{ label }}
+        {% if required %}<span class="text-danger">*</span>{% endif %}
+    </label>
+    <input type="{{ type }}" 
+           class="form-control {{ extra_classes }}" 
+           id="{{ name }}" 
+           name="{{ name }}" 
+           {% if required %}required{% endif %}
+           {% if placeholder %}placeholder="{{ placeholder }}"{% endif %}
+           {% if value %}value="{{ value }}"{% endif %}>
+    <div class="invalid-feedback" id="{{ name }}Error"></div>
+</div>
+{% endmacro %}
+
+{# Macro para crear campos de formulario en fila #}
+{% macro form_row(inputs) %}
+<div class="row">
+    {% for input in inputs %}
+    <div class="col-md-{{ input.cols or 6 }}">
+        {{ form_input(input.name, input.label, input.type, input.required, input.placeholder, input.value, input.extra_classes) }}
+    </div>
+    {% endfor %}
+</div>
+{% endmacro %}
+
+{# Macro para crear tabla de datos #}
+{% macro data_table(headers, data, actions=None, empty_message="No hay datos disponibles") %}
+<div class="table-responsive">
+    <table class="table table-hover">
+        <thead>
+            <tr>
+                {% for header in headers %}
+                <th>{{ header }}</th>
+                {% endfor %}
+                {% if actions %}
+                <th>Acciones</th>
+                {% endif %}
+            </tr>
+        </thead>
+        <tbody>
+            {% if data %}
+                {% for row in data %}
+                <tr>
+                    {% for field in row %}
+                    <td>{{ field }}</td>
+                    {% endfor %}
+                    {% if actions %}
+                    <td>
+                        {{ action_button_group(actions) }}
+                    </td>
+                    {% endif %}
+                </tr>
+                {% endfor %}
+            {% else %}
+            <tr>
+                <td colspan="{{ headers|length + (1 if actions else 0) }}" class="text-center text-muted py-4">
+                    <i class="bi bi-inbox" style="font-size: 2rem;"></i>
+                    <p class="mt-2">{{ empty_message }}</p>
+                </td>
+            </tr>
+            {% endif %}
+        </tbody>
+    </table>
+</div>
+{% endmacro %}
+
+{# Macro para crear alertas #}
+{% macro alert(message, type="info", dismissible=true) %}
+<div class="alert alert-{{ type }} {% if dismissible %}alert-dismissible fade show{% endif %}" role="alert">
+    <i class="bi bi-{{ 'exclamation-triangle' if type == 'danger' else 'info-circle' if type == 'info' else 'check-circle' if type == 'success' else 'exclamation-circle' }} me-2"></i>
+    {{ message }}
+    {% if dismissible %}
+    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    {% endif %}
+</div>
+{% endmacro %}
+
+{# Macro para crear modales #}
+{% macro modal(id, title, size="lg") %}
+<div class="modal fade" id="{{ id }}" tabindex="-1" aria-labelledby="{{ id }}Label" aria-hidden="true">
+    <div class="modal-dialog modal-{{ size }}">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="{{ id }}Label">{{ title }}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                {{ caller() }}
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                {{ caller() }}
+            </div>
+        </div>
+    </div>
+</div>
+{% endmacro %}
+
+{# Macro para crear sidebar de navegación #}
+{% macro sidebar_nav(items, active_item="") %}
+<nav class="nav flex-column">
+    {% for item in items %}
+    <a class="nav-link {% if item.id == active_item %}active{% endif %}" 
+       href="{{ item.url }}" 
+       {% if item.onclick %}onclick="{{ item.onclick }}"{% endif %}>
+        <i class="bi {{ item.icon }} me-2"></i>
+        {{ item.text }}
+    </a>
+    {% endfor %}
+</nav>
+{% endmacro %}
+
+{# Macro para crear breadcrumbs #}
+{% macro breadcrumb(items) %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        {% for item in items %}
+        <li class="breadcrumb-item {% if loop.last %}active{% endif %}">
+            {% if not loop.last and item.url %}
+            <a href="{{ item.url }}">{{ item.text }}</a>
+            {% else %}
+            {{ item.text }}
+            {% endif %}
+        </li>
+        {% endfor %}
+    </ol>
+</nav>
+{% endmacro %}

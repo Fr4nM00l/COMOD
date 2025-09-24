@@ -1,0 +1,432 @@
+{% extends 'base_improved.html' %}
+{% from 'macros/common.html' import stats_card, action_button_group, alert %}
+{% from 'macros/patient.html' import patient_form, patients_table %}
+
+{% block title %}Gestión de Pacientes - COMOD{% endblock %}
+
+{% block breadcrumbs %}
+{% from 'macros/common.html' import breadcrumb %}
+{{ breadcrumb([
+    {'text': 'Dashboard', 'url': url_for('secretario_dashboard')},
+    {'text': 'Pacientes', 'url': ''}
+]) }}
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <!-- Header con estadísticas -->
+        <div class="row mb-4">
+            <div class="col-md-8">
+                <h2 class="mb-1">
+                    <i class="bi bi-people me-2"></i>Gestión de Pacientes
+                </h2>
+                <p class="text-muted">Administre la información de los pacientes del centro</p>
+            </div>
+            <div class="col-md-4 text-end">
+                <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#patientModal">
+                    <i class="bi bi-person-plus me-2"></i>Nuevo Paciente
+                </button>
+            </div>
+        </div>
+
+        <!-- Estadísticas rápidas -->
+        <div class="row mb-4">
+            {{ stats_card('bi-people', patients|length, 'Pacientes Registrados', 'primary') }}
+            {{ stats_card('bi-person-check', '0', 'Pacientes Activos', 'success') }}
+            {{ stats_card('bi-calendar-event', '0', 'Turnos Hoy', 'info') }}
+            {{ stats_card('bi-clock-history', '0', 'Pendientes', 'warning') }}
+        </div>
+
+        <!-- Panel de búsqueda -->
+        <div class="card mb-4">
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-8">
+                        <div class="input-group">
+                            <span class="input-group-text">
+                                <i class="bi bi-search"></i>
+                            </span>
+                            <input type="text" class="form-control" id="patientSearch" 
+                                   placeholder="Buscar por nombre, DNI, teléfono o email...">
+                            <button class="btn btn-outline-secondary" type="button" id="clearSearch" style="display: none;">
+                                <i class="bi bi-x-circle"></i>
+                            </button>
+                        </div>
+                        <div class="mt-2">
+                            <small class="text-muted">
+                                <i class="bi bi-info-circle me-1"></i>
+                                Busca por cualquier campo: nombre, DNI, teléfono o email
+                            </small>
+                        </div>
+                    </div>
+                    <div class="col-md-4 text-end">
+                        <div class="d-flex flex-column align-items-end">
+                            <span class="badge bg-primary mb-1" id="totalPatients">{{ patients|length }} pacientes registrados</span>
+                            <span class="badge bg-success" id="filteredPatients" style="display: none;">0 resultados</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tabla de pacientes -->
+        <div class="card">
+            <div class="card-body">
+                <div id="patientsTableContainer">
+                    {% if patients %}
+                        {{ patients_table(patients) }}
+                    {% else %}
+                        <div class="text-center py-5">
+                            <i class="bi bi-people" style="font-size: 3rem; color: #6c757d;"></i>
+                            <h5 class="text-muted mt-3">No hay pacientes registrados</h5>
+                            <p class="text-muted">Comience agregando el primer paciente al sistema</p>
+                            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#patientModal">
+                                <i class="bi bi-person-plus me-2"></i>Agregar Primer Paciente
+                            </button>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de Paciente -->
+<div class="modal fade" id="patientModal" tabindex="-1" aria-labelledby="patientModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="patientModalLabel">
+                    <i class="bi bi-person-plus me-2"></i>Registrar Nuevo Paciente
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                {{ patient_form() }}
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="submit" class="btn btn-primary" id="patientSubmitBtn" form="patientForm">
+                    <i class="bi bi-check-lg me-2"></i>Guardar Paciente
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let patients = [];
+let editingPatientId = null;
+
+// Cargar pacientes al inicializar
+document.addEventListener('DOMContentLoaded', function() {
+    loadPatients();
+    setupEventListeners();
+});
+
+// Configurar event listeners
+function setupEventListeners() {
+    // Búsqueda en tiempo real
+    document.getElementById('patientSearch').addEventListener('input', searchPatients);
+    
+    // Limpiar búsqueda
+    document.getElementById('clearSearch').addEventListener('click', clearSearch);
+    
+    // Envío del formulario
+    document.getElementById('patientForm').addEventListener('submit', handleFormSubmit);
+}
+
+// Cargar pacientes
+async function loadPatients() {
+    try {
+        LoadingUtils.showContainerLoading('patientsTableContainer', 'Cargando pacientes...');
+        const data = await ApiUtils.get('/secretario/pacientes/lista');
+        
+        if (data.success !== false) {
+            patients = Array.isArray(data) ? data : data.patients || [];
+            renderPatientsTable(patients);
+            updatePatientCount(patients.length);
+        } else {
+            AlertUtils.showError('Error al cargar pacientes: ' + (data.message || 'Error desconocido'));
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        AlertUtils.showError('Error al cargar pacientes');
+    }
+}
+
+// Renderizar tabla de pacientes
+function renderPatientsTable(patientsList) {
+    const container = document.getElementById('patientsTableContainer');
+    
+    if (patientsList.length === 0) {
+        container.innerHTML = `
+            <div class="text-center py-5">
+                <i class="bi bi-people" style="font-size: 3rem; color: #6c757d;"></i>
+                <h5 class="text-muted mt-3">No hay pacientes registrados</h5>
+                <p class="text-muted">Comience agregando el primer paciente al sistema</p>
+                <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#patientModal">
+                    <i class="bi bi-person-plus me-2"></i>Agregar Primer Paciente
+                </button>
+            </div>
+        `;
+        return;
+    }
+
+    let tableHTML = `
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>Nombre Completo</th>
+                        <th>DNI</th>
+                        <th>Fecha Nacimiento</th>
+                        <th>Teléfono</th>
+                        <th>Email</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+    `;
+
+    patientsList.forEach(patient => {
+        const birthDate = patient.FechaNacimiento ? 
+            DateUtils.formatDateForDisplay(patient.FechaNacimiento) : 
+            'No especificada';
+        
+        tableHTML += `
+            <tr>
+                <td>
+                    <div class="d-flex align-items-center">
+                        <div class="avatar-sm me-2">
+                            <i class="bi bi-person-circle" style="font-size: 2rem; color: #0d6efd;"></i>
+                        </div>
+                        <div>
+                            <strong>${patient.Nombre}</strong>
+                            ${patient.telefono ? `<br><small class="text-muted">${patient.telefono}</small>` : ''}
+                        </div>
+                    </div>
+                </td>
+                <td><span class="badge bg-light text-dark">${patient.DNI}</span></td>
+                <td>${birthDate}</td>
+                <td>
+                    ${patient.telefono ? 
+                        `<i class="bi bi-telephone me-1 text-success"></i>${patient.telefono}` : 
+                        '<span class="text-muted">No especificado</span>'
+                    }
+                </td>
+                <td>
+                    ${patient.email ? 
+                        `<i class="bi bi-envelope me-1 text-info"></i>${patient.email}` : 
+                        '<span class="text-muted">No especificado</span>'
+                    }
+                </td>
+                <td>
+                    <div class="btn-group" role="group">
+                        <button class="btn btn-sm btn-outline-primary" onclick="editPatient(${patient.id})" title="Editar">
+                            <i class="bi bi-pencil"></i>
+                        </button>
+                        <button class="btn btn-sm btn-outline-danger" onclick="deletePatient(${patient.id})" title="Eliminar">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    </div>
+                </td>
+            </tr>
+        `;
+    });
+
+    tableHTML += `
+                </tbody>
+            </table>
+        </div>
+    `;
+
+    container.innerHTML = tableHTML;
+}
+
+// Buscar pacientes
+function searchPatients() {
+    const searchTerm = document.getElementById('patientSearch').value.toLowerCase();
+    const clearBtn = document.getElementById('clearSearch');
+    
+    if (searchTerm) {
+        clearBtn.style.display = 'block';
+        const filteredPatients = patients.filter(patient => 
+            patient.Nombre.toLowerCase().includes(searchTerm) ||
+            patient.DNI.includes(searchTerm) ||
+            (patient.telefono && patient.telefono.includes(searchTerm)) ||
+            (patient.email && patient.email.toLowerCase().includes(searchTerm))
+        );
+        renderPatientsTable(filteredPatients);
+        updatePatientCount(filteredPatients.length, true);
+    } else {
+        clearBtn.style.display = 'none';
+        renderPatientsTable(patients);
+        updatePatientCount(patients.length);
+    }
+}
+
+// Limpiar búsqueda
+function clearSearch() {
+    document.getElementById('patientSearch').value = '';
+    document.getElementById('clearSearch').style.display = 'none';
+    renderPatientsTable(patients);
+    updatePatientCount(patients.length);
+}
+
+// Actualizar contador
+function updatePatientCount(count, isFiltered = false) {
+    const totalElement = document.getElementById('totalPatients');
+    const filteredElement = document.getElementById('filteredPatients');
+    
+    if (isFiltered) {
+        totalElement.style.display = 'none';
+        filteredElement.style.display = 'block';
+        filteredElement.textContent = `${count} resultados`;
+    } else {
+        totalElement.style.display = 'block';
+        filteredElement.style.display = 'none';
+        totalElement.textContent = `${count} pacientes registrados`;
+    }
+}
+
+// Editar paciente
+function editPatient(id) {
+    const patient = patients.find(p => p.id === id);
+    if (!patient) return;
+
+    editingPatientId = id;
+    document.getElementById('patientModalLabel').innerHTML = '<i class="bi bi-person-gear me-2"></i>Editar Paciente';
+    
+    // Llenar formulario
+    FormUtils.fillForm('patientForm', {
+        nombre: patient.Nombre || '',
+        dni: patient.DNI || '',
+        fecha_nacimiento: DateUtils.formatDateForInput(patient.FechaNacimiento),
+        telefono: patient.telefono || '',
+        email: patient.email || '',
+        direccion: patient.direccion || '',
+        contacto_emergencia: patient.contacto_emergencia || '',
+        telefono_emergencia: patient.telefono_emergencia || ''
+    });
+    
+    FormUtils.clearValidationErrors();
+    ModalUtils.show('patientModal');
+}
+
+// Eliminar paciente
+function deletePatient(id) {
+    const patient = patients.find(p => p.id === id);
+    if (!patient) return;
+
+    document.getElementById('confirmMessage').textContent = 
+        `¿Está seguro de que desea eliminar al paciente "${patient.Nombre}"? Esta acción no se puede deshacer.`;
+    
+    document.getElementById('confirmButton').onclick = async function() {
+        try {
+            LoadingUtils.showButtonLoading('confirmButton', 'Eliminando...');
+            const result = await ApiUtils.delete(`/secretario/paciente/${id}`);
+            
+            if (result.success) {
+                AlertUtils.showSuccess(result.message);
+                ModalUtils.hide('confirmModal');
+                loadPatients();
+            } else {
+                AlertUtils.showError(result.message);
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            AlertUtils.showError('Error al eliminar el paciente');
+        } finally {
+            LoadingUtils.hideButtonLoading('confirmButton', 'Confirmar');
+        }
+    };
+    
+    ModalUtils.show('confirmModal');
+}
+
+// Manejar envío del formulario
+async function handleFormSubmit(e) {
+    e.preventDefault();
+    
+    FormUtils.clearValidationErrors();
+    
+    const formData = FormUtils.getFormData('patientForm');
+    
+    // Validaciones del lado del cliente
+    let hasErrors = false;
+    
+    if (!formData.nombre || formData.nombre.trim() === '') {
+        FormUtils.showValidationError('nombre', 'El nombre es obligatorio');
+        hasErrors = true;
+    }
+    
+    if (!formData.dni || formData.dni.trim() === '') {
+        FormUtils.showValidationError('dni', 'El DNI es obligatorio');
+        hasErrors = true;
+    } else if (!FormUtils.validateDNI(formData.dni)) {
+        FormUtils.showValidationError('dni', 'El DNI debe contener entre 7 y 8 dígitos');
+        hasErrors = true;
+    }
+    
+    if (!formData.fecha_nacimiento) {
+        FormUtils.showValidationError('fecha_nacimiento', 'La fecha de nacimiento es obligatoria');
+        hasErrors = true;
+    }
+    
+    if (formData.email && formData.email.trim() !== '') {
+        if (!FormUtils.validateEmail(formData.email)) {
+            FormUtils.showValidationError('email', 'El formato del email no es válido');
+            hasErrors = true;
+        }
+    }
+    
+    if (hasErrors) return;
+    
+    // Enviar datos
+    try {
+        LoadingUtils.showButtonLoading('patientSubmitBtn', 'Guardando...');
+        
+        const url = editingPatientId ? 
+            `/secretario/paciente/${editingPatientId}` : 
+            '/secretario/paciente';
+        const method = editingPatientId ? 'PUT' : 'POST';
+        
+        const result = method === 'POST' ? 
+            await ApiUtils.post(url, formData) : 
+            await ApiUtils.put(url, formData);
+        
+        if (result.success) {
+            AlertUtils.showSuccess(result.message);
+            ModalUtils.hide('patientModal');
+            loadPatients();
+        } else {
+            // Mostrar errores específicos del servidor
+            if (result.message.includes('DNI')) {
+                FormUtils.showValidationError('dni', result.message);
+            } else if (result.message.includes('email')) {
+                FormUtils.showValidationError('email', result.message);
+            } else {
+                AlertUtils.showError(result.message);
+            }
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        AlertUtils.showError('Error al guardar el paciente');
+    } finally {
+        LoadingUtils.hideButtonLoading('patientSubmitBtn', '<i class="bi bi-check-lg me-2"></i>Guardar Paciente');
+    }
+}
+
+// Resetear modal al cerrar
+document.getElementById('patientModal').addEventListener('hidden.bs.modal', function() {
+    editingPatientId = null;
+    document.getElementById('patientModalLabel').innerHTML = '<i class="bi bi-person-plus me-2"></i>Registrar Nuevo Paciente';
+    document.getElementById('patientForm').reset();
+    FormUtils.clearValidationErrors();
+});
+</script>
+{% endblock %}

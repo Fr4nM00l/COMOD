@@ -195,12 +195,6 @@ function renderPatientsTable(patientsList) {
                         <button class="btn btn-sm btn-outline-primary" onclick="editPatient(${patient.id})" title="Editar">
                             <i class="bi bi-pencil"></i>
                         </button>
-                        <button class="btn btn-sm btn-outline-info" onclick="viewPatientHistory(${patient.id})" title="Ver Historia">
-                            <i class="bi bi-file-medical"></i>
-                        </button>
-                        <button class="btn btn-sm btn-outline-success" onclick="createAppointment(${patient.id})" title="Crear Turno">
-                            <i class="bi bi-calendar-plus"></i>
-                        </button>
                     </div>
                 </td>
             </tr>
@@ -402,11 +396,6 @@ document.getElementById('patientForm').addEventListener('submit', function(e) {
 });
 
 // Funciones de acciones (placeholder para futuras implementaciones)
-function viewPatientHistory(id) {
-    alert('Función de ver historia clínica - En desarrollo');
-}
-
-function createAppointment(id) {
-    alert('Función de crear turno - En desarrollo');
-}
+// Las funciones de ver historia clínica y crear turno han sido removidas
+// ya que el secretario no debe tener acceso a estas funciones
 </script>

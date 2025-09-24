@@ -111,3 +111,37 @@ python app.py
 - `python_app/templates/modals/clinical_history_modal.html`
 
 **Total de archivos corregidos: 11**
+
+## 📅 Cambios Recientes (Septiembre 2025)
+
+### 7. **Eliminación de Opciones Inapropiadas en Vista de Secretario**
+- **Problema**: El secretario tenía acceso a funciones que solo deberían ser del odontólogo
+- **Archivos Corregidos**:
+  - `templates/sections/pacientes.html` - Removidos botones "Ver Historia" y "Crear Turno"
+  - `templates/sections/pacientes_section.html` - Removidos botones "Ver Historia" y "Crear Turno"
+- **Funciones JavaScript Removidas**:
+  - `viewPatientHistory()` - Solo para odontólogos
+  - `createAppointment()` - Solo para odontólogos
+- **Estado**: ✅ Corregido
+
+### 8. **Limpieza de Templates Duplicados**
+- **Problema**: Existían dos versiones de `secretario_dashboard` causando confusión
+- **Solución**: 
+  - Movido `secretario_dashboard_old.html` a carpeta `backup/`
+  - Creada documentación de respaldo en `templates/backup/README.md`
+  - Mantenido solo `secretario_dashboard.html` (versión activa)
+- **Beneficios**:
+  - Proyecto más organizado
+  - Eliminada confusión entre versiones
+  - Respaldo seguro disponible
+- **Estado**: ✅ Corregido
+
+### 9. **Creación de Sistema de Respaldo**
+- **Archivos Creados**:
+  - `templates/backup/` - Carpeta de respaldo
+  - `templates/backup/README.md` - Documentación de respaldo
+- **Funcionalidades**:
+  - Instrucciones de restauración
+  - Comparación entre versiones
+  - Proceso de migración documentado
+- **Estado**: ✅ Implementado
