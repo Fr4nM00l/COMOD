@@ -5,6 +5,24 @@ from datetime import datetime, date, timedelta
 from flask import jsonify
 
 
+def validate_required_fields(data, required_fields):
+    """
+    Valida que los campos requeridos estén presentes en los datos
+    
+    Args:
+        data: Diccionario con los datos a validar
+        required_fields: Lista de campos requeridos
+    
+    Returns:
+        tuple: (is_valid, missing_fields_list)
+    """
+    if not data:
+        return False, required_fields
+    
+    missing_fields = [field for field in required_fields if not data.get(field)]
+    return len(missing_fields) == 0, missing_fields
+
+
 def format_time_from_timedelta(time_obj):
     """
     Convierte un objeto timedelta o time a string formato HH:MM
@@ -84,3 +102,98 @@ def create_success_response(message="", data=None):
     Crea una respuesta de éxito JSON estandarizada
     """
     return create_json_response(success=True, message=message, data=data)
+
+
+def check_duplicate_appointment(cursor, fecha_str, hora_str, odontologo_id, paciente_id=None):
+    """
+    Verifica si ya existe un turno duplicado para la misma fecha, hora y odontólogo
+    
+    Args:
+        cursor: Cursor de base de datos
+        fecha_str: Fecha en formato YYYY-MM-DD
+        hora_str: Hora en formato HH:MM
+        odontologo_id: ID del odontólogo
+        paciente_id: ID del paciente (opcional, para verificar duplicados del mismo paciente)
+    
+    Returns:
+        tuple: (is_duplicate, error_message)
+    """
+    try:
+        # Convertir hora a formato de base de datos (timedelta)
+        hora_parts = hora_str.split(':')
+        hora_timedelta = timedelta(
+            hours=int(hora_parts[0]),
+            minutes=int(hora_parts[1])
+        )
+        
+        # Consulta para verificar turnos duplicados
+        if paciente_id:
+            # Verificar duplicados del mismo paciente
+            cursor.execute("""
+                SELECT COUNT(*) as count, p.Nombre, o.Nombre as OdontologoNombre
+                FROM detalleturno t
+                JOIN paciente p ON t.Paciente_id = p.id
+                JOIN odontologo o ON t.Odontologo_id = o.id
+                WHERE t.FechaTurno = %s 
+                AND t.HoraTurno = %s 
+                AND t.Odontologo_id = %s
+                AND t.Paciente_id = %s
+                AND t.estado != 'Cancelado'
+            """, (fecha_str, hora_timedelta, odontologo_id, paciente_id))
+        else:
+            # Verificar cualquier turno duplicado para el odontólogo
+            cursor.execute("""
+                SELECT COUNT(*) as count, p.Nombre, o.Nombre as OdontologoNombre
+                FROM detalleturno t
+                JOIN paciente p ON t.Paciente_id = p.id
+                JOIN odontologo o ON t.Odontologo_id = o.id
+                WHERE t.FechaTurno = %s 
+                AND t.HoraTurno = %s 
+                AND t.Odontologo_id = %s
+                AND t.estado != 'Cancelado'
+            """, (fecha_str, hora_timedelta, odontologo_id))
+        
+        result = cursor.fetchone()
+        
+        if result and result['count'] > 0:
+            paciente_nombre = result['Nombre']
+            odontologo_nombre = result['OdontologoNombre']
+            
+            if paciente_id:
+                error_msg = f"Ya existe un turno para el paciente {paciente_nombre} con el Dr./Dra. {odontologo_nombre} el {fecha_str} a las {hora_str}."
+            else:
+                error_msg = f"Ya existe un turno con el Dr./Dra. {odontologo_nombre} el {fecha_str} a las {hora_str}. Paciente: {paciente_nombre}"
+            
+            return True, error_msg
+        
+        return False, None
+        
+    except Exception as e:
+        return False, f"Error al verificar turnos duplicados: {str(e)}"
+
+
+def validate_appointment_availability(cursor, fecha_str, hora_str, odontologo_id, paciente_id=None):
+    """
+    Valida que el turno esté disponible (no duplicado y horario válido)
+    
+    Args:
+        cursor: Cursor de base de datos
+        fecha_str: Fecha en formato YYYY-MM-DD
+        hora_str: Hora en formato HH:MM
+        odontologo_id: ID del odontólogo
+        paciente_id: ID del paciente (opcional)
+    
+    Returns:
+        tuple: (is_valid, error_message)
+    """
+    # Primero validar fecha y hora
+    is_valid_datetime, datetime_error = validate_appointment_datetime(fecha_str, hora_str)
+    if not is_valid_datetime:
+        return False, datetime_error
+    
+    # Luego verificar duplicados
+    is_duplicate, duplicate_error = check_duplicate_appointment(cursor, fecha_str, hora_str, odontologo_id, paciente_id)
+    if is_duplicate:
+        return False, duplicate_error
+    
+    return True, None

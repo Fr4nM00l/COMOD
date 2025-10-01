@@ -133,7 +133,7 @@ function populateAppointmentModal(appointment) {
 
 function deleteTurno(id) {
     // Show confirmation dialog with more details
-    if (confirm('¿Estás seguro de que quieres eliminar este turno?\n\nEsta acción no se puede deshacer.')) {
+    confirmDelete('turno', 'este turno', () => {
         console.log('Delete turno:', id);
         
         // Show loading state
@@ -177,7 +177,7 @@ function deleteTurno(id) {
             deleteBtn.innerHTML = originalContent;
             deleteBtn.disabled = false;
         });
-    }
+    });
 }
 
 function showAlert(type, message) {

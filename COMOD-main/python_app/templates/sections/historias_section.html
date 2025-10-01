@@ -241,12 +241,12 @@ document.getElementById('clinicalHistoryForm').addEventListener('submit', functi
         if (data.success) {
             location.reload();
         } else {
-            alert('Error al guardar la historia clínica: ' + data.message);
+            showSaveError('historia clínica', data.message);
         }
     })
     .catch(error => {
         console.error('Error:', error);
-        alert('Error al guardar la historia clínica');
+        showSaveError('historia clínica', 'Error de conexión');
     });
 });
 
@@ -298,17 +298,17 @@ function createOdontograma(pacienteId) {
 }
 
 function deleteClinicalHistory(id) {
-    if (confirm('¿Está seguro de que desea eliminar esta historia clínica? Esta acción no se puede deshacer.')) {
+    confirmDelete('historia clínica', 'esta historia clínica', () => {
         fetch(`/secretario/historia-clinica/${id}`, { method: 'DELETE' })
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
                     location.reload();
                 } else {
-                    alert('Error al eliminar la historia clínica: ' + data.message);
+                    showDeleteError('historia clínica', data.message);
                 }
             });
-    }
+    });
 }
 
 function createClinicalHistoryForPatient(pacienteId) {

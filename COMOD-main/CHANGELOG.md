@@ -8,16 +8,47 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.0.h
 ## [Unreleased]
 
 ### Added
+- **Sistema de Restricción de Turnos Duplicados**:
+  - `utils.py` - Funciones `check_duplicate_appointment()` y `validate_appointment_availability()`
+  - Validación automática de turnos duplicados en creación de turnos
+  - Validación de turnos duplicados en turnos online
+  - Notificaciones específicas para errores de duplicados
+  - `templates/test_duplicate_appointments.html` - Página de prueba para duplicados
+  - Exclusión de turnos cancelados en la validación de duplicados
+  - Mensajes de error detallados con información del conflicto
+
+- **Sistema de Notificaciones Personalizado**:
+  - `static/css/notifications.css` - Estilos para notificaciones elegantes
+  - `static/js/notifications.js` - JavaScript para sistema de notificaciones
+  - `templates/notifications_example.html` - Ejemplo de uso del sistema
+  - Reemplazo completo de alertas del navegador con notificaciones personalizadas
+  - Diferentes tipos: success, error, warning, info
+  - Confirmaciones personalizadas con modales Bootstrap
+  - Auto-cierre con barra de progreso
+  - Animaciones suaves de entrada y salida
+  - Diseño responsive para móviles
+
 - Sistema de respaldo para templates antiguos
 - Documentación de respaldo en `templates/backup/README.md`
 
 ### Changed
 - Movido `secretario_dashboard_old.html` a carpeta de respaldo
 - Actualizada documentación de correcciones
+- **Templates actualizados** para usar sistema de notificaciones:
+  - `templates/base.html` - Incluye CSS y JS de notificaciones
+  - `templates/sections/pacientes.html` - Reemplazadas alertas de guardado
+  - `templates/sections/turnos.html` - Reemplazadas alertas de validación y eliminación
+- **Rutas de creación de turnos actualizadas**:
+  - `app.py` - `create_appointment()` y `api_online_create_appointment()` con validación de duplicados
+  - Validación automática antes de crear cualquier turno
 
 ### Fixed
 - Eliminadas opciones inapropiadas para secretarios en lista de pacientes
 - Removidos botones "Ver Historia" y "Crear Turno" de vista de secretario
+- **Reemplazadas todas las alertas del navegador** con notificaciones profesionales
+- **Mejorada experiencia de usuario** con confirmaciones elegantes
+- **Prevención de turnos duplicados** con validación automática
+- **Mensajes de error específicos** para diferentes tipos de conflictos
 
 ## [2025-09-24] - Refactorización Mayor
 

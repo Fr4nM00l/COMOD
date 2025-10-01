@@ -1,0 +1,103 @@
+<!-- Ejemplo de uso del sistema de notificaciones -->
+<div class="card">
+    <div class="card-header">
+        <h5><i class="bi bi-bell me-2"></i>Sistema de Notificaciones</h5>
+    </div>
+    <div class="card-body">
+        <p>Este es un ejemplo de cómo usar el nuevo sistema de notificaciones personalizado.</p>
+        
+        <div class="row">
+            <div class="col-md-6">
+                <h6>Notificaciones de Éxito</h6>
+                <button class="btn btn-success me-2" onclick="notifications.success('Éxito', 'Operación completada exitosamente')">
+                    <i class="bi bi-check-circle me-1"></i>Éxito
+                </button>
+                <button class="btn btn-success me-2" onclick="showPatientDeletedSuccess('Juan Pérez')">
+                    <i class="bi bi-person-x me-1"></i>Paciente Eliminado
+                </button>
+                <button class="btn btn-success me-2" onclick="showAppointmentDeletedSuccess({date: '2025-09-25', time: '10:30'})">
+                    <i class="bi bi-calendar-x me-1"></i>Turno Eliminado
+                </button>
+            </div>
+            
+            <div class="col-md-6">
+                <h6>Notificaciones de Error</h6>
+                <button class="btn btn-danger me-2" onclick="notifications.error('Error', 'No se pudo completar la operación')">
+                    <i class="bi bi-exclamation-triangle me-1"></i>Error
+                </button>
+                <button class="btn btn-danger me-2" onclick="showDeleteError('paciente', 'Error de conexión')">
+                    <i class="bi bi-x-circle me-1"></i>Error Eliminar
+                </button>
+                <button class="btn btn-danger me-2" onclick="showSaveError('turno', 'Fecha no disponible')">
+                    <i class="bi bi-x-circle me-1"></i>Error Guardar
+                </button>
+            </div>
+        </div>
+        
+        <div class="row mt-3">
+            <div class="col-md-6">
+                <h6>Notificaciones de Advertencia</h6>
+                <button class="btn btn-warning me-2" onclick="notifications.warning('Advertencia', 'Debe completar todos los campos')">
+                    <i class="bi bi-exclamation-circle me-1"></i>Advertencia
+                </button>
+                <button class="btn btn-warning me-2" onclick="notifications.warning('Validación', 'DNI debe contener solo números')">
+                    <i class="bi bi-shield-exclamation me-1"></i>Validación
+                </button>
+            </div>
+            
+            <div class="col-md-6">
+                <h6>Notificaciones de Información</h6>
+                <button class="btn btn-info me-2" onclick="notifications.info('Información', 'Sistema actualizado correctamente')">
+                    <i class="bi bi-info-circle me-1"></i>Información
+                </button>
+                <button class="btn btn-info me-2" onclick="notifications.info('Desarrollo', 'Funcionalidad en desarrollo')">
+                    <i class="bi bi-tools me-1"></i>En Desarrollo
+                </button>
+            </div>
+        </div>
+        
+        <div class="row mt-3">
+            <div class="col-md-12">
+                <h6>Confirmaciones Personalizadas</h6>
+                <button class="btn btn-outline-danger me-2" onclick="confirmDelete('paciente', 'María González', () => { notifications.success('Paciente Eliminado', 'María González ha sido eliminado exitosamente'); })">
+                    <i class="bi bi-person-x me-1"></i>Confirmar Eliminar Paciente
+                </button>
+                <button class="btn btn-outline-danger me-2" onclick="confirmDelete('turno', 'Turno del 25/09/2025', () => { notifications.success('Turno Eliminado', 'El turno ha sido eliminado exitosamente'); })">
+                    <i class="bi bi-calendar-x me-1"></i>Confirmar Eliminar Turno
+                </button>
+            </div>
+        </div>
+        
+        <div class="row mt-3">
+            <div class="col-md-12">
+                <h6>Controles</h6>
+                <button class="btn btn-outline-secondary me-2" onclick="notifications.clear()">
+                    <i class="bi bi-trash me-1"></i>Limpiar Todas
+                </button>
+                <button class="btn btn-outline-primary me-2" onclick="showAlert('Mensaje de prueba', 'info')">
+                    <i class="bi bi-bell me-1"></i>Alert Personalizado
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Ejemplo de cómo reemplazar las alertas del navegador
+function ejemploReemplazoAlertas() {
+    // ❌ ANTES (alert del navegador):
+    // alert('Error al guardar el paciente');
+    
+    // ✅ DESPUÉS (notificación personalizada):
+    showSaveError('paciente', 'Error de conexión');
+    
+    // ❌ ANTES (confirm del navegador):
+    // if (confirm('¿Eliminar paciente?')) { ... }
+    
+    // ✅ DESPUÉS (confirmación personalizada):
+    confirmDelete('paciente', 'Juan Pérez', () => {
+        // Lógica de eliminación
+        notifications.success('Paciente Eliminado', 'Juan Pérez ha sido eliminado exitosamente');
+    });
+}
+</script>

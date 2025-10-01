@@ -2,12 +2,11 @@ import os
 from flask import Flask, render_template, request, redirect, url_for, session, flash, jsonify
 from dotenv import load_dotenv
 from datetime import datetime, date
-# from flask_moment import Moment
 import json
 
-from db import get_db_connection
+from db_utils import get_db_cursor, get_db_cursor_with_commit
 from decorators import require_secretario, require_odontologo
-from utils import validate_appointment_datetime, create_success_response, create_error_response
+from utils import validate_appointment_datetime, create_success_response, create_error_response, validate_appointment_availability, validate_required_fields
 from services import (
     PatientService, AppointmentService, DentistService, 
     ClinicalHistoryService, OdontogramaService
@@ -91,7 +90,6 @@ def create_app() -> Flask:
             next_appointments = AppointmentService.get_upcoming_appointments(limit=10)
             
             # Obtener conteos usando el contexto manager
-            from db_utils import get_db_cursor
             with get_db_cursor() as cursor:
                 cursor.execute("SELECT COUNT(*) AS total FROM paciente")
                 patient_count = (cursor.fetchone() or {}).get("total", 0)
@@ -298,15 +296,22 @@ def create_app() -> Flask:
             
             # Validate required fields
             required_fields = ["paciente_id", "odontologo_id", "fecha", "hora"]
-            missing_fields = [field for field in required_fields if not data.get(field)]
+            is_valid_fields, missing_fields = validate_required_fields(data, required_fields)
             
-            if missing_fields:
+            if not is_valid_fields:
                 return create_error_response(f"Campos obligatorios faltantes: {', '.join(missing_fields)}")
 
-            # Validate date and time
-            is_valid, error_message = validate_appointment_datetime(data["fecha"], data["hora"])
-            if not is_valid:
-                return create_error_response(error_message)
+            # Validate appointment availability (date, time, and duplicates)
+            with get_db_cursor() as cursor:
+                is_valid, error_message = validate_appointment_availability(
+                    cursor, 
+                    data["fecha"], 
+                    data["hora"], 
+                    data["odontologo_id"], 
+                    data.get("paciente_id")
+                )
+                if not is_valid:
+                    return create_error_response(error_message)
 
             # Create appointment
             appointment_id = AppointmentService.create_appointment(data)
@@ -341,9 +346,9 @@ def create_app() -> Flask:
             
             # Validate required fields
             required_fields = ["paciente_id", "odontologo_id", "fecha", "hora"]
-            missing_fields = [field for field in required_fields if not data.get(field)]
+            is_valid_fields, missing_fields = validate_required_fields(data, required_fields)
             
-            if missing_fields:
+            if not is_valid_fields:
                 return create_error_response(f"Campos obligatorios faltantes: {', '.join(missing_fields)}")
 
             # Validate date and time
@@ -379,7 +384,6 @@ def create_app() -> Flask:
     def api_get_appointment(appointment_id):
         """Obtener un turno específico via API"""
         try:
-            from db_utils import get_db_cursor
             from utils import format_time_from_timedelta
             
             with get_db_cursor() as cursor:
@@ -416,11 +420,11 @@ def create_app() -> Flask:
         
         # Validar campos obligatorios
         required_fields = ['fecha', 'hora']
-        if not data or not all(key in data for key in required_fields):
-            return create_error_response("Datos incompletos", 400)
+        is_valid_fields, missing_fields = validate_required_fields(data, required_fields)
+        if not is_valid_fields:
+            return create_error_response(f"Datos incompletos: {', '.join(missing_fields)}", 400)
 
         try:
-            from db_utils import get_db_cursor_with_commit
             from datetime import timedelta
             
             with get_db_cursor_with_commit() as cursor:
@@ -466,7 +470,6 @@ def create_app() -> Flask:
     def api_clear_all_appointments():
         """Eliminar todos los turnos via API"""
         try:
-            from db_utils import get_db_cursor_with_commit
             
             with get_db_cursor_with_commit() as cursor:
                 # Obtener el número de turnos antes de eliminarlos
@@ -646,11 +649,11 @@ def create_app() -> Flask:
         
         # Validar campos obligatorios
         required_fields = ['doctor_id', 'fecha', 'hora', 'patient_data']
-        if not data or not all(key in data for key in required_fields):
-            return create_error_response("Datos incompletos", 400)
+        is_valid_fields, missing_fields = validate_required_fields(data, required_fields)
+        if not is_valid_fields:
+            return create_error_response(f"Datos incompletos: {', '.join(missing_fields)}", 400)
         
         try:
-            from db_utils import get_db_cursor_with_commit
             from datetime import timedelta
             
             with get_db_cursor_with_commit() as cursor:
@@ -678,9 +681,19 @@ def create_app() -> Flask:
                     ))
                     patient_id = cursor.lastrowid
                 
-                # Crear el turno
+                # Validar disponibilidad del turno (fecha, hora y duplicados)
                 fecha = data['fecha']
                 hora = data['hora']
+                
+                is_valid, error_message = validate_appointment_availability(
+                    cursor, 
+                    fecha, 
+                    hora, 
+                    data['doctor_id'], 
+                    patient_id
+                )
+                if not is_valid:
+                    return create_error_response(error_message)
                 
                 # Convertir hora a formato de base de datos
                 hora_parts = hora.split(':')
@@ -716,6 +729,16 @@ def create_app() -> Flask:
 
 app = create_app()
 
+
+@app.route('/test-duplicate-appointments')
+def test_duplicate_appointments():
+    """Ruta para probar la restricción de turnos duplicados"""
+    return render_template('test_duplicate_appointments.html')
+
+@app.route('/test-notifications')
+def test_notifications():
+    """Ruta para probar el sistema de notificaciones"""
+    return render_template('test_notifications.html')
 
 if __name__ == "__main__":
     port = int(os.getenv("PORT", "5000"))

@@ -1017,19 +1017,19 @@
             switch (currentStep) {
                 case 1:
                     if (!selectedSpecialty) {
-                        alert('Por favor seleccione una especialidad');
+                        notifications.warning('Validación Requerida', 'Por favor seleccione una especialidad');
                         return false;
                     }
                     break;
                 case 2:
                     if (!selectedDoctor) {
-                        alert('Por favor seleccione un doctor');
+                        notifications.warning('Validación Requerida', 'Por favor seleccione un doctor');
                         return false;
                     }
                     break;
                 case 3:
                     if (!selectedDate || !selectedTime) {
-                        alert('Por favor seleccione fecha y hora');
+                        notifications.warning('Validación Requerida', 'Por favor seleccione fecha y hora');
                         return false;
                     }
                     break;
@@ -1042,13 +1042,13 @@
                             !document.getElementById('email').value ||
                             !document.getElementById('telefono').value ||
                             !document.querySelector('input[name="genero"]:checked')) {
-                            alert('Por favor complete todos los campos obligatorios');
+                            notifications.warning('Validación Requerida', 'Por favor complete todos los campos obligatorios');
                             return false;
                         }
                     } else {
                         if (!document.getElementById('loginEmail').value || 
                             !document.getElementById('loginPassword').value) {
-                            alert('Por favor complete email y contraseña');
+                            notifications.warning('Validación Requerida', 'Por favor complete email y contraseña');
                             return false;
                         }
                     }
@@ -1104,7 +1104,7 @@
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    alert('¡Turno confirmado exitosamente! Recibirás una confirmación por email.');
+                    notifications.success('Turno Confirmado', '¡Turno confirmado exitosamente! Recibirás una confirmación por email.');
                     
                     // Resetear formulario
                     currentStep = 1;
@@ -1121,12 +1121,17 @@
                     document.getElementById('telefono').value = '';
                     document.querySelectorAll('input[name="genero"]').forEach(radio => radio.checked = false);
                 } else {
-                    alert('Error al crear el turno: ' + data.error);
+                    // Verificar si es un error de turno duplicado
+                    if (data.error.includes('Ya existe un turno') || data.error.includes('duplicado')) {
+                        showDuplicateAppointmentError(data.error);
+                    } else {
+                        showSaveError('turno', data.error);
+                    }
                 }
             })
             .catch(error => {
                 console.error('Error:', error);
-                alert('Error al crear el turno. Por favor intenta de nuevo.');
+                showSaveError('turno', 'Error de conexión. Por favor intenta de nuevo.');
             });
         }
     </script>

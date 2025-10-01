@@ -549,19 +549,19 @@ function validateCurrentStep() {
     switch (currentStep) {
         case 1:
             if (!selectedSpecialty) {
-                alert('Debe seleccionar una especialidad');
+                notifications.warning('Validación Requerida', 'Debe seleccionar una especialidad');
                 return false;
             }
             break;
         case 2:
             if (!selectedDoctor) {
-                alert('Debe seleccionar un doctor');
+                notifications.warning('Validación Requerida', 'Debe seleccionar un doctor');
                 return false;
             }
             break;
         case 3:
             if (!selectedDate || !selectedTime) {
-                alert('Debe seleccionar fecha y hora');
+                notifications.warning('Validación Requerida', 'Debe seleccionar fecha y hora');
                 return false;
             }
             break;
@@ -570,20 +570,20 @@ function validateCurrentStep() {
             const patientDNI = document.getElementById('patientDNI').value.trim();
             
             if (!patientName) {
-                alert('Debe ingresar el nombre del paciente');
+                notifications.warning('Validación Requerida', 'Debe ingresar el nombre del paciente');
                 document.getElementById('patientName').focus();
                 return false;
             }
             
             if (!patientDNI) {
-                alert('Debe ingresar el DNI del paciente');
+                notifications.warning('Validación Requerida', 'Debe ingresar el DNI del paciente');
                 document.getElementById('patientDNI').focus();
                 return false;
             }
             
             // Validar formato de DNI (solo números)
             if (!/^\d+$/.test(patientDNI)) {
-                alert('El DNI debe contener solo números');
+                notifications.warning('Formato Incorrecto', 'El DNI debe contener solo números');
                 document.getElementById('patientDNI').focus();
                 return false;
             }
@@ -831,7 +831,7 @@ function confirmAppointment() {
     const reason = document.getElementById('appointmentReason').value.trim();
     
     if (!reason) {
-        alert('Debe especificar el motivo de la consulta');
+        notifications.warning('Validación Requerida', 'Debe especificar el motivo de la consulta');
         return;
     }
     
@@ -873,12 +873,17 @@ function confirmAppointment() {
             resetWizard();
             loadAppointments();
         } else {
-            alert('Error: ' + data.error);
+            // Verificar si es un error de turno duplicado
+            if (data.error.includes('Ya existe un turno') || data.error.includes('duplicado')) {
+                showDuplicateAppointmentError(data.error);
+            } else {
+                showSaveError('turno', data.error);
+            }
         }
     })
     .catch(error => {
         console.error('Error:', error);
-        alert('Error al programar el turno');
+        showSaveError('turno', 'Error de conexión');
     })
     .finally(() => {
         nextBtn.disabled = false;
@@ -1067,7 +1072,7 @@ function filterAppointments() {
 
 // Cancelar turno
 function cancelAppointment(id) {
-    if (confirm('¿Está seguro de que desea cancelar este turno?')) {
+    confirmDelete('turno', 'este turno (cancelar)', () => {
         fetch(`/api/appointments/${id}/cancel`, {
             method: 'POST',
             headers: {
@@ -1083,19 +1088,19 @@ function cancelAppointment(id) {
                     window.location.reload();
                 }, 1000);
             } else {
-                alert('Error: ' + data.error);
+                showDeleteError('turno', data.error);
             }
         })
         .catch(error => {
             console.error('Error:', error);
-            alert('Error al cancelar el turno');
+            showDeleteError('turno', 'Error de conexión');
         });
-    }
+    });
 }
 
 // Eliminar turno
 function deleteTurno(id) {
-    if (confirm('¿Está seguro de que desea eliminar este turno? Esta acción no se puede deshacer.')) {
+    confirmDelete('turno', 'este turno', () => {
         fetch(`/api/appointments/${id}`, {
             method: 'DELETE',
             headers: {
@@ -1111,20 +1116,20 @@ function deleteTurno(id) {
                     window.location.reload();
                 }, 1000);
             } else {
-                alert('Error: ' + data.error);
+                showDeleteError('turno', data.error);
             }
         })
         .catch(error => {
             console.error('Error:', error);
-            alert('Error al eliminar el turno');
+            showDeleteError('turno', 'Error de conexión');
         });
-    }
+    });
 }
 
 // Editar turno
 function editTurno(id) {
     // Por ahora, mostrar un mensaje de que la funcionalidad está en desarrollo
-    alert('La funcionalidad de editar turnos está en desarrollo. Por favor, cancele el turno actual y cree uno nuevo.');
+    notifications.info('Funcionalidad en Desarrollo', 'La funcionalidad de editar turnos está en desarrollo. Por favor, cancele el turno actual y cree uno nuevo.');
     
     // TODO: Implementar modal de edición de turnos
     // fetch(`/api/appointments/${id}`)
@@ -1146,10 +1151,10 @@ function editTurno(id) {
 // Limpiar todos los turnos
 function clearAllAppointments() {
     console.log('clearAllAppointments() ejecutada');
-    alert('Función clearAllAppointments() ejecutada correctamente!');
+    notifications.info('Función Ejecutada', 'Función clearAllAppointments() ejecutada correctamente!');
     
-    if (confirm('¿Está seguro de que desea eliminar TODOS los turnos? Esta acción no se puede deshacer.')) {
-        if (confirm('Esta acción eliminará permanentemente todos los turnos del sistema. ¿Continuar?')) {
+    showConfirm('Eliminar Todos los Turnos', '¿Está seguro de que desea eliminar TODOS los turnos? Esta acción no se puede deshacer.', () => {
+        showConfirm('Confirmación Final', 'Esta acción eliminará permanentemente todos los turnos del sistema. ¿Continuar?', () => {
             fetch('/api/appointments/clear-all', {
                 method: 'DELETE',
                 headers: {
@@ -1165,15 +1170,15 @@ function clearAllAppointments() {
                         window.location.reload();
                     }, 1000);
                 } else {
-                    alert('Error: ' + data.error);
+                    showDeleteError('turnos', data.error);
                 }
             })
             .catch(error => {
                 console.error('Error:', error);
-                alert('Error al eliminar los turnos');
+                showDeleteError('turnos', 'Error de conexión');
             });
-        }
-    }
+        });
+    });
 }
 
 // Asegurar que la función esté disponible globalmente
