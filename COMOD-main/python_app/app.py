@@ -83,6 +83,125 @@ def create_app() -> Flask:
             upcoming_appointments=upcoming_appointments,
         )
 
+    # Rutas específicas para odontólogos
+    @app.route("/odontologo/pacientes")
+    @require_odontologo
+    def odontologo_pacientes():
+        """Vista de pacientes para odontólogos"""
+        try:
+            patients = PatientService.get_all_patients()
+            return render_template("odontologo/pacientes.html", patients=patients)
+        except Exception as e:
+            flash(f"Error al cargar pacientes: {str(e)}", "error")
+            return render_template("odontologo/pacientes.html", patients=[])
+
+    @app.route("/odontologo/historias-clinicas")
+    @require_odontologo
+    def odontologo_historias():
+        """Vista de historias clínicas para odontólogos"""
+        try:
+            histories = ClinicalHistoryService.get_all_clinical_histories()
+            return render_template("odontologo/historias_clinicas.html", histories=histories)
+        except Exception as e:
+            flash(f"Error al cargar historias clínicas: {str(e)}", "error")
+            return render_template("odontologo/historias_clinicas.html", histories=[])
+
+    @app.route("/odontologo/odontogramas")
+    @require_odontologo
+    def odontologo_odontogramas():
+        """Vista de odontogramas para odontólogos"""
+        try:
+            odontogramas = OdontogramaService.get_all_odontogramas()
+            return render_template("odontologo/odontogramas.html", odontogramas=odontogramas)
+        except Exception as e:
+            flash(f"Error al cargar odontogramas: {str(e)}", "error")
+            return render_template("odontologo/odontogramas.html", odontogramas=[])
+
+    @app.route("/odontologo/consulta/<int:patient_id>")
+    @require_odontologo
+    def odontologo_consulta(patient_id):
+        """Vista de consulta médica para un paciente específico"""
+        try:
+            patient = PatientService.get_patient_by_id(patient_id)
+            if not patient:
+                flash("Paciente no encontrado", "error")
+                return redirect(url_for("odontologo_pacientes"))
+            
+            # Obtener historias clínicas del paciente
+            histories = ClinicalHistoryService.get_clinical_histories_by_patient(patient_id)
+            
+            # Obtener odontogramas del paciente
+            odontogramas = OdontogramaService.get_odontogramas_by_patient(patient_id)
+            
+            return render_template("odontologo/consulta.html", 
+                                 patient=patient, 
+                                 histories=histories, 
+                                 odontogramas=odontogramas)
+        except Exception as e:
+            flash(f"Error al cargar consulta: {str(e)}", "error")
+            return redirect(url_for("odontologo_pacientes"))
+
+    @app.route("/odontologo/historia-clinica/nueva/<int:patient_id>")
+    @require_odontologo
+    def nueva_historia_clinica(patient_id):
+        """Crear nueva historia clínica para un paciente"""
+        try:
+            patient = PatientService.get_patient_by_id(patient_id)
+            if not patient:
+                flash("Paciente no encontrado", "error")
+                return redirect(url_for("odontologo_pacientes"))
+            
+            return render_template("odontologo/nueva_historia_clinica.html", patient=patient)
+        except Exception as e:
+            flash(f"Error al cargar formulario: {str(e)}", "error")
+            return redirect(url_for("odontologo_pacientes"))
+
+    @app.route("/odontologo/historia-clinica/editar/<int:history_id>")
+    @require_odontologo
+    def editar_historia_clinica(history_id):
+        """Editar historia clínica existente"""
+        try:
+            history = ClinicalHistoryService.get_clinical_history_by_id(history_id)
+            if not history:
+                flash("Historia clínica no encontrada", "error")
+                return redirect(url_for("odontologo_historias"))
+            
+            patient = PatientService.get_patient_by_id(history['Paciente_id'])
+            return render_template("odontologo/editar_historia_clinica.html", 
+                                 patient=patient, history=history)
+        except Exception as e:
+            flash(f"Error al cargar historia: {str(e)}", "error")
+            return redirect(url_for("odontologo_historias"))
+
+    @app.route("/odontologo/historia-clinica/guardar", methods=["POST"])
+    @require_odontologo
+    def guardar_historia_clinica():
+        """Guardar historia clínica (crear o actualizar)"""
+        try:
+            data = request.get_json()
+            
+            # Validar campos obligatorios
+            required_fields = ["paciente_id", "motivo_consulta"]
+            is_valid_fields, missing_fields = validate_required_fields(data, required_fields)
+            
+            if not is_valid_fields:
+                return create_error_response(f"Campos obligatorios faltantes: {', '.join(missing_fields)}")
+            
+            # Guardar historia clínica
+            if data.get('history_id'):
+                # Actualizar historia existente
+                history_id = ClinicalHistoryService.update_clinical_history(data['history_id'], data)
+                message = "Historia clínica actualizada exitosamente"
+            else:
+                # Crear nueva historia
+                history_id = ClinicalHistoryService.create_clinical_history(data)
+                message = "Historia clínica creada exitosamente"
+            
+            return create_success_response(message, {"history_id": history_id})
+            
+        except Exception as e:
+            return create_error_response(f"Error al guardar historia clínica: {str(e)}")
+
     @app.route("/secretario")
     @require_secretario
     def secretario_dashboard():

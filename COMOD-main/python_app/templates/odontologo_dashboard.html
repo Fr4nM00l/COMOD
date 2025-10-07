@@ -14,6 +14,58 @@
         </div>
     </div>
 
+    <!-- Navegación rápida -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card dashboard-card h-100">
+                <div class="card-body text-center">
+                    <i class="bi bi-people text-primary mb-3" style="font-size: 2rem;"></i>
+                    <h6 class="card-title">Pacientes</h6>
+                    <p class="card-text text-muted">Gestionar pacientes</p>
+                    <a href="{{ url_for('odontologo_pacientes') }}" class="btn btn-primary btn-sm">
+                        <i class="bi bi-arrow-right me-1"></i>Ver Pacientes
+                    </a>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card dashboard-card h-100">
+                <div class="card-body text-center">
+                    <i class="bi bi-file-medical text-success mb-3" style="font-size: 2rem;"></i>
+                    <h6 class="card-title">Historias Clínicas</h6>
+                    <p class="card-text text-muted">Ver historias médicas</p>
+                    <a href="{{ url_for('odontologo_historias') }}" class="btn btn-success btn-sm">
+                        <i class="bi bi-arrow-right me-1"></i>Ver Historias
+                    </a>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card dashboard-card h-100">
+                <div class="card-body text-center">
+                    <i class="bi bi-tooth text-warning mb-3" style="font-size: 2rem;"></i>
+                    <h6 class="card-title">Odontogramas</h6>
+                    <p class="card-text text-muted">Gestionar odontogramas</p>
+                    <a href="{{ url_for('odontologo_odontogramas') }}" class="btn btn-warning btn-sm">
+                        <i class="bi bi-arrow-right me-1"></i>Ver Odontogramas
+                    </a>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card dashboard-card h-100">
+                <div class="card-body text-center">
+                    <i class="bi bi-globe text-info mb-3" style="font-size: 2rem;"></i>
+                    <h6 class="card-title">Turnos Online</h6>
+                    <p class="card-text text-muted">Gestionar turnos online</p>
+                    <button class="btn btn-info btn-sm" onclick="showTurnosOnline()">
+                        <i class="bi bi-arrow-right me-1"></i>Ver Turnos Online
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div class="card dashboard-card">
         <div class="card-body">
             <div class="d-flex align-items-center mb-3">
@@ -28,6 +80,7 @@
                                 <th><i class="bi bi-calendar me-1"></i>Fecha</th>
                                 <th><i class="bi bi-clock me-1"></i>Hora</th>
                                 <th><i class="bi bi-person me-1"></i>Paciente</th>
+                                <th><i class="bi bi-gear me-1"></i>Acciones</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -36,6 +89,19 @@
                                 <td><i class="bi bi-calendar-event me-2"></i>{{ t.FechaTurno }}</td>
                                 <td><i class="bi bi-clock-history me-2"></i>{{ t.HoraTurno }}</td>
                                 <td><i class="bi bi-person-circle me-2"></i>{{ t.Paciente }}</td>
+                                <td>
+                                    <div class="btn-group" role="group">
+                                        <a href="{{ url_for('odontologo_consulta', patient_id=t.PacienteID) }}" 
+                                           class="btn btn-primary btn-sm" title="Iniciar Consulta">
+                                            <i class="bi bi-stethoscope"></i>
+                                        </a>
+                                        <button class="btn btn-info btn-sm" 
+                                                onclick="viewPatientInfo({{ t.PacienteID }})" 
+                                                title="Ver Info del Paciente">
+                                            <i class="bi bi-eye"></i>
+                                        </button>
+                                    </div>
+                                </td>
                             </tr>
                             {% endfor %}
                         </tbody>
@@ -82,6 +148,10 @@ function hideTurnosOnline() {
     document.querySelector('.card.dashboard-card').style.display = 'block';
     // Ocultar la sección de turnos online
     document.getElementById('turnos-online-section').style.display = 'none';
+}
+
+function viewPatientInfo(patientId) {
+    notifications.info('Funcionalidad en desarrollo', 'La visualización de información del paciente estará disponible próximamente.');
 }
 </script>
 

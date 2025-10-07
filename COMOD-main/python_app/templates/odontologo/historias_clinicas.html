@@ -1,0 +1,276 @@
+{% extends 'base.html' %}
+
+{% block title %}Historias Clínicas - Panel Odontólogo{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <!-- Header -->
+            <div class="d-flex align-items-center justify-content-between mb-4">
+                <div class="d-flex align-items-center">
+                    <i class="bi bi-file-medical text-primary me-3" style="font-size: 2rem;"></i>
+                    <div>
+                        <h3 class="mb-1">Historias Clínicas</h3>
+                        <p class="text-muted mb-0">Panel de Odontólogo</p>
+                    </div>
+                </div>
+                <div>
+                    <a href="{{ url_for('odontologo_dashboard') }}" class="btn btn-outline-secondary">
+                        <i class="bi bi-arrow-left me-1"></i>Volver al Dashboard
+                    </a>
+                </div>
+            </div>
+
+            <!-- Filtros y búsqueda -->
+            <div class="card mb-4">
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="bi bi-search"></i></span>
+                                <input type="text" class="form-control" id="searchInput" placeholder="Buscar por paciente...">
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <input type="date" class="form-control" id="dateFrom" placeholder="Desde">
+                        </div>
+                        <div class="col-md-3">
+                            <input type="date" class="form-control" id="dateTo" placeholder="Hasta">
+                        </div>
+                        <div class="col-md-2">
+                            <button class="btn btn-primary w-100" onclick="clearFilters()">
+                                <i class="bi bi-arrow-clockwise me-1"></i>Limpiar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Lista de historias clínicas -->
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="bi bi-file-medical me-2"></i>Lista de Historias Clínicas
+                        <span class="badge bg-primary ms-2" id="historyCount">{{ histories|length }}</span>
+                    </h5>
+                </div>
+                <div class="card-body p-0">
+                    {% if histories %}
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0" id="historiesTable">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th><i class="bi bi-person me-1"></i>Paciente</th>
+                                        <th><i class="bi bi-calendar me-1"></i>Fecha</th>
+                                        <th><i class="bi bi-file-text me-1"></i>Motivo</th>
+                                        <th><i class="bi bi-clipboard-data me-1"></i>Diagnóstico</th>
+                                        <th><i class="bi bi-gear me-1"></i>Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for history in histories %}
+                                    <tr class="history-row" data-history-id="{{ history.id }}">
+                                        <td>
+                                            <div class="d-flex align-items-center">
+                                                <div class="avatar-sm bg-info text-white rounded-circle d-flex align-items-center justify-content-center me-3">
+                                                    {{ history.PacienteNombre[0].upper() }}
+                                                </div>
+                                                <div>
+                                                    <strong>{{ history.PacienteNombre }}</strong>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <i class="bi bi-calendar-event me-1"></i>
+                                            {{ history.Fecha.strftime('%d/%m/%Y') if history.Fecha else 'No especificada' }}
+                                        </td>
+                                        <td>
+                                            <span class="text-truncate d-inline-block" style="max-width: 200px;" title="{{ history.MotivoConsulta or 'No especificado' }}">
+                                                {{ history.MotivoConsulta or 'No especificado' }}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <span class="text-truncate d-inline-block" style="max-width: 200px;" title="{{ history.Diagnostico or 'No especificado' }}">
+                                                {{ history.Diagnostico or 'No especificado' }}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <div class="btn-group" role="group">
+                                                <button class="btn btn-primary btn-sm" 
+                                                        onclick="viewHistory({{ history.id }})" 
+                                                        title="Ver Historia Completa">
+                                                    <i class="bi bi-eye"></i>
+                                                </button>
+                                                <button class="btn btn-warning btn-sm" 
+                                                        onclick="editHistory({{ history.id }})" 
+                                                        title="Editar Historia">
+                                                    <i class="bi bi-pencil"></i>
+                                                </button>
+                                                <button class="btn btn-success btn-sm" 
+                                                        onclick="createOdontogramFromHistory({{ history.id }})" 
+                                                        title="Crear Odontograma">
+                                                    <i class="bi bi-tooth"></i>
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-5">
+                            <i class="bi bi-file-medical text-muted" style="font-size: 4rem;"></i>
+                            <h4 class="text-muted mt-3">No hay historias clínicas registradas</h4>
+                            <p class="text-muted">Las historias clínicas aparecerán aquí una vez que sean creadas.</p>
+                            <button class="btn btn-primary" onclick="createNewHistory()">
+                                <i class="bi bi-plus-circle me-1"></i>Crear Primera Historia Clínica
+                            </button>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para ver historia clínica completa -->
+<div class="modal fade" id="historyModal" tabindex="-1">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="bi bi-file-medical me-2"></i>Historia Clínica Completa
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="historyContent">
+                <!-- Contenido cargado dinámicamente -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                <button type="button" class="btn btn-warning" id="editHistoryBtn">
+                    <i class="bi bi-pencil me-1"></i>Editar
+                </button>
+                <button type="button" class="btn btn-success" id="createOdontogramBtn">
+                    <i class="bi bi-tooth me-1"></i>Crear Odontograma
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Variables globales
+let currentHistoryId = null;
+
+// Filtros y búsqueda
+document.getElementById('searchInput').addEventListener('input', filterHistories);
+document.getElementById('dateFrom').addEventListener('change', filterHistories);
+document.getElementById('dateTo').addEventListener('change', filterHistories);
+
+function filterHistories() {
+    const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+    const dateFrom = document.getElementById('dateFrom').value;
+    const dateTo = document.getElementById('dateTo').value;
+    const rows = document.querySelectorAll('.history-row');
+    let visibleCount = 0;
+
+    rows.forEach(row => {
+        const patientName = row.querySelector('td:first-child').textContent.toLowerCase();
+        const historyDate = row.cells[1].textContent.trim();
+        
+        let showRow = true;
+
+        // Filtro de búsqueda
+        if (searchTerm && !patientName.includes(searchTerm)) {
+            showRow = false;
+        }
+
+        // Filtro de fecha (implementación básica)
+        if (dateFrom || dateTo) {
+            // Aquí implementarías la lógica de filtrado por fecha
+            // Por ahora, mostramos todas las filas
+        }
+
+        row.style.display = showRow ? '' : 'none';
+        if (showRow) visibleCount++;
+    });
+
+    document.getElementById('historyCount').textContent = visibleCount;
+}
+
+function clearFilters() {
+    document.getElementById('searchInput').value = '';
+    document.getElementById('dateFrom').value = '';
+    document.getElementById('dateTo').value = '';
+    filterHistories();
+}
+
+// Ver historia clínica completa
+function viewHistory(historyId) {
+    currentHistoryId = historyId;
+    
+    // Simular carga de datos (en una implementación real, harías una llamada AJAX)
+    const historyRow = document.querySelector(`[data-history-id="${historyId}"]`);
+    const patientName = historyRow.querySelector('td:first-child strong').textContent;
+    const historyDate = historyRow.cells[1].textContent;
+    const motivo = historyRow.cells[2].textContent.trim();
+    const diagnostico = historyRow.cells[3].textContent.trim();
+    
+    document.getElementById('historyContent').innerHTML = `
+        <div class="row">
+            <div class="col-md-6">
+                <h6><i class="bi bi-person me-2"></i>Información del Paciente</h6>
+                <p><strong>Paciente:</strong> ${patientName}</p>
+                <p><strong>Fecha de Consulta:</strong> ${historyDate}</p>
+            </div>
+            <div class="col-md-6">
+                <h6><i class="bi bi-file-medical me-2"></i>Detalles de la Consulta</h6>
+                <p><strong>Motivo:</strong> ${motivo}</p>
+                <p><strong>Diagnóstico:</strong> ${diagnostico}</p>
+            </div>
+        </div>
+        <hr>
+        <div class="row">
+            <div class="col-12">
+                <h6><i class="bi bi-clipboard-data me-2"></i>Historia Clínica Detallada</h6>
+                <div class="alert alert-info">
+                    <i class="bi bi-info-circle me-2"></i>
+                    La vista completa de la historia clínica estará disponible próximamente.
+                </div>
+            </div>
+        </div>
+    `;
+    
+    document.getElementById('editHistoryBtn').onclick = () => editHistory(historyId);
+    document.getElementById('createOdontogramBtn').onclick = () => createOdontogramFromHistory(historyId);
+    
+    new bootstrap.Modal(document.getElementById('historyModal')).show();
+}
+
+// Editar historia clínica
+function editHistory(historyId) {
+    notifications.info('Funcionalidad en desarrollo', 'La edición de historias clínicas estará disponible próximamente.');
+}
+
+// Crear odontograma desde historia clínica
+function createOdontogramFromHistory(historyId) {
+    notifications.info('Funcionalidad en desarrollo', 'La creación de odontogramas desde historias clínicas estará disponible próximamente.');
+}
+
+// Crear nueva historia clínica
+function createNewHistory() {
+    // Mostrar modal para seleccionar paciente
+    notifications.info('Seleccionar paciente', 'Por favor, vaya a la sección de pacientes para crear una nueva historia clínica.');
+}
+
+// Inicialización
+document.addEventListener('DOMContentLoaded', function() {
+    filterHistories(); // Aplicar filtros iniciales
+});
+</script>
+{% endblock %}

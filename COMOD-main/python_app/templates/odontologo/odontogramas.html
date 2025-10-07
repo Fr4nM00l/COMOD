@@ -1,0 +1,292 @@
+{% extends 'base.html' %}
+
+{% block title %}Odontogramas - Panel Odontólogo{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <!-- Header -->
+            <div class="d-flex align-items-center justify-content-between mb-4">
+                <div class="d-flex align-items-center">
+                    <i class="bi bi-tooth text-primary me-3" style="font-size: 2rem;"></i>
+                    <div>
+                        <h3 class="mb-1">Odontogramas</h3>
+                        <p class="text-muted mb-0">Panel de Odontólogo</p>
+                    </div>
+                </div>
+                <div>
+                    <a href="{{ url_for('odontologo_dashboard') }}" class="btn btn-outline-secondary">
+                        <i class="bi bi-arrow-left me-1"></i>Volver al Dashboard
+                    </a>
+                </div>
+            </div>
+
+            <!-- Filtros y búsqueda -->
+            <div class="card mb-4">
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="bi bi-search"></i></span>
+                                <input type="text" class="form-control" id="searchInput" placeholder="Buscar por paciente...">
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <input type="date" class="form-control" id="dateFrom" placeholder="Desde">
+                        </div>
+                        <div class="col-md-3">
+                            <input type="date" class="form-control" id="dateTo" placeholder="Hasta">
+                        </div>
+                        <div class="col-md-2">
+                            <button class="btn btn-primary w-100" onclick="clearFilters()">
+                                <i class="bi bi-arrow-clockwise me-1"></i>Limpiar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Lista de odontogramas -->
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="bi bi-tooth me-2"></i>Lista de Odontogramas
+                        <span class="badge bg-primary ms-2" id="odontogramCount">{{ odontogramas|length }}</span>
+                    </h5>
+                </div>
+                <div class="card-body p-0">
+                    {% if odontogramas %}
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0" id="odontogramasTable">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th><i class="bi bi-person me-1"></i>Paciente</th>
+                                        <th><i class="bi bi-calendar me-1"></i>Fecha</th>
+                                        <th><i class="bi bi-file-medical me-1"></i>Historia Clínica</th>
+                                        <th><i class="bi bi-clipboard-data me-1"></i>Estado</th>
+                                        <th><i class="bi bi-gear me-1"></i>Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for odontograma in odontogramas %}
+                                    <tr class="odontogram-row" data-odontogram-id="{{ odontograma.id }}">
+                                        <td>
+                                            <div class="d-flex align-items-center">
+                                                <div class="avatar-sm bg-success text-white rounded-circle d-flex align-items-center justify-content-center me-3">
+                                                    {{ odontograma.PacienteNombre[0].upper() }}
+                                                </div>
+                                                <div>
+                                                    <strong>{{ odontograma.PacienteNombre }}</strong>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <i class="bi bi-calendar-event me-1"></i>
+                                            {{ odontograma.Fecha.strftime('%d/%m/%Y') if odontograma.Fecha else 'No especificada' }}
+                                        </td>
+                                        <td>
+                                            <i class="bi bi-calendar-event me-1"></i>
+                                            {{ odontograma.HistoriaFecha.strftime('%d/%m/%Y') if odontograma.HistoriaFecha else 'No especificada' }}
+                                        </td>
+                                        <td>
+                                            {% if odontograma.Estado == 'completo' %}
+                                                <span class="badge bg-success">
+                                                    <i class="bi bi-check-circle me-1"></i>Completo
+                                                </span>
+                                            {% elif odontograma.Estado == 'en_progreso' %}
+                                                <span class="badge bg-warning">
+                                                    <i class="bi bi-clock me-1"></i>En Progreso
+                                                </span>
+                                            {% else %}
+                                                <span class="badge bg-secondary">
+                                                    <i class="bi bi-dash-circle me-1"></i>Inicial
+                                                </span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <div class="btn-group" role="group">
+                                                <button class="btn btn-primary btn-sm" 
+                                                        onclick="viewOdontogram({{ odontograma.id }})" 
+                                                        title="Ver Odontograma">
+                                                    <i class="bi bi-eye"></i>
+                                                </button>
+                                                <button class="btn btn-warning btn-sm" 
+                                                        onclick="editOdontogram({{ odontograma.id }})" 
+                                                        title="Editar Odontograma">
+                                                    <i class="bi bi-pencil"></i>
+                                                </button>
+                                                <button class="btn btn-info btn-sm" 
+                                                        onclick="printOdontogram({{ odontograma.id }})" 
+                                                        title="Imprimir Odontograma">
+                                                    <i class="bi bi-printer"></i>
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-5">
+                            <i class="bi bi-tooth text-muted" style="font-size: 4rem;"></i>
+                            <h4 class="text-muted mt-3">No hay odontogramas registrados</h4>
+                            <p class="text-muted">Los odontogramas aparecerán aquí una vez que sean creados.</p>
+                            <button class="btn btn-primary" onclick="createNewOdontogram()">
+                                <i class="bi bi-plus-circle me-1"></i>Crear Primer Odontograma
+                            </button>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para ver odontograma -->
+<div class="modal fade" id="odontogramModal" tabindex="-1">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="bi bi-tooth me-2"></i>Odontograma Completo
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="odontogramContent">
+                <!-- Contenido cargado dinámicamente -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                <button type="button" class="btn btn-warning" id="editOdontogramBtn">
+                    <i class="bi bi-pencil me-1"></i>Editar
+                </button>
+                <button type="button" class="btn btn-info" id="printOdontogramBtn">
+                    <i class="bi bi-printer me-1"></i>Imprimir
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Variables globales
+let currentOdontogramId = null;
+
+// Filtros y búsqueda
+document.getElementById('searchInput').addEventListener('input', filterOdontogramas);
+document.getElementById('dateFrom').addEventListener('change', filterOdontogramas);
+document.getElementById('dateTo').addEventListener('change', filterOdontogramas);
+
+function filterOdontogramas() {
+    const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+    const dateFrom = document.getElementById('dateFrom').value;
+    const dateTo = document.getElementById('dateTo').value;
+    const rows = document.querySelectorAll('.odontogram-row');
+    let visibleCount = 0;
+
+    rows.forEach(row => {
+        const patientName = row.querySelector('td:first-child').textContent.toLowerCase();
+        const odontogramDate = row.cells[1].textContent.trim();
+        
+        let showRow = true;
+
+        // Filtro de búsqueda
+        if (searchTerm && !patientName.includes(searchTerm)) {
+            showRow = false;
+        }
+
+        // Filtro de fecha (implementación básica)
+        if (dateFrom || dateTo) {
+            // Aquí implementarías la lógica de filtrado por fecha
+            // Por ahora, mostramos todas las filas
+        }
+
+        row.style.display = showRow ? '' : 'none';
+        if (showRow) visibleCount++;
+    });
+
+    document.getElementById('odontogramCount').textContent = visibleCount;
+}
+
+function clearFilters() {
+    document.getElementById('searchInput').value = '';
+    document.getElementById('dateFrom').value = '';
+    document.getElementById('dateTo').value = '';
+    filterOdontogramas();
+}
+
+// Ver odontograma completo
+function viewOdontogram(odontogramId) {
+    currentOdontogramId = odontogramId;
+    
+    // Simular carga de datos (en una implementación real, harías una llamada AJAX)
+    const odontogramRow = document.querySelector(`[data-odontogram-id="${odontogramId}"]`);
+    const patientName = odontogramRow.querySelector('td:first-child strong').textContent;
+    const odontogramDate = odontogramRow.cells[1].textContent;
+    const historiaDate = odontogramRow.cells[2].textContent;
+    const estado = odontogramRow.cells[3].innerHTML;
+    
+    document.getElementById('odontogramContent').innerHTML = `
+        <div class="row mb-4">
+            <div class="col-md-6">
+                <h6><i class="bi bi-person me-2"></i>Información del Paciente</h6>
+                <p><strong>Paciente:</strong> ${patientName}</p>
+                <p><strong>Fecha del Odontograma:</strong> ${odontogramDate}</p>
+            </div>
+            <div class="col-md-6">
+                <h6><i class="bi bi-file-medical me-2"></i>Información de la Historia</h6>
+                <p><strong>Fecha de Historia:</strong> ${historiaDate}</p>
+                <p><strong>Estado:</strong> ${estado}</p>
+            </div>
+        </div>
+        <hr>
+        <div class="row">
+            <div class="col-12">
+                <h6><i class="bi bi-tooth me-2"></i>Odontograma Visual</h6>
+                <div class="alert alert-info">
+                    <i class="bi bi-info-circle me-2"></i>
+                    El odontograma visual interactivo estará disponible próximamente.
+                </div>
+                <div class="text-center">
+                    <div class="border rounded p-4 bg-light">
+                        <i class="bi bi-tooth text-muted" style="font-size: 3rem;"></i>
+                        <p class="text-muted mt-2">Odontograma Interactivo</p>
+                        <small class="text-muted">Aquí se mostrará el diagrama dental completo</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    document.getElementById('editOdontogramBtn').onclick = () => editOdontogram(odontogramId);
+    document.getElementById('printOdontogramBtn').onclick = () => printOdontogram(odontogramId);
+    
+    new bootstrap.Modal(document.getElementById('odontogramModal')).show();
+}
+
+// Editar odontograma
+function editOdontogram(odontogramId) {
+    notifications.info('Funcionalidad en desarrollo', 'La edición de odontogramas estará disponible próximamente.');
+}
+
+// Imprimir odontograma
+function printOdontogram(odontogramId) {
+    notifications.info('Funcionalidad en desarrollo', 'La impresión de odontogramas estará disponible próximamente.');
+}
+
+// Crear nuevo odontograma
+function createNewOdontogram() {
+    notifications.info('Funcionalidad en desarrollo', 'La creación de nuevos odontogramas estará disponible próximamente.');
+}
+
+// Inicialización
+document.addEventListener('DOMContentLoaded', function() {
+    filterOdontogramas(); // Aplicar filtros iniciales
+});
+</script>
+{% endblock %}
+

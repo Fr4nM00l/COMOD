@@ -1,0 +1,294 @@
+{% extends 'base.html' %}
+
+{% block title %}Pacientes - Panel Odontólogo{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <!-- Header -->
+            <div class="d-flex align-items-center justify-content-between mb-4">
+                <div class="d-flex align-items-center">
+                    <i class="bi bi-people text-primary me-3" style="font-size: 2rem;"></i>
+                    <div>
+                        <h3 class="mb-1">Gestión de Pacientes</h3>
+                        <p class="text-muted mb-0">Panel de Odontólogo</p>
+                    </div>
+                </div>
+                <div>
+                    <a href="{{ url_for('odontologo_dashboard') }}" class="btn btn-outline-secondary">
+                        <i class="bi bi-arrow-left me-1"></i>Volver al Dashboard
+                    </a>
+                </div>
+            </div>
+
+            <!-- Filtros y búsqueda -->
+            <div class="card mb-4">
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="bi bi-search"></i></span>
+                                <input type="text" class="form-control" id="searchInput" placeholder="Buscar por nombre, DNI o email...">
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <select class="form-select" id="filterSelect">
+                                <option value="">Todos los pacientes</option>
+                                <option value="con-historia">Con historia clínica</option>
+                                <option value="sin-historia">Sin historia clínica</option>
+                                <option value="con-odontograma">Con odontograma</option>
+                                <option value="sin-odontograma">Sin odontograma</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <button class="btn btn-primary w-100" onclick="clearFilters()">
+                                <i class="bi bi-arrow-clockwise me-1"></i>Limpiar Filtros
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Lista de pacientes -->
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="bi bi-person-lines-fill me-2"></i>Lista de Pacientes
+                        <span class="badge bg-primary ms-2" id="patientCount">{{ patients|length }}</span>
+                    </h5>
+                </div>
+                <div class="card-body p-0">
+                    {% if patients %}
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0" id="patientsTable">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th><i class="bi bi-person me-1"></i>Paciente</th>
+                                        <th><i class="bi bi-card-text me-1"></i>DNI</th>
+                                        <th><i class="bi bi-telephone me-1"></i>Teléfono</th>
+                                        <th><i class="bi bi-envelope me-1"></i>Email</th>
+                                        <th><i class="bi bi-file-medical me-1"></i>Historia</th>
+                                        <th><i class="bi bi-tooth me-1"></i>Odontograma</th>
+                                        <th><i class="bi bi-gear me-1"></i>Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for patient in patients %}
+                                    <tr class="patient-row" data-patient-id="{{ patient.id }}">
+                                        <td>
+                                            <div class="d-flex align-items-center">
+                                                <div class="avatar-sm bg-primary text-white rounded-circle d-flex align-items-center justify-content-center me-3">
+                                                    {{ patient.Nombre[0].upper() }}
+                                                </div>
+                                                <div>
+                                                    <strong>{{ patient.Nombre }}</strong>
+                                                    {% if patient.FechaNacimiento %}
+                                                        <br><small class="text-muted">{{ patient.FechaNacimiento }} años</small>
+                                                    {% endif %}
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td>{{ patient.DNI or 'No especificado' }}</td>
+                                        <td>{{ patient.telefono or 'No especificado' }}</td>
+                                        <td>{{ patient.email or 'No especificado' }}</td>
+                                        <td>
+                                            {% if patient.has_history %}
+                                                <span class="badge bg-success">
+                                                    <i class="bi bi-check-circle me-1"></i>Completa
+                                                </span>
+                                            {% else %}
+                                                <span class="badge bg-warning">
+                                                    <i class="bi bi-exclamation-circle me-1"></i>Pendiente
+                                                </span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if patient.has_odontogram %}
+                                                <span class="badge bg-success">
+                                                    <i class="bi bi-check-circle me-1"></i>Completo
+                                                </span>
+                                            {% else %}
+                                                <span class="badge bg-warning">
+                                                    <i class="bi bi-exclamation-circle me-1"></i>Pendiente
+                                                </span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <div class="btn-group" role="group">
+                                                <a href="{{ url_for('odontologo_consulta', patient_id=patient.id) }}" 
+                                                   class="btn btn-primary btn-sm" title="Iniciar Consulta">
+                                                    <i class="bi bi-stethoscope"></i>
+                                                </a>
+                                                <button class="btn btn-info btn-sm" 
+                                                        onclick="viewPatientDetails({{ patient.id }})" 
+                                                        title="Ver Detalles">
+                                                    <i class="bi bi-eye"></i>
+                                                </button>
+                                                <button class="btn btn-success btn-sm" 
+                                                        onclick="createHistory({{ patient.id }})" 
+                                                        title="Crear Historia Clínica">
+                                                    <i class="bi bi-file-medical"></i>
+                                                </button>
+                                                <button class="btn btn-warning btn-sm" 
+                                                        onclick="createOdontogram({{ patient.id }})" 
+                                                        title="Crear Odontograma">
+                                                    <i class="bi bi-tooth"></i>
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-5">
+                            <i class="bi bi-person-x text-muted" style="font-size: 4rem;"></i>
+                            <h4 class="text-muted mt-3">No hay pacientes registrados</h4>
+                            <p class="text-muted">Los pacientes aparecerán aquí una vez que sean registrados por el secretario.</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para detalles del paciente -->
+<div class="modal fade" id="patientDetailsModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="bi bi-person-circle me-2"></i>Detalles del Paciente
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="patientDetailsContent">
+                <!-- Contenido cargado dinámicamente -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                <button type="button" class="btn btn-primary" id="startConsultationBtn">
+                    <i class="bi bi-stethoscope me-1"></i>Iniciar Consulta
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Variables globales
+let currentPatientId = null;
+
+// Filtros y búsqueda
+document.getElementById('searchInput').addEventListener('input', filterPatients);
+document.getElementById('filterSelect').addEventListener('change', filterPatients);
+
+function filterPatients() {
+    const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+    const filterValue = document.getElementById('filterSelect').value;
+    const rows = document.querySelectorAll('.patient-row');
+    let visibleCount = 0;
+
+    rows.forEach(row => {
+        const patientName = row.querySelector('td:first-child').textContent.toLowerCase();
+        const patientDNI = row.cells[1].textContent.toLowerCase();
+        const patientEmail = row.cells[3].textContent.toLowerCase();
+        
+        let showRow = true;
+
+        // Filtro de búsqueda
+        if (searchTerm && !patientName.includes(searchTerm) && 
+            !patientDNI.includes(searchTerm) && !patientEmail.includes(searchTerm)) {
+            showRow = false;
+        }
+
+        // Filtro de estado
+        if (filterValue) {
+            const historyBadge = row.cells[4].querySelector('.badge');
+            const odontogramBadge = row.cells[5].querySelector('.badge');
+            
+            switch(filterValue) {
+                case 'con-historia':
+                    if (!historyBadge.classList.contains('bg-success')) showRow = false;
+                    break;
+                case 'sin-historia':
+                    if (historyBadge.classList.contains('bg-success')) showRow = false;
+                    break;
+                case 'con-odontograma':
+                    if (!odontogramBadge.classList.contains('bg-success')) showRow = false;
+                    break;
+                case 'sin-odontograma':
+                    if (odontogramBadge.classList.contains('bg-success')) showRow = false;
+                    break;
+            }
+        }
+
+        row.style.display = showRow ? '' : 'none';
+        if (showRow) visibleCount++;
+    });
+
+    document.getElementById('patientCount').textContent = visibleCount;
+}
+
+function clearFilters() {
+    document.getElementById('searchInput').value = '';
+    document.getElementById('filterSelect').value = '';
+    filterPatients();
+}
+
+// Ver detalles del paciente
+function viewPatientDetails(patientId) {
+    currentPatientId = patientId;
+    
+    // Simular carga de datos (en una implementación real, harías una llamada AJAX)
+    const patientRow = document.querySelector(`[data-patient-id="${patientId}"]`);
+    const patientName = patientRow.querySelector('td:first-child strong').textContent;
+    const patientDNI = patientRow.cells[1].textContent;
+    const patientPhone = patientRow.cells[2].textContent;
+    const patientEmail = patientRow.cells[3].textContent;
+    
+    document.getElementById('patientDetailsContent').innerHTML = `
+        <div class="row">
+            <div class="col-md-6">
+                <h6><i class="bi bi-person me-2"></i>Información Personal</h6>
+                <p><strong>Nombre:</strong> ${patientName}</p>
+                <p><strong>DNI:</strong> ${patientDNI}</p>
+                <p><strong>Teléfono:</strong> ${patientPhone}</p>
+                <p><strong>Email:</strong> ${patientEmail}</p>
+            </div>
+            <div class="col-md-6">
+                <h6><i class="bi bi-file-medical me-2"></i>Estado Médico</h6>
+                <p><strong>Historia Clínica:</strong> ${patientRow.cells[4].innerHTML}</p>
+                <p><strong>Odontograma:</strong> ${patientRow.cells[5].innerHTML}</p>
+            </div>
+        </div>
+    `;
+    
+    document.getElementById('startConsultationBtn').onclick = () => {
+        window.location.href = `/odontologo/consulta/${patientId}`;
+    };
+    
+    new bootstrap.Modal(document.getElementById('patientDetailsModal')).show();
+}
+
+// Crear historia clínica
+function createHistory(patientId) {
+    window.location.href = `/odontologo/historia-clinica/nueva/${patientId}`;
+}
+
+// Crear odontograma
+function createOdontogram(patientId) {
+    notifications.info('Funcionalidad en desarrollo', 'La creación de odontogramas estará disponible próximamente.');
+}
+
+// Inicialización
+document.addEventListener('DOMContentLoaded', function() {
+    filterPatients(); // Aplicar filtros iniciales
+});
+</script>
+{% endblock %}

@@ -86,7 +86,7 @@ class AppointmentService:
             if odontologo_id:
                 cursor.execute(
                     """
-                    SELECT dt.FechaTurno, dt.HoraTurno, p.Nombre AS Paciente
+                    SELECT dt.FechaTurno, dt.HoraTurno, p.Nombre AS Paciente, dt.Paciente_id AS PacienteID
                     FROM detalleturno dt
                     INNER JOIN paciente p ON p.id = dt.Paciente_id
                     WHERE dt.Odontologo_id = %s
@@ -99,7 +99,7 @@ class AppointmentService:
             else:
                 cursor.execute(
                     """
-                    SELECT dt.FechaTurno, dt.HoraTurno, p.Nombre AS Paciente, o.Nombre AS Odontologo, dt.id
+                    SELECT dt.FechaTurno, dt.HoraTurno, p.Nombre AS Paciente, o.Nombre AS Odontologo, dt.id, dt.Paciente_id AS PacienteID
                     FROM detalleturno dt
                     INNER JOIN paciente p ON p.id = dt.Paciente_id
                     INNER JOIN odontologo o ON o.id = dt.Odontologo_id
@@ -257,44 +257,102 @@ class ClinicalHistoryService:
             return cursor.fetchall()
     
     @staticmethod
-    def get_patients_without_history():
-        """Obtener pacientes sin historia clínica"""
+    def get_clinical_history_by_id(history_id):
+        """Obtener historia clínica por ID"""
         with get_db_cursor() as cursor:
             cursor.execute(
                 """
-                SELECT p.* FROM paciente p
-                LEFT JOIN historiaclinica hc ON p.id = hc.Paciente_id
-                WHERE hc.id IS NULL
-                ORDER BY p.Nombre
-                """
+                SELECT hc.*, p.Nombre AS PacienteNombre, p.DNI AS paciente_dni
+                FROM historiaclinica hc
+                INNER JOIN paciente p ON p.id = hc.Paciente_id
+                WHERE hc.id = %s
+                """,
+                (history_id,)
             )
-            return cursor.fetchall()
+            return cursor.fetchone()
     
     @staticmethod
-    def create_clinical_history(history_data):
+    def create_clinical_history(data):
         """Crear nueva historia clínica"""
         with get_db_cursor_with_commit() as cursor:
             cursor.execute(
                 """
                 INSERT INTO historiaclinica 
-                (Fecha, Paciente_id, ObraSocial, NumAfiliado, Alergias, Enfermedades, 
-                 Fuma, Drogas, Medicamentos, NivelDeDolor, Calmante, GolpeEnDientes, FechaGolpe) 
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                (Paciente_id, Fecha, MotivoConsulta, Diagnostico, PlanTratamiento, 
+                 MedicamentosActuales, Alergias, Enfermedades, Observaciones,
+                 Calculo, EnfermedadPeriodontal, OdontogramaData)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                 """,
-                (history_data["fecha"], history_data["paciente_id"], history_data.get("obra_social"), 
-                 history_data.get("num_afiliado"), history_data.get("alergias"), history_data.get("enfermedades"),
-                 history_data.get("fuma", False), history_data.get("drogas"), history_data.get("medicamentos"),
-                 history_data.get("nivel_dolor"), history_data.get("calmante"), history_data.get("golpe_en_dientes", False),
-                 history_data.get("fecha_golpe"))
+                (
+                    data["paciente_id"],
+                    data.get("fecha", datetime.now().date()),
+                    data["motivo_consulta"],
+                    data.get("diagnostico"),
+                    data.get("plan_tratamiento"),
+                    data.get("medicamentos_actuales"),
+                    data.get("alergias"),
+                    data.get("enfermedades"),
+                    data.get("observaciones"),
+                    data.get("calculo"),
+                    data.get("enfermedad_periodontal"),
+                    data.get("odontograma_data")
+                )
             )
             return cursor.lastrowid
     
     @staticmethod
-    def get_clinical_history_by_id(history_id):
-        """Obtener historia clínica por ID"""
+    def update_clinical_history(history_id, data):
+        """Actualizar historia clínica existente"""
+        with get_db_cursor_with_commit() as cursor:
+            cursor.execute(
+                """
+                UPDATE historiaclinica SET
+                Fecha = %s, MotivoConsulta = %s, Diagnostico = %s, PlanTratamiento = %s,
+                MedicamentosActuales = %s, Alergias = %s, Enfermedades = %s, Observaciones = %s,
+                Calculo = %s, EnfermedadPeriodontal = %s, OdontogramaData = %s
+                WHERE id = %s
+                """,
+                (
+                    data.get("fecha", datetime.now().date()),
+                    data["motivo_consulta"],
+                    data.get("diagnostico"),
+                    data.get("plan_tratamiento"),
+                    data.get("medicamentos_actuales"),
+                    data.get("alergias"),
+                    data.get("enfermedades"),
+                    data.get("observaciones"),
+                    data.get("calculo"),
+                    data.get("enfermedad_periodontal"),
+                    data.get("odontograma_data"),
+                    history_id
+                )
+            )
+            return history_id
+    
+    @staticmethod
+    def get_clinical_histories_by_patient(patient_id):
+        """Obtener historias clínicas de un paciente específico"""
         with get_db_cursor() as cursor:
-            cursor.execute("SELECT * FROM historiaclinica WHERE id = %s", (history_id,))
-            return cursor.fetchone()
+            cursor.execute(
+                """
+                SELECT hc.*, p.Nombre as PacienteNombre
+                FROM historiaclinica hc
+                JOIN paciente p ON hc.Paciente_id = p.id
+                WHERE hc.Paciente_id = %s
+                ORDER BY hc.Fecha DESC
+                """,
+                (patient_id,)
+            )
+            histories = cursor.fetchall()
+            
+            # Formatear fechas
+            for history in histories:
+                if history['Fecha']:
+                    history['Fecha_formatted'] = history['Fecha'].strftime('%d/%m/%Y')
+                else:
+                    history['Fecha_formatted'] = None
+            
+            return histories
     
     @staticmethod
     def delete_clinical_history(history_id):
@@ -343,3 +401,34 @@ class OdontogramaService:
         with get_db_cursor() as cursor:
             cursor.execute("SELECT * FROM procedimientos WHERE Activo = 1 ORDER BY NombreProcedimiento")
             return cursor.fetchall()
+    
+    @staticmethod
+    def get_odontogramas_by_patient(patient_id):
+        """Obtener odontogramas de un paciente específico"""
+        with get_db_cursor() as cursor:
+            cursor.execute(
+                """
+                SELECT o.*, p.Nombre as PacienteNombre, hc.Fecha as HistoriaFecha
+                FROM odontograma o
+                JOIN historiaclinica hc ON o.HistoriaClinica_id = hc.id
+                JOIN paciente p ON hc.Paciente_id = p.id
+                WHERE hc.Paciente_id = %s
+                ORDER BY o.Fecha DESC
+                """,
+                (patient_id,)
+            )
+            odontogramas = cursor.fetchall()
+            
+            # Formatear fechas
+            for odontograma in odontogramas:
+                if odontograma['Fecha']:
+                    odontograma['Fecha_formatted'] = odontograma['Fecha'].strftime('%d/%m/%Y')
+                else:
+                    odontograma['Fecha_formatted'] = None
+                    
+                if odontograma['HistoriaFecha']:
+                    odontograma['HistoriaFecha_formatted'] = odontograma['HistoriaFecha'].strftime('%d/%m/%Y')
+                else:
+                    odontograma['HistoriaFecha_formatted'] = None
+            
+            return odontogramas
