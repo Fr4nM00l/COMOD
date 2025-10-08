@@ -1,0 +1,406 @@
+{% extends 'base.html' %}
+
+{% block title %}Gestión de Disponibilidad - Odontólogo{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4 fade-in-up">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="mb-0"><i class="bi bi-calendar-check me-2"></i>Gestión de Disponibilidad</h2>
+        <a href="{{ url_for('odontologo_dashboard') }}" class="btn btn-secondary">
+            <i class="bi bi-arrow-left me-2"></i>Volver al Dashboard
+        </a>
+    </div>
+
+    <!-- Pestañas -->
+    <ul class="nav nav-tabs" id="availabilityTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active" id="schedule-tab" data-bs-toggle="tab" data-bs-target="#schedule" type="button" role="tab" aria-controls="schedule" aria-selected="true">
+                <i class="bi bi-clock me-1"></i>Horarios de Trabajo
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="monthly-tab" data-bs-toggle="tab" data-bs-target="#monthly" type="button" role="tab" aria-controls="monthly" aria-selected="false">
+                <i class="bi bi-calendar-month me-1"></i>Disponibilidad Mensual
+            </button>
+        </li>
+    </ul>
+
+    <div class="tab-content mt-4" id="availabilityTabsContent">
+        <!-- Tab de Horarios de Trabajo -->
+        <div class="tab-pane fade show active" id="schedule" role="tabpanel" aria-labelledby="schedule-tab">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="bi bi-clock-history me-2"></i>Configurar Horarios de Trabajo Semanales</h5>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted">Configure sus horarios de trabajo para cada día de la semana. Estos horarios se usarán para generar automáticamente la disponibilidad mensual.</p>
+                    
+                    <!-- Botones de atajos rápidos -->
+                    <div class="alert alert-info">
+                        <h6><i class="bi bi-lightning me-1"></i>Atajos Rápidos:</h6>
+                        <div class="btn-group" role="group">
+                            <button type="button" class="btn btn-success" onclick="applyStandardHours()">
+                                <i class="bi bi-clock-history me-1"></i>Horario Estándar
+                            </button>
+                            <button type="button" class="btn btn-info" onclick="applyWeekdays()">
+                                <i class="bi bi-calendar-week me-1"></i>Días Laborables
+                            </button>
+                            <button type="button" class="btn btn-warning" onclick="applyWeekend()">
+                                <i class="bi bi-calendar-day me-1"></i>Fin de Semana
+                            </button>
+                            <button type="button" class="btn btn-danger" onclick="clearAll()">
+                                <i class="bi bi-trash me-1"></i>Limpiar Todo
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <form id="workScheduleForm">
+                        <div class="row">
+                            {% set dias_semana = [
+                                {'numero': 1, 'nombre': 'Lunes'},
+                                {'numero': 2, 'nombre': 'Martes'},
+                                {'numero': 3, 'nombre': 'Miércoles'},
+                                {'numero': 4, 'nombre': 'Jueves'},
+                                {'numero': 5, 'nombre': 'Viernes'},
+                                {'numero': 6, 'nombre': 'Sábado'},
+                                {'numero': 7, 'nombre': 'Domingo'}
+                            ] %}
+                            
+                            {% for dia in dias_semana %}
+                            <div class="col-md-6 mb-3">
+                                <div class="card border">
+                                    <div class="card-body">
+                                        <div class="form-check mb-3">
+                                            <input class="form-check-input" type="checkbox" id="dia_{{ dia.numero }}" name="dia_{{ dia.numero }}" 
+                                                   {% for schedule in work_schedule %}
+                                                   {% if schedule.dia_semana == dia.numero %}checked{% endif %}
+                                                   {% endfor %}>
+                                            <label class="form-check-label" for="dia_{{ dia.numero }}">
+                                                <strong>{{ dia.nombre }}</strong>
+                                            </label>
+                                        </div>
+                                        
+                                        <div class="row">
+                                            <div class="col-6">
+                                                <label class="form-label small">Hora Inicio</label>
+                                                <input type="time" class="form-control form-control-sm" 
+                                                       id="inicio_{{ dia.numero }}" name="inicio_{{ dia.numero }}"
+                                                       {% for schedule in work_schedule %}
+                                                       {% if schedule.dia_semana == dia.numero %}value="{{ schedule.hora_inicio }}"{% endif %}
+                                                       {% endfor %}>
+                                                
+                                                <!-- Atajos rápidos para hora inicio -->
+                                                <div class="mt-1">
+                                                    <small class="text-muted">Atajos:</small>
+                                                    <div class="btn-group btn-group-sm" role="group">
+                                                        <button type="button" class="btn btn-outline-secondary btn-sm" onclick="setStartTime({{ dia.numero }}, '08:00')">8:00</button>
+                                                        <button type="button" class="btn btn-outline-secondary btn-sm" onclick="setStartTime({{ dia.numero }}, '09:00')">9:00</button>
+                                                        <button type="button" class="btn btn-outline-secondary btn-sm" onclick="setStartTime({{ dia.numero }}, '10:00')">10:00</button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="col-6">
+                                                <label class="form-label small">Hora Fin</label>
+                                                <input type="time" class="form-control form-control-sm" 
+                                                       id="fin_{{ dia.numero }}" name="fin_{{ dia.numero }}"
+                                                       {% for schedule in work_schedule %}
+                                                       {% if schedule.dia_semana == dia.numero %}value="{{ schedule.hora_fin }}"{% endif %}
+                                                       {% endfor %}>
+                                                
+                                                <!-- Atajos rápidos para hora fin -->
+                                                <div class="mt-1">
+                                                    <small class="text-muted">Atajos:</small>
+                                                    <div class="btn-group btn-group-sm" role="group">
+                                                        <button type="button" class="btn btn-outline-secondary btn-sm" onclick="setEndTime({{ dia.numero }}, '13:00')">13:00</button>
+                                                        <button type="button" class="btn btn-outline-secondary btn-sm" onclick="setEndTime({{ dia.numero }}, '17:00')">17:00</button>
+                                                        <button type="button" class="btn btn-outline-secondary btn-sm" onclick="setEndTime({{ dia.numero }}, '18:00')">18:00</button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        
+                        <div class="d-flex justify-content-end mt-4">
+                            <button type="button" class="btn btn-primary" onclick="saveWorkSchedule()">
+                                <i class="bi bi-save me-1"></i>Guardar Horarios
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab de Disponibilidad Mensual -->
+        <div class="tab-pane fade" id="monthly" role="tabpanel" aria-labelledby="monthly-tab">
+            <div class="card">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0"><i class="bi bi-calendar-plus me-2"></i>Generar Disponibilidad Mensual</h5>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted">Genere automáticamente la disponibilidad para un mes específico basándose en sus horarios de trabajo configurados.</p>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="selectYear" class="form-label">Año</label>
+                                <select class="form-select" id="selectYear">
+                                    {% for year in range(current_year - 1, current_year + 2) %}
+                                    <option value="{{ year }}" {% if year == current_year %}selected{% endif %}>{{ year }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="selectMonth" class="form-label">Mes</label>
+                                <select class="form-select" id="selectMonth">
+                                    {% set meses = [
+                                        {'numero': 1, 'nombre': 'Enero'},
+                                        {'numero': 2, 'nombre': 'Febrero'},
+                                        {'numero': 3, 'nombre': 'Marzo'},
+                                        {'numero': 4, 'nombre': 'Abril'},
+                                        {'numero': 5, 'nombre': 'Mayo'},
+                                        {'numero': 6, 'nombre': 'Junio'},
+                                        {'numero': 7, 'nombre': 'Julio'},
+                                        {'numero': 8, 'nombre': 'Agosto'},
+                                        {'numero': 9, 'nombre': 'Septiembre'},
+                                        {'numero': 10, 'nombre': 'Octubre'},
+                                        {'numero': 11, 'nombre': 'Noviembre'},
+                                        {'numero': 12, 'nombre': 'Diciembre'}
+                                    ] %}
+                                    {% for mes in meses %}
+                                    <option value="{{ mes.numero }}" {% if mes.numero == current_month %}selected{% endif %}>{{ mes.nombre }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle me-2"></i>
+                        <strong>Información:</strong> Se generarán slots de 30 minutos para cada día de trabajo configurado. 
+                        Si ya existe disponibilidad para el mes seleccionado, se reemplazará.
+                    </div>
+                    
+                    <div class="d-flex justify-content-between">
+                        <button type="button" class="btn btn-success" onclick="generateMonthlyAvailability()">
+                            <i class="bi bi-calendar-plus me-1"></i>Generar Disponibilidad
+                        </button>
+                        <button type="button" class="btn btn-outline-info" onclick="viewMonthlyAvailability()">
+                            <i class="bi bi-eye me-1"></i>Ver Disponibilidad del Mes
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Funciones simplificadas para atajos
+function setStartTime(dayNumber, time) {
+    console.log('Setting start time for day', dayNumber, 'to', time);
+    const element = document.getElementById('inicio_' + dayNumber);
+    if (element) {
+        element.value = time;
+        console.log('Start time set successfully');
+    } else {
+        console.error('Element not found: inicio_' + dayNumber);
+    }
+}
+
+function setEndTime(dayNumber, time) {
+    console.log('Setting end time for day', dayNumber, 'to', time);
+    const element = document.getElementById('fin_' + dayNumber);
+    if (element) {
+        element.value = time;
+        console.log('End time set successfully');
+    } else {
+        console.error('Element not found: fin_' + dayNumber);
+    }
+}
+
+function applyStandardHours() {
+    console.log('Applying standard office hours');
+    // Días laborables (1-5)
+    for (let i = 1; i <= 5; i++) {
+        document.getElementById('dia_' + i).checked = true;
+        setStartTime(i, '09:00');
+        setEndTime(i, '17:00');
+    }
+    // Sábado (6)
+    document.getElementById('dia_6').checked = true;
+    setStartTime(6, '09:00');
+    setEndTime(6, '13:00');
+    // Domingo (7) - no trabaja
+    document.getElementById('dia_7').checked = false;
+    setStartTime(7, '');
+    setEndTime(7, '');
+    
+    alert('Horario estándar aplicado: 9:00-17:00 L-V, 9:00-13:00 S');
+}
+
+function applyWeekdays() {
+    console.log('Applying weekdays schedule');
+    for (let i = 1; i <= 5; i++) {
+        document.getElementById('dia_' + i).checked = true;
+        setStartTime(i, '09:00');
+        setEndTime(i, '17:00');
+    }
+    alert('Horarios aplicados a días laborables (9:00-17:00)');
+}
+
+function applyWeekend() {
+    console.log('Applying weekend schedule');
+    for (let i = 6; i <= 7; i++) {
+        document.getElementById('dia_' + i).checked = true;
+        setStartTime(i, '09:00');
+        setEndTime(i, '13:00');
+    }
+    alert('Horarios aplicados al fin de semana (9:00-13:00)');
+}
+
+function clearAll() {
+    console.log('Clearing all schedules');
+    for (let i = 1; i <= 7; i++) {
+        document.getElementById('dia_' + i).checked = false;
+        setStartTime(i, '');
+        setEndTime(i, '');
+    }
+    alert('Todos los horarios han sido limpiados');
+}
+
+// Función para guardar horarios de trabajo
+function saveWorkSchedule() {
+    console.log('Saving work schedule');
+    const scheduleData = {};
+    
+    // Recopilar datos de cada día
+    for (let i = 1; i <= 7; i++) {
+        const checkbox = document.getElementById('dia_' + i);
+        const inicio = document.getElementById('inicio_' + i);
+        const fin = document.getElementById('fin_' + i);
+        
+        if (checkbox.checked && inicio.value && fin.value) {
+            scheduleData[i] = {
+                active: true,
+                start_time: inicio.value,
+                end_time: fin.value
+            };
+        } else {
+            scheduleData[i] = {
+                active: false,
+                start_time: '09:00',
+                end_time: '17:00'
+            };
+        }
+    }
+    
+    // Mostrar loading
+    const saveBtn = document.querySelector('button[onclick="saveWorkSchedule()"]');
+    const originalText = saveBtn.innerHTML;
+    saveBtn.innerHTML = '<i class="bi bi-hourglass-split me-1"></i>Guardando...';
+    saveBtn.disabled = true;
+    
+    fetch('/odontologo/disponibilidad/horarios', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(scheduleData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('Horarios de trabajo guardados exitosamente');
+        } else {
+            alert('Error al guardar horarios: ' + (data.message || 'Error desconocido'));
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error de conexión al guardar los horarios');
+    })
+    .finally(() => {
+        saveBtn.innerHTML = originalText;
+        saveBtn.disabled = false;
+    });
+}
+
+// Función para generar disponibilidad mensual
+function generateMonthlyAvailability() {
+    const year = parseInt(document.getElementById('selectYear').value);
+    const month = parseInt(document.getElementById('selectMonth').value);
+    
+    console.log('Generating availability for', month, year);
+    
+    // Mostrar loading
+    const generateBtn = document.querySelector('button[onclick="generateMonthlyAvailability()"]');
+    const originalText = generateBtn.innerHTML;
+    generateBtn.innerHTML = '<i class="bi bi-hourglass-split me-1"></i>Generando...';
+    generateBtn.disabled = true;
+    
+    fetch('/odontologo/disponibilidad/generar-mes', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ year: year, month: month })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('Disponibilidad generada exitosamente para ' + month + '/' + year);
+        } else {
+            alert('Error al generar disponibilidad: ' + (data.message || 'Error desconocido'));
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error de conexión al generar la disponibilidad');
+    })
+    .finally(() => {
+        generateBtn.innerHTML = originalText;
+        generateBtn.disabled = false;
+    });
+}
+
+// Función para ver disponibilidad del mes
+function viewMonthlyAvailability() {
+    const year = parseInt(document.getElementById('selectYear').value);
+    const month = parseInt(document.getElementById('selectMonth').value);
+    
+    window.location.href = '/odontologo/disponibilidad/mes/' + year + '/' + month;
+}
+
+// Inicialización
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('Availability page loaded');
+    
+    // Habilitar/deshabilitar campos de tiempo según checkbox
+    for (let i = 1; i <= 7; i++) {
+        const checkbox = document.getElementById('dia_' + i);
+        const inicio = document.getElementById('inicio_' + i);
+        const fin = document.getElementById('fin_' + i);
+        
+        function toggleTimeInputs() {
+            const enabled = checkbox.checked;
+            inicio.disabled = !enabled;
+            fin.disabled = !enabled;
+            
+            if (!enabled) {
+                inicio.value = '';
+                fin.value = '';
+            }
+        }
+        
+        checkbox.addEventListener('change', toggleTimeInputs);
+        toggleTimeInputs(); // Aplicar estado inicial
+    }
+});
+</script>
+{% endblock %}

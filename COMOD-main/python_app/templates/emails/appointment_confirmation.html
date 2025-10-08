@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Confirmación de Turno - {{ appointment_data.get('clinica_nombre', 'Clínica Odontológica COMOD') }}</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: #ffffff;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+        .header {
+            background: linear-gradient(135deg, #0d6efd, #0b5ed7);
+            color: white;
+            padding: 30px 20px;
+            text-align: center;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 24px;
+            font-weight: 600;
+        }
+        .header p {
+            margin: 10px 0 0 0;
+            opacity: 0.9;
+        }
+        .content {
+            padding: 30px 20px;
+        }
+        .greeting {
+            font-size: 18px;
+            margin-bottom: 20px;
+            color: #0d6efd;
+        }
+        .appointment-details {
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+            border-left: 4px solid #0d6efd;
+        }
+        .detail-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            padding: 5px 0;
+        }
+        .detail-row:last-child {
+            margin-bottom: 0;
+        }
+        .detail-label {
+            font-weight: 600;
+            color: #495057;
+        }
+        .detail-value {
+            color: #212529;
+        }
+        .important-info {
+            background-color: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 6px;
+            padding: 15px;
+            margin: 20px 0;
+        }
+        .important-info h3 {
+            margin: 0 0 10px 0;
+            color: #856404;
+            font-size: 16px;
+        }
+        .important-info ul {
+            margin: 0;
+            padding-left: 20px;
+        }
+        .important-info li {
+            margin-bottom: 5px;
+            color: #856404;
+        }
+        .footer {
+            background-color: #f8f9fa;
+            padding: 20px;
+            text-align: center;
+            border-top: 1px solid #dee2e6;
+        }
+        .footer p {
+            margin: 5px 0;
+            color: #6c757d;
+            font-size: 14px;
+        }
+        .contact-info {
+            margin-top: 15px;
+        }
+        .contact-info a {
+            color: #0d6efd;
+            text-decoration: none;
+        }
+        .contact-info a:hover {
+            text-decoration: underline;
+        }
+        .success-icon {
+            font-size: 48px;
+            color: #28a745;
+            margin-bottom: 20px;
+        }
+        @media (max-width: 600px) {
+            .container {
+                margin: 10px;
+                border-radius: 0;
+            }
+            .content {
+                padding: 20px 15px;
+            }
+            .detail-row {
+                flex-direction: column;
+            }
+            .detail-label {
+                margin-bottom: 5px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="success-icon">✓</div>
+            <h1>¡Turno Confirmado!</h1>
+            <p>{{ appointment_data.get('clinica_nombre', 'Clínica Odontológica COMOD') }}</p>
+        </div>
+        
+        <div class="content">
+            <div class="greeting">
+                Hola <strong>{{ patient_name }}</strong>,
+            </div>
+            
+            <p>Tu turno ha sido confirmado exitosamente. A continuación, los detalles de tu cita:</p>
+            
+            <div class="appointment-details">
+                <div class="detail-row">
+                    <span class="detail-label">📅 Fecha:</span>
+                    <span class="detail-value">{{ appointment_data.get('fecha_formatted', appointment_data.get('fecha', '')) }}</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">🕐 Hora:</span>
+                    <span class="detail-value">{{ appointment_data.get('hora_formatted', appointment_data.get('hora', '')) }}</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">👨‍⚕️ Doctor:</span>
+                    <span class="detail-value">{{ appointment_data.get('doctor_nombre', 'Dr. No especificado') }}</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">⏱️ Duración:</span>
+                    <span class="detail-value">{{ appointment_data.get('duracion_formatted', appointment_data.get('duracion', '')) }}</span>
+                </div>
+                {% if appointment_data.get('observaciones') %}
+                <div class="detail-row">
+                    <span class="detail-label">📝 Observaciones:</span>
+                    <span class="detail-value">{{ appointment_data.get('observaciones') }}</span>
+                </div>
+                {% endif %}
+            </div>
+            
+            <div class="important-info">
+                <h3>📋 Información Importante:</h3>
+                <ul>
+                    <li>Por favor, llega 15 minutos antes de tu cita</li>
+                    <li>Trae tu DNI y cualquier documentación médica relevante</li>
+                    <li>Si necesitas cancelar o reprogramar, contáctanos con al menos 24 horas de anticipación</li>
+                    <li>En caso de emergencia, puedes contactarnos por teléfono</li>
+                </ul>
+            </div>
+            
+            <p>Si tienes alguna pregunta o necesitas hacer cambios en tu cita, no dudes en contactarnos.</p>
+            
+            <p>¡Esperamos verte pronto!</p>
+            
+            <p><strong>El equipo de {{ appointment_data.get('clinica_nombre', 'Clínica Odontológica COMOD') }}</strong></p>
+        </div>
+        
+        <div class="footer">
+            <div class="contact-info">
+                <p><strong>{{ appointment_data.get('clinica_nombre', 'Clínica Odontológica COMOD') }}</strong></p>
+                <p>📍 {{ appointment_data.get('clinica_direccion', 'Dirección de la Clínica') }}</p>
+                <p>📞 <a href="tel:{{ appointment_data.get('clinica_telefono', '+54 11 1234-5678') }}">{{ appointment_data.get('clinica_telefono', '+54 11 1234-5678') }}</a></p>
+                <p>✉️ <a href="mailto:{{ appointment_data.get('clinica_email', 'info@clinica.com') }}">{{ appointment_data.get('clinica_email', 'info@clinica.com') }}</a></p>
+            </div>
+            <p style="margin-top: 20px; font-size: 12px; color: #adb5bd;">
+                Este es un email automático. Por favor, no respondas a este mensaje.
+            </p>
+        </div>
+    </div>
+</body>
+</html>
+

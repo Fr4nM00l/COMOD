@@ -1,0 +1,21 @@
+# Configuración de Email para COMOD
+# Copia este archivo como .env y configura tus datos de SMTP
+
+# Configuración SMTP
+MAIL_SERVER=smtp.gmail.com
+MAIL_PORT=587
+MAIL_USE_TLS=True
+MAIL_USERNAME=tu_email@gmail.com
+MAIL_PASSWORD=tu_contraseña_de_aplicacion
+MAIL_DEFAULT_SENDER=tu_email@gmail.com
+
+# Configuración de la clínica
+CLINIC_NAME=Clínica Odontológica COMOD
+CLINIC_ADDRESS=Dirección de la Clínica
+CLINIC_PHONE=+54 11 1234-5678
+CLINIC_EMAIL=info@clinica.com
+
+# Configuración de desarrollo (opcional)
+MAIL_SUPPRESS_SEND=False
+MAIL_DEBUG=True
+

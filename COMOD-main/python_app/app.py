@@ -6,11 +6,12 @@ import json
 
 from db_utils import get_db_cursor, get_db_cursor_with_commit
 from decorators import require_secretario, require_odontologo
-from utils import validate_appointment_datetime, create_success_response, create_error_response, validate_appointment_availability, validate_required_fields
+from utils import validate_appointment_datetime, create_success_response, create_error_response, validate_appointment_availability, validate_required_fields, handle_load_error, handle_validation_error, handle_not_found_error
 from services import (
     PatientService, AppointmentService, DentistService, 
-    ClinicalHistoryService, OdontogramaService
+    ClinicalHistoryService, OdontogramaService, AvailabilityService
 )
+from email_service import email_service
 
 
 load_dotenv()
@@ -23,6 +24,17 @@ def create_app() -> Flask:
     secret_key = os.getenv("SECRET_KEY", "dev-secret-key-change-me")
     app.config["SECRET_KEY"] = secret_key
     app.config["SESSION_PERMANENT"] = False
+    
+    # Configuración de email
+    app.config['MAIL_SERVER'] = os.getenv('MAIL_SERVER', 'smtp.gmail.com')
+    app.config['MAIL_PORT'] = int(os.getenv('MAIL_PORT', 587))
+    app.config['MAIL_USE_TLS'] = os.getenv('MAIL_USE_TLS', 'True').lower() == 'true'
+    app.config['MAIL_USERNAME'] = os.getenv('MAIL_USERNAME', '')
+    app.config['MAIL_PASSWORD'] = os.getenv('MAIL_PASSWORD', '')
+    app.config['MAIL_DEFAULT_SENDER'] = os.getenv('MAIL_DEFAULT_SENDER', 'noreply@clinica.com')
+    
+    # Inicializar el servicio de email
+    email_service.init_app(app)
 
     @app.route("/", methods=["GET", "POST"])
     def login():
@@ -74,7 +86,7 @@ def create_app() -> Flask:
         try:
             upcoming_appointments = AppointmentService.get_upcoming_appointments(odontologo_id, limit=10)
         except Exception as e:
-            flash("Error al cargar los turnos.", "error")
+            handle_load_error(e, "turnos", flash)
             upcoming_appointments = []
 
         return render_template(
@@ -92,7 +104,7 @@ def create_app() -> Flask:
             patients = PatientService.get_all_patients()
             return render_template("odontologo/pacientes.html", patients=patients)
         except Exception as e:
-            flash(f"Error al cargar pacientes: {str(e)}", "error")
+            handle_load_error(e, "pacientes", flash)
             return render_template("odontologo/pacientes.html", patients=[])
 
     @app.route("/odontologo/historias-clinicas")
@@ -103,7 +115,7 @@ def create_app() -> Flask:
             histories = ClinicalHistoryService.get_all_clinical_histories()
             return render_template("odontologo/historias_clinicas.html", histories=histories)
         except Exception as e:
-            flash(f"Error al cargar historias clínicas: {str(e)}", "error")
+            handle_load_error(e, "historias clínicas", flash)
             return render_template("odontologo/historias_clinicas.html", histories=[])
 
     @app.route("/odontologo/odontogramas")
@@ -114,7 +126,7 @@ def create_app() -> Flask:
             odontogramas = OdontogramaService.get_all_odontogramas()
             return render_template("odontologo/odontogramas.html", odontogramas=odontogramas)
         except Exception as e:
-            flash(f"Error al cargar odontogramas: {str(e)}", "error")
+            handle_load_error(e, "odontogramas", flash)
             return render_template("odontologo/odontogramas.html", odontogramas=[])
 
     @app.route("/odontologo/consulta/<int:patient_id>")
@@ -138,7 +150,7 @@ def create_app() -> Flask:
                                  histories=histories, 
                                  odontogramas=odontogramas)
         except Exception as e:
-            flash(f"Error al cargar consulta: {str(e)}", "error")
+            handle_load_error(e, "consulta", flash)
             return redirect(url_for("odontologo_pacientes"))
 
     @app.route("/odontologo/historia-clinica/nueva/<int:patient_id>")
@@ -153,7 +165,7 @@ def create_app() -> Flask:
             
             return render_template("odontologo/nueva_historia_clinica.html", patient=patient)
         except Exception as e:
-            flash(f"Error al cargar formulario: {str(e)}", "error")
+            handle_load_error(e, "formulario", flash)
             return redirect(url_for("odontologo_pacientes"))
 
     @app.route("/odontologo/historia-clinica/editar/<int:history_id>")
@@ -170,7 +182,7 @@ def create_app() -> Flask:
             return render_template("odontologo/editar_historia_clinica.html", 
                                  patient=patient, history=history)
         except Exception as e:
-            flash(f"Error al cargar historia: {str(e)}", "error")
+            handle_load_error(e, "historia", flash)
             return redirect(url_for("odontologo_historias"))
 
     @app.route("/odontologo/historia-clinica/guardar", methods=["POST"])
@@ -185,7 +197,8 @@ def create_app() -> Flask:
             is_valid_fields, missing_fields = validate_required_fields(data, required_fields)
             
             if not is_valid_fields:
-                return create_error_response(f"Campos obligatorios faltantes: {', '.join(missing_fields)}")
+                error_response, status_code = handle_validation_error(missing_fields)
+                return error_response
             
             # Guardar historia clínica
             if data.get('history_id'):
@@ -202,6 +215,220 @@ def create_app() -> Flask:
         except Exception as e:
             return create_error_response(f"Error al guardar historia clínica: {str(e)}")
 
+    # Rutas para gestión de disponibilidad
+
+    @app.route("/odontologo/disponibilidad")
+    @require_odontologo
+    def odontologo_disponibilidad():
+        """Vista de gestión de disponibilidad"""
+        try:
+            odontologo_id = session.get("user_id")
+            work_schedule = AvailabilityService.get_work_schedule(odontologo_id)
+            
+            # Obtener mes y año actual
+            from datetime import datetime
+            current_date = datetime.now()
+            year = current_date.year
+            month = current_date.month
+            
+            return render_template("odontologo/disponibilidad.html", 
+                                 work_schedule=work_schedule,
+                                 current_year=year,
+                                 current_month=month)
+        except Exception as e:
+            handle_load_error(e, "disponibilidad", flash)
+            return render_template("odontologo/disponibilidad.html", 
+                                 work_schedule=[], 
+                                 current_year=datetime.now().year,
+                                 current_month=datetime.now().month)
+
+    @app.route("/odontologo/disponibilidad/horarios", methods=["POST"])
+    @require_odontologo
+    def guardar_horarios_trabajo():
+        """Guardar horarios de trabajo semanales"""
+        try:
+            odontologo_id = session.get("user_id")
+            data = request.get_json()
+            
+            AvailabilityService.update_work_schedule(odontologo_id, data)
+            
+            return create_success_response("Horarios de trabajo guardados exitosamente")
+            
+        except Exception as e:
+            return create_error_response(f"Error al guardar horarios: {str(e)}")
+
+    @app.route("/odontologo/disponibilidad/generar-mes", methods=["POST"])
+    @require_odontologo
+    def generar_disponibilidad_mes():
+        """Generar disponibilidad para un mes específico"""
+        try:
+            odontologo_id = session.get("user_id")
+            data = request.get_json()
+            
+            year = data.get("year")
+            month = data.get("month")
+            
+            if not year or not month:
+                return create_error_response("Año y mes son requeridos")
+            
+            # Generar slots de disponibilidad
+            availability_slots = AvailabilityService.generate_monthly_availability(odontologo_id, year, month)
+            
+            # Guardar en la base de datos
+            AvailabilityService.save_monthly_availability(odontologo_id, year, month, availability_slots)
+            
+            return create_success_response(f"Disponibilidad generada para {month}/{year}", {
+                "slots_generated": len(availability_slots)
+            })
+            
+        except Exception as e:
+            return create_error_response(f"Error al generar disponibilidad: {str(e)}")
+
+    @app.route("/odontologo/disponibilidad/mes/<int:year>/<int:month>")
+    @require_odontologo
+    def ver_disponibilidad_mes(year, month):
+        """Ver disponibilidad de un mes específico"""
+        try:
+            odontologo_id = session.get("user_id")
+            
+            # Obtener disponibilidad del mes
+            with get_db_cursor() as cursor:
+                cursor.execute(
+                    """
+                    SELECT fecha, hora_inicio, hora_fin, disponible, observaciones
+                    FROM disponibilidad_medico
+                    WHERE odontologo_id = %s 
+                    AND YEAR(fecha) = %s 
+                    AND MONTH(fecha) = %s
+                    ORDER BY fecha, hora_inicio
+                    """,
+                    (odontologo_id, year, month)
+                )
+                availability_raw = cursor.fetchall()
+                
+                # Convertir objetos timedelta a strings para el template
+                availability = []
+                for slot in availability_raw:
+                    slot_dict = dict(slot)
+                    
+                    # Convertir fecha a string formateado
+                    if hasattr(slot_dict['fecha'], 'strftime'):
+                        fecha_str = slot_dict['fecha'].strftime('%d/%m/%Y')
+                    else:
+                        fecha_str = str(slot_dict['fecha'])
+                    
+                    # Convertir hora_inicio
+                    if isinstance(slot_dict['hora_inicio'], str):
+                        hora_inicio_str = slot_dict['hora_inicio']
+                    else:
+                        # Es un timedelta, convertir a string
+                        from datetime import datetime, timedelta
+                        hora_inicio_str = (datetime.min + slot_dict['hora_inicio']).time().strftime('%H:%M:%S')
+                    
+                    # Convertir hora_fin
+                    if isinstance(slot_dict['hora_fin'], str):
+                        hora_fin_str = slot_dict['hora_fin']
+                    else:
+                        # Es un timedelta, convertir a string
+                        hora_fin_str = (datetime.min + slot_dict['hora_fin']).time().strftime('%H:%M:%S')
+                    
+                    slot_dict['fecha'] = fecha_str
+                    slot_dict['hora_inicio'] = hora_inicio_str
+                    slot_dict['hora_fin'] = hora_fin_str
+                    availability.append(slot_dict)
+            
+            return render_template("odontologo/disponibilidad_mes.html", 
+                                 availability=availability,
+                                 year=year,
+                                 month=month)
+            
+        except Exception as e:
+            handle_load_error(e, "disponibilidad del mes", flash)
+            return redirect(url_for("odontologo_disponibilidad"))
+
+    @app.route("/api/disponibilidad/<int:odontologo_id>/fechas")
+    def api_get_available_dates(odontologo_id):
+        """API para obtener fechas disponibles de un médico"""
+        try:
+            with get_db_cursor() as cursor:
+                # Obtener fechas únicas disponibles para el médico
+                cursor.execute(
+                    """
+                    SELECT DISTINCT fecha
+                    FROM disponibilidad_medico
+                    WHERE odontologo_id = %s 
+                    AND disponible = TRUE
+                    AND fecha >= CURDATE()
+                    ORDER BY fecha
+                    """,
+                    (odontologo_id,)
+                )
+                dates_raw = cursor.fetchall()
+                
+                # Formatear fechas para el frontend
+                available_dates = []
+                for date_row in dates_raw:
+                    fecha = date_row['fecha']
+                    if hasattr(fecha, 'strftime'):
+                        fecha_str = fecha.strftime('%Y-%m-%d')
+                    else:
+                        fecha_str = str(fecha)
+                    
+                    # Formatear fecha para mostrar al usuario
+                    if hasattr(fecha, 'strftime'):
+                        fecha_display = fecha.strftime('%d/%m/%Y')
+                    else:
+                        fecha_display = str(fecha)
+                    
+                    available_dates.append({
+                        'fecha': fecha_str,
+                        'fecha_display': fecha_display
+                    })
+                
+                return create_success_response("Fechas disponibles obtenidas", {
+                    "fechas": available_dates
+                })
+                
+        except Exception as e:
+            return create_error_response(f"Error al obtener fechas disponibles: {str(e)}")
+
+    @app.route("/api/disponibilidad/<int:odontologo_id>/<fecha>")
+    def api_get_available_slots(odontologo_id, fecha):
+        """API para obtener slots disponibles de un médico en una fecha"""
+        try:
+            available_slots = AvailabilityService.get_available_slots(odontologo_id, fecha)
+            
+            # Formatear slots para el frontend
+            formatted_slots = []
+            for slot in available_slots:
+                # Convertir hora_inicio
+                if isinstance(slot['hora_inicio'], str):
+                    hora_inicio_str = slot['hora_inicio'][:5]  # Tomar solo HH:MM
+                else:
+                    # Es un timedelta, convertir a string
+                    from datetime import datetime
+                    hora_inicio_str = (datetime.min + slot['hora_inicio']).time().strftime('%H:%M')
+                
+                # Convertir hora_fin
+                if isinstance(slot['hora_fin'], str):
+                    hora_fin_str = slot['hora_fin'][:5]  # Tomar solo HH:MM
+                else:
+                    # Es un timedelta, convertir a string
+                    hora_fin_str = (datetime.min + slot['hora_fin']).time().strftime('%H:%M')
+                
+                formatted_slots.append({
+                    'hora_inicio': hora_inicio_str,
+                    'hora_fin': hora_fin_str,
+                    'observaciones': slot['observaciones']
+                })
+            
+            return create_success_response("Slots disponibles obtenidos", {
+                "slots": formatted_slots
+            })
+            
+        except Exception as e:
+            return create_error_response(f"Error al obtener slots disponibles: {str(e)}")
+
     @app.route("/secretario")
     @require_secretario
     def secretario_dashboard():
@@ -217,7 +444,7 @@ def create_app() -> Flask:
                 dentist_count = (cursor.fetchone() or {}).get("total", 0)
                 
         except Exception as e:
-            flash("Error al cargar los datos.", "error")
+            handle_load_error(e, "datos", flash)
             next_appointments = []
             patient_count = 0
             dentist_count = 0
@@ -237,7 +464,7 @@ def create_app() -> Flask:
         try:
             patients = PatientService.get_all_patients()
         except Exception as e:
-            flash("Error al cargar los pacientes.", "error")
+            handle_load_error(e, "pacientes", flash)
             patients = []
 
         return render_template("sections/pacientes_section.html", patients=patients)
@@ -248,7 +475,7 @@ def create_app() -> Flask:
         try:
             next_appointments = AppointmentService.get_all_appointments()
         except Exception as e:
-            flash("Error al cargar los turnos.", "error")
+            handle_load_error(e, "turnos", flash)
             next_appointments = []
 
         return render_template("sections/turnos_section.html", 
@@ -262,7 +489,8 @@ def create_app() -> Flask:
             rows_affected = AppointmentService.delete_appointment(turno_id)
             
             if rows_affected == 0:
-                return create_error_response("Turno no encontrado", 404)
+                error_response, status_code = handle_not_found_error("Turno", turno_id)
+                return error_response
             
             return create_success_response("Turno eliminado correctamente")
             
@@ -277,7 +505,7 @@ def create_app() -> Flask:
             clinical_histories = ClinicalHistoryService.get_all_clinical_histories()
             patients_without_history = ClinicalHistoryService.get_patients_without_history()
         except Exception as e:
-            flash("Error al cargar las historias clínicas.", "error")
+            handle_load_error(e, "historias clínicas", flash)
             clinical_histories = []
             patients_without_history = []
 
@@ -293,7 +521,7 @@ def create_app() -> Flask:
             patients_without_odontograma = OdontogramaService.get_patients_without_odontograma()
             procedimientos = OdontogramaService.get_procedimientos()
         except Exception as e:
-            flash("Error al cargar los odontogramas.", "error")
+            handle_load_error(e, "odontogramas", flash)
             odontogramas = []
             patients_without_odontograma = []
             procedimientos = []
@@ -418,7 +646,8 @@ def create_app() -> Flask:
             is_valid_fields, missing_fields = validate_required_fields(data, required_fields)
             
             if not is_valid_fields:
-                return create_error_response(f"Campos obligatorios faltantes: {', '.join(missing_fields)}")
+                error_response, status_code = handle_validation_error(missing_fields)
+                return error_response
 
             # Validate appointment availability (date, time, and duplicates)
             with get_db_cursor() as cursor:
@@ -434,7 +663,40 @@ def create_app() -> Flask:
 
             # Create appointment
             appointment_id = AppointmentService.create_appointment(data)
-            print(f"✅ Appointment created with ID: {appointment_id}")  # Debug
+            
+            # Enviar email de confirmación si el paciente tiene email
+            try:
+                # Obtener datos del paciente y del turno para el email
+                patient = PatientService.get_patient_by_id(data["paciente_id"])
+                dentist = DentistService.get_dentist_by_id(data["odontologo_id"])
+                
+                if patient and patient.get('email') and dentist:
+                    # Preparar datos para el email
+                    appointment_data = {
+                        'fecha': data["fecha"],
+                        'fecha_formatted': datetime.strptime(data["fecha"], '%Y-%m-%d').strftime('%d/%m/%Y'),
+                        'hora': data["hora"],
+                        'hora_formatted': data["hora"],
+                        'duracion': data.get("duracion", "30"),
+                        'duracion_formatted': f"{data.get('duracion', '30')} minutos",
+                        'doctor_nombre': dentist.get('Nombre', 'Dr. No especificado') if isinstance(dentist, dict) else (dentist[1] if dentist else 'Dr. No especificado'),
+                        'observaciones': data.get("observaciones", ""),
+                        'clinica_nombre': os.getenv('CLINIC_NAME', 'Clínica Odontológica COMOD'),
+                        'clinica_direccion': os.getenv('CLINIC_ADDRESS', 'Dirección de la Clínica'),
+                        'clinica_telefono': os.getenv('CLINIC_PHONE', '+54 11 1234-5678'),
+                        'clinica_email': os.getenv('CLINIC_EMAIL', 'info@clinica.com')
+                    }
+                    
+                    # Enviar email de confirmación
+                    email_service.send_appointment_confirmation(
+                        patient['email'], 
+                        patient['Nombre'], 
+                        appointment_data
+                    )
+                    
+            except Exception as email_error:
+                # No fallar la creación del turno por error de email
+                pass
             
             return create_success_response("Turno creado exitosamente", {"appointment_id": appointment_id})
             
@@ -468,7 +730,8 @@ def create_app() -> Flask:
             is_valid_fields, missing_fields = validate_required_fields(data, required_fields)
             
             if not is_valid_fields:
-                return create_error_response(f"Campos obligatorios faltantes: {', '.join(missing_fields)}")
+                error_response, status_code = handle_validation_error(missing_fields)
+                return error_response
 
             # Validate date and time
             is_valid, error_message = validate_appointment_datetime(data["fecha"], data["hora"])
@@ -834,6 +1097,40 @@ def create_app() -> Flask:
                 ))
                 
                 appointment_id = cursor.lastrowid
+                
+                # Enviar email de confirmación
+                try:
+                    # Obtener datos del doctor
+                    cursor.execute("SELECT Nombre FROM odontologo WHERE id = %s", (data['doctor_id'],))
+                    doctor_result = cursor.fetchone()
+                    doctor_name = doctor_result[0] if doctor_result else 'Dr. No especificado'
+                    
+                    # Preparar datos para el email
+                    appointment_data = {
+                        'fecha': fecha,
+                        'fecha_formatted': datetime.strptime(fecha, '%Y-%m-%d').strftime('%d/%m/%Y'),
+                        'hora': hora,
+                        'hora_formatted': hora,
+                        'duracion': '30',
+                        'duracion_formatted': '30 minutos',
+                        'doctor_nombre': doctor_name,
+                        'observaciones': 'Consulta Online',
+                        'clinica_nombre': os.getenv('CLINIC_NAME', 'Clínica Odontológica COMOD'),
+                        'clinica_direccion': os.getenv('CLINIC_ADDRESS', 'Dirección de la Clínica'),
+                        'clinica_telefono': os.getenv('CLINIC_PHONE', '+54 11 1234-5678'),
+                        'clinica_email': os.getenv('CLINIC_EMAIL', 'info@clinica.com')
+                    }
+                    
+                    # Enviar email de confirmación
+                    email_service.send_appointment_confirmation(
+                        patient_data['email'], 
+                        f"{patient_data['nombre']} {patient_data['apellido']}", 
+                        appointment_data
+                    )
+                        
+                except Exception as email_error:
+                    # No fallar la creación del turno por error de email
+                    pass
                 
                 return create_success_response(
                     "Turno creado exitosamente",

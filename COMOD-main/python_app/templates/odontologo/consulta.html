@@ -15,9 +15,6 @@
                 </div>
                 <div class="card-body">
                     <div class="text-center mb-3">
-                        <div class="avatar-lg bg-primary text-white rounded-circle d-flex align-items-center justify-content-center mx-auto mb-3">
-                            {{ patient.Nombre[0].upper() }}
-                        </div>
                         <h5 class="mb-1">{{ patient.Nombre }}</h5>
                         <p class="text-muted mb-0">{{ patient.email or 'Sin email' }}</p>
                     </div>
@@ -30,7 +27,9 @@
                         <p class="mb-1"><strong>Teléfono:</strong> {{ patient.telefono or 'No especificado' }}</p>
                         <p class="mb-1"><strong>Dirección:</strong> {{ patient.direccion or 'No especificada' }}</p>
                         {% if patient.FechaNacimiento %}
-                            <p class="mb-1"><strong>Edad:</strong> {{ patient.FechaNacimiento }} años</p>
+                            <p class="mb-1"><strong>Edad:</strong> <span id="patient-age" data-birth-date="{{ patient.FechaNacimiento }}">{{ patient.FechaNacimiento }}</span> años</p>
+                        {% else %}
+                            <p class="mb-1"><strong>Edad:</strong> <span class="text-muted">No especificada</span></p>
                         {% endif %}
                     </div>
                     
@@ -360,6 +359,24 @@ document.addEventListener('DOMContentLoaded', function() {
             // Aquí implementarías el auto-guardado
         }
     }, 300000); // 5 minutos
+    
+    // Calcular edad del paciente
+    const ageElement = document.getElementById('patient-age');
+    if (ageElement) {
+        const birthDate = ageElement.getAttribute('data-birth-date');
+        if (birthDate && birthDate !== 'No especificada') {
+            const birth = new Date(birthDate);
+            const today = new Date();
+            let age = today.getFullYear() - birth.getFullYear();
+            const monthDiff = today.getMonth() - birth.getMonth();
+            
+            if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) {
+                age--;
+            }
+            
+            ageElement.textContent = age;
+        }
+    }
 });
 </script>
 {% endblock %}

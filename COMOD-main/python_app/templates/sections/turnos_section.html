@@ -1,7 +1,7 @@
 <div class="card">
     <div class="card-header d-flex justify-content-between align-items-center">
         <h5 class="mb-0"><i class="bi bi-calendar3 me-2"></i>Gestión de Turnos</h5>
-        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#appointmentModal">
+        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#appointmentModal" onclick="loadAvailableSlots()">
             <i class="bi bi-calendar-plus me-2"></i>Nuevo Turno
         </button>
     </div>
@@ -116,7 +116,6 @@ function populateAppointmentModal(appointment) {
     document.getElementById('appointmentPatient').value = appointment.Paciente_id || '';
     document.getElementById('appointmentDentist').value = appointment.Odontologo_id || '';
     document.getElementById('appointmentDate').value = appointment.FechaTurno || '';
-    document.getElementById('appointmentTime').value = appointment.HoraTurno || '';
     document.getElementById('appointmentDuration').value = appointment.duracion || 30;
     document.getElementById('appointmentType').value = appointment.tipo_consulta || '';
     document.getElementById('appointmentNotes').value = appointment.observaciones || '';
@@ -129,6 +128,25 @@ function populateAppointmentModal(appointment) {
     if (submitBtn) {
         submitBtn.innerHTML = '<i class="bi bi-check-circle me-2"></i>Actualizar Turno';
     }
+    
+    // Cargar horarios disponibles y seleccionar el horario actual
+    setTimeout(() => {
+        loadAvailableTimes();
+        
+        // Después de cargar los horarios, seleccionar el horario actual
+        setTimeout(() => {
+            const timeSelect = document.getElementById('appointmentTime');
+            const currentTime = appointment.HoraTurno || '';
+            
+            // Buscar la opción que coincida con la hora actual
+            for (let option of timeSelect.options) {
+                if (option.value === currentTime) {
+                    option.selected = true;
+                    break;
+                }
+            }
+        }, 500);
+    }, 100);
 }
 
 function deleteTurno(id) {
@@ -201,5 +219,22 @@ function showAlert(type, message) {
             }
         }, 5000);
     }
+}
+
+// Función para cargar slots disponibles
+function loadAvailableSlots() {
+    // Esta función se ejecutará cuando se abra el modal
+    console.log('Cargando slots disponibles...');
+    // La función real es loadAvailableTimes() que se llama automáticamente
+    // cuando se selecciona médico y fecha
+}
+
+// Función para cargar horarios disponibles cuando se selecciona fecha y odontólogo
+// Esta función está definida en appointment_modal.html
+// Se mantiene aquí solo para compatibilidad con edición de turnos
+function loadAvailableTimes() {
+    // La función real está en appointment_modal.html
+    // Esta es solo un placeholder para evitar errores
+    console.log('loadAvailableTimes called from turnos_section');
 }
 </script>

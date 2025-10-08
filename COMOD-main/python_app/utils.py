@@ -5,6 +5,60 @@ from datetime import datetime, date, timedelta
 from flask import jsonify
 
 
+def handle_validation_error(missing_fields, resource_name="datos"):
+    """
+    Maneja errores de validación de manera consistente
+    
+    Args:
+        missing_fields: Lista de campos faltantes
+        resource_name: Nombre del recurso que se estaba validando
+    
+    Returns:
+        tuple: (error_response, status_code)
+    """
+    error_message = f"Campos obligatorios faltantes: {', '.join(missing_fields)}"
+    return create_error_response(error_message), 400
+
+
+def handle_not_found_error(resource_name, resource_id=None):
+    """
+    Maneja errores de recurso no encontrado de manera consistente
+    
+    Args:
+        resource_name: Nombre del recurso no encontrado
+        resource_id: ID del recurso (opcional)
+    
+    Returns:
+        tuple: (error_response, status_code)
+    """
+    if resource_id:
+        error_message = f"{resource_name} con ID {resource_id} no encontrado"
+    else:
+        error_message = f"{resource_name} no encontrado"
+    
+    return create_error_response(error_message), 404
+
+
+def handle_load_error(error, resource_name, flash_func=None):
+    """
+    Maneja errores de carga de manera consistente
+    
+    Args:
+        error: La excepción capturada
+        resource_name: Nombre del recurso que se estaba cargando
+        flash_func: Función flash para mostrar mensaje (opcional)
+    
+    Returns:
+        str: Mensaje de error formateado
+    """
+    error_message = f"Error al cargar {resource_name}: {str(error)}"
+    
+    if flash_func:
+        flash_func(error_message, "error")
+    
+    return error_message
+
+
 def validate_required_fields(data, required_fields):
     """
     Valida que los campos requeridos estén presentes en los datos
@@ -127,31 +181,17 @@ def check_duplicate_appointment(cursor, fecha_str, hora_str, odontologo_id, paci
         )
         
         # Consulta para verificar turnos duplicados
-        if paciente_id:
-            # Verificar duplicados del mismo paciente
-            cursor.execute("""
-                SELECT COUNT(*) as count, p.Nombre, o.Nombre as OdontologoNombre
-                FROM detalleturno t
-                JOIN paciente p ON t.Paciente_id = p.id
-                JOIN odontologo o ON t.Odontologo_id = o.id
-                WHERE t.FechaTurno = %s 
-                AND t.HoraTurno = %s 
-                AND t.Odontologo_id = %s
-                AND t.Paciente_id = %s
-                AND t.estado != 'Cancelado'
-            """, (fecha_str, hora_timedelta, odontologo_id, paciente_id))
-        else:
-            # Verificar cualquier turno duplicado para el odontólogo
-            cursor.execute("""
-                SELECT COUNT(*) as count, p.Nombre, o.Nombre as OdontologoNombre
-                FROM detalleturno t
-                JOIN paciente p ON t.Paciente_id = p.id
-                JOIN odontologo o ON t.Odontologo_id = o.id
-                WHERE t.FechaTurno = %s 
-                AND t.HoraTurno = %s 
-                AND t.Odontologo_id = %s
-                AND t.estado != 'Cancelado'
-            """, (fecha_str, hora_timedelta, odontologo_id))
+        # SIEMPRE verificar si ya existe un turno para ese doctor en esa fecha/hora
+        cursor.execute("""
+            SELECT COUNT(*) as count, p.Nombre, o.Nombre as OdontologoNombre
+            FROM detalleturno t
+            JOIN paciente p ON t.Paciente_id = p.id
+            JOIN odontologo o ON t.Odontologo_id = o.id
+            WHERE t.FechaTurno = %s 
+            AND t.HoraTurno = %s 
+            AND t.Odontologo_id = %s
+            AND t.estado != 'Cancelado'
+        """, (fecha_str, hora_timedelta, odontologo_id))
         
         result = cursor.fetchone()
         
@@ -159,10 +199,7 @@ def check_duplicate_appointment(cursor, fecha_str, hora_str, odontologo_id, paci
             paciente_nombre = result['Nombre']
             odontologo_nombre = result['OdontologoNombre']
             
-            if paciente_id:
-                error_msg = f"Ya existe un turno para el paciente {paciente_nombre} con el Dr./Dra. {odontologo_nombre} el {fecha_str} a las {hora_str}."
-            else:
-                error_msg = f"Ya existe un turno con el Dr./Dra. {odontologo_nombre} el {fecha_str} a las {hora_str}. Paciente: {paciente_nombre}"
+            error_msg = f"Ya existe un turno con el Dr./Dra. {odontologo_nombre} el {fecha_str} a las {hora_str}. Paciente: {paciente_nombre}"
             
             return True, error_msg
         

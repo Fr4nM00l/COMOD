@@ -222,6 +222,17 @@ class DentistService:
             return cursor.fetchall()
     
     @staticmethod
+    def get_dentist_by_id(dentist_id):
+        """Obtener un odontólogo por su ID"""
+        with get_db_cursor() as cursor:
+            cursor.execute(
+                "SELECT id, Nombre FROM odontologo WHERE id = %s",
+                (int(dentist_id),)
+            )
+            result = cursor.fetchone()
+            return result
+    
+    @staticmethod
     def authenticate_user(username, password, role):
         """Autenticar usuario"""
         table_name = "odontologo" if role == "odontologo" else "secretario"
@@ -359,6 +370,172 @@ class ClinicalHistoryService:
         """Eliminar historia clínica"""
         with get_db_cursor_with_commit() as cursor:
             cursor.execute("DELETE FROM historiaclinica WHERE id = %s", (history_id,))
+            return cursor.rowcount
+
+
+class AvailabilityService:
+    """Servicio para gestionar la disponibilidad del médico"""
+    
+    @staticmethod
+    def get_work_schedule(odontologo_id):
+        """Obtener horarios de trabajo por día de la semana"""
+        with get_db_cursor() as cursor:
+            cursor.execute(
+                """
+                SELECT dia_semana, hora_inicio, hora_fin, activo
+                FROM horarios_trabajo
+                WHERE odontologo_id = %s AND activo = TRUE
+                ORDER BY dia_semana
+                """,
+                (odontologo_id,)
+            )
+            return cursor.fetchall()
+    
+    @staticmethod
+    def update_work_schedule(odontologo_id, schedule_data):
+        """Actualizar horarios de trabajo"""
+        with get_db_cursor_with_commit() as cursor:
+            # Eliminar horarios existentes
+            cursor.execute(
+                "DELETE FROM horarios_trabajo WHERE odontologo_id = %s",
+                (odontologo_id,)
+            )
+            
+            # Insertar nuevos horarios
+            for day, schedule in schedule_data.items():
+                if schedule.get('active', False):
+                    cursor.execute(
+                        """
+                        INSERT INTO horarios_trabajo (odontologo_id, dia_semana, hora_inicio, hora_fin)
+                        VALUES (%s, %s, %s, %s)
+                        """,
+                        (odontologo_id, day, schedule['start_time'], schedule['end_time'])
+                    )
+    
+    @staticmethod
+    def generate_monthly_availability(odontologo_id, year, month):
+        """Generar disponibilidad mensual basada en horarios de trabajo"""
+        from datetime import datetime, timedelta
+        import calendar
+        
+        # Obtener horarios de trabajo
+        work_schedule = AvailabilityService.get_work_schedule(odontologo_id)
+        schedule_dict = {day['dia_semana']: day for day in work_schedule}
+        
+        # Generar días del mes
+        days_in_month = calendar.monthrange(year, month)[1]
+        availability_slots = []
+        
+        for day in range(1, days_in_month + 1):
+            date = datetime(year, month, day)
+            day_of_week = date.weekday() + 1  # Convertir a formato 1-7
+            
+            if day_of_week in schedule_dict:
+                schedule = schedule_dict[day_of_week]
+                
+                # Manejar tanto strings como objetos timedelta
+                if isinstance(schedule['hora_inicio'], str):
+                    start_time = datetime.strptime(schedule['hora_inicio'], '%H:%M:%S').time()
+                else:
+                    # Es un timedelta, convertir a time
+                    start_time = (datetime.min + schedule['hora_inicio']).time()
+                
+                if isinstance(schedule['hora_fin'], str):
+                    end_time = datetime.strptime(schedule['hora_fin'], '%H:%M:%S').time()
+                else:
+                    # Es un timedelta, convertir a time
+                    end_time = (datetime.min + schedule['hora_fin']).time()
+                
+                # Generar slots de 30 minutos
+                current_time = datetime.combine(date.date(), start_time)
+                end_datetime = datetime.combine(date.date(), end_time)
+                
+                while current_time < end_datetime:
+                    availability_slots.append({
+                        'fecha': date.date(),
+                        'hora_inicio': current_time.time(),
+                        'hora_fin': (current_time + timedelta(minutes=30)).time(),
+                        'disponible': True
+                    })
+                    current_time += timedelta(minutes=30)
+        
+        return availability_slots
+    
+    @staticmethod
+    def save_monthly_availability(odontologo_id, year, month, availability_slots):
+        """Guardar disponibilidad mensual en la base de datos"""
+        with get_db_cursor_with_commit() as cursor:
+            # Eliminar disponibilidad existente del mes
+            cursor.execute(
+                """
+                DELETE FROM disponibilidad_medico 
+                WHERE odontologo_id = %s 
+                AND YEAR(fecha) = %s 
+                AND MONTH(fecha) = %s
+                """,
+                (odontologo_id, year, month)
+            )
+            
+            # Insertar nueva disponibilidad
+            for slot in availability_slots:
+                cursor.execute(
+                    """
+                    INSERT INTO disponibilidad_medico 
+                    (odontologo_id, fecha, hora_inicio, hora_fin, disponible)
+                    VALUES (%s, %s, %s, %s, %s)
+                    """,
+                    (odontologo_id, slot['fecha'], slot['hora_inicio'], slot['hora_fin'], slot['disponible'])
+                )
+    
+    @staticmethod
+    def get_available_slots(odontologo_id, fecha):
+        """Obtener slots disponibles para una fecha específica"""
+        with get_db_cursor() as cursor:
+            cursor.execute(
+                """
+                SELECT hora_inicio, hora_fin, observaciones
+                FROM disponibilidad_medico
+                WHERE odontologo_id = %s 
+                AND fecha = %s 
+                AND disponible = TRUE
+                ORDER BY hora_inicio
+                """,
+                (odontologo_id, fecha)
+            )
+            return cursor.fetchall()
+    
+    @staticmethod
+    def check_slot_availability(odontologo_id, fecha, hora):
+        """Verificar si un slot específico está disponible"""
+        with get_db_cursor() as cursor:
+            cursor.execute(
+                """
+                SELECT COUNT(*) as count
+                FROM disponibilidad_medico
+                WHERE odontologo_id = %s 
+                AND fecha = %s 
+                AND hora_inicio = %s
+                AND disponible = TRUE
+                """,
+                (odontologo_id, fecha, hora)
+            )
+            result = cursor.fetchone()
+            return result['count'] > 0
+    
+    @staticmethod
+    def mark_slot_unavailable(odontologo_id, fecha, hora_inicio, observaciones=None):
+        """Marcar un slot como no disponible"""
+        with get_db_cursor_with_commit() as cursor:
+            cursor.execute(
+                """
+                UPDATE disponibilidad_medico 
+                SET disponible = FALSE, observaciones = %s
+                WHERE odontologo_id = %s 
+                AND fecha = %s 
+                AND hora_inicio = %s
+                """,
+                (observaciones, odontologo_id, fecha, hora_inicio)
+            )
             return cursor.rowcount
 
 

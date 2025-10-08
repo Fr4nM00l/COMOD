@@ -3,5 +3,6 @@ mysql-connector-python==8.1.0
 python-dotenv==1.0.0
 Werkzeug==2.3.7
 Flask-Moment==1.0.5
+Flask-Mail==0.9.1
 
 

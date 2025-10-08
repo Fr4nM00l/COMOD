@@ -52,18 +52,18 @@
                 </div>
             </div>
         </div>
-        <div class="col-md-3">
-            <div class="card dashboard-card h-100">
-                <div class="card-body text-center">
-                    <i class="bi bi-globe text-info mb-3" style="font-size: 2rem;"></i>
-                    <h6 class="card-title">Turnos Online</h6>
-                    <p class="card-text text-muted">Gestionar turnos online</p>
-                    <button class="btn btn-info btn-sm" onclick="showTurnosOnline()">
-                        <i class="bi bi-arrow-right me-1"></i>Ver Turnos Online
-                    </button>
+            <div class="col-md-3">
+                <div class="card dashboard-card h-100">
+                    <div class="card-body text-center">
+                        <i class="bi bi-calendar-check text-primary mb-3" style="font-size: 2rem;"></i>
+                        <h6 class="card-title">Disponibilidad</h6>
+                        <p class="card-text text-muted">Gestionar horarios de trabajo</p>
+                        <a href="{{ url_for('odontologo_disponibilidad') }}" class="btn btn-primary btn-sm">
+                            <i class="bi bi-arrow-right me-1"></i>Configurar
+                        </a>
+                    </div>
                 </div>
             </div>
-        </div>
     </div>
 
     <div class="card dashboard-card">
@@ -96,7 +96,7 @@
                                             <i class="bi bi-stethoscope"></i>
                                         </a>
                                         <button class="btn btn-info btn-sm" 
-                                                onclick="viewPatientInfo({{ t.PacienteID }})" 
+                                                onclick="viewPatientInfo('{{ t.PacienteID }}')" 
                                                 title="Ver Info del Paciente">
                                             <i class="bi bi-eye"></i>
                                         </button>
