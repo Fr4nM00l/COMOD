@@ -1,0 +1,230 @@
+{% extends 'base.html' %}
+
+{% block title %}Historia Clínica #{{ history.id }} - {{ history.PacienteNombre }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <!-- Header -->
+            <div class="d-flex align-items-center justify-content-between mb-4">
+                <div class="d-flex align-items-center">
+                    <div class="text-center me-4">
+                        <i class="bi bi-tooth text-primary" style="font-size: 3rem;"></i>
+                        <div class="small text-muted">OD. LUNA JOSE LUIS</div>
+                        <div class="small text-muted">MP N°340</div>
+                    </div>
+                    <div>
+                        <h2 class="mb-1 text-primary">HISTORIA CLÍNICA</h2>
+                        <p class="text-muted mb-0">{{ history.PacienteNombre }} - {{ history.Fecha.strftime('%d/%m/%Y') }}</p>
+                        <small class="text-muted">Historia #{{ history.id }}</small>
+                    </div>
+                </div>
+                <div>
+                    <a href="{{ url_for('paciente_historias_clinicas', patient_id=history.Paciente_id) }}" class="btn btn-outline-primary me-2">
+                        <i class="bi bi-arrow-left me-1"></i>Volver al Historial
+                    </a>
+                    <a href="{{ url_for('editar_historia_clinica', history_id=history.id) }}" class="btn btn-outline-secondary">
+                        <i class="bi bi-pencil me-1"></i>Editar
+                    </a>
+                </div>
+            </div>
+
+            <!-- Datos Personales -->
+            <div class="card mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">
+                        <i class="bi bi-person me-2"></i>DATOS PERSONALES
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <p><strong>Nombre:</strong> {{ history.PacienteNombre }}</p>
+                            <p><strong>DNI:</strong> {{ history.paciente_dni or 'No especificado' }}</p>
+                            <p><strong>Domicilio:</strong> {{ history.domicilio or 'No especificado' }}</p>
+                            <p><strong>Edad:</strong> {{ history.edad or 'No especificada' }} años</p>
+                        </div>
+                        <div class="col-md-6">
+                            <p><strong>Obra Social:</strong> {{ history.ObraSocial or 'No especificada' }}</p>
+                            <p><strong>Plan:</strong> {{ history.NumAfiliado or 'No especificado' }}</p>
+                            <p><strong>Fecha de Consulta:</strong> {{ history.Fecha.strftime('%d/%m/%Y') }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Historia Clínica General -->
+            <div class="card mb-4">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0">
+                        <i class="bi bi-heart-pulse me-2"></i>HISTORIA CLÍNICA GENERAL
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-4">
+                            <h6>Enfermedades:</h6>
+                            <p class="text-muted">{{ history.Enfermedades or 'Ninguna' }}</p>
+                            
+                            <h6>Medicamentos Actuales:</h6>
+                            <p class="text-muted">{{ history.Medicamentos or 'Ninguno' }}</p>
+                            
+                            <h6>Alergias:</h6>
+                            <p class="text-muted">{{ history.Alergias or 'Ninguna' }}</p>
+                            
+                            <h6>Tratamiento Odontológico Previo:</h6>
+                            <p class="text-muted">
+                                {% if history.tratamiento_odontologico %}
+                                    Sí - {{ history.tratamiento_odontologico_detalle or 'Sin detalles' }}
+                                {% else %}
+                                    No
+                                {% endif %}
+                            </p>
+                        </div>
+                        
+                        <div class="col-md-4">
+                            <h6>Condiciones Médicas:</h6>
+                            <div class="d-flex flex-wrap gap-2 mb-3">
+                                {% if history.colageno %}<span class="badge bg-warning">Colágeno</span>{% endif %}
+                                {% if history.fiebre_reumatica %}<span class="badge bg-danger">Fiebre Reumática</span>{% endif %}
+                                {% if history.diabetes %}<span class="badge bg-danger">Diabetes</span>{% endif %}
+                                {% if history.cardiaco %}<span class="badge bg-danger">Cardíaco</span>{% endif %}
+                                {% if history.hipertension %}<span class="badge bg-warning">Hipertensión</span>{% endif %}
+                                {% if history.sifilis %}<span class="badge bg-danger">Sífilis/Gonorrea</span>{% endif %}
+                                {% if history.transfusiones %}<span class="badge bg-info">Transfusiones</span>{% endif %}
+                                {% if history.embarazada %}<span class="badge bg-info">Embarazada ({{ history.meses_embarazo or 'meses no especificados' }})</span>{% endif %}
+                                {% if history.chagas %}<span class="badge bg-danger">Chagas</span>{% endif %}
+                                {% if history.hepatitis %}<span class="badge bg-danger">Hepatitis</span>{% endif %}
+                                {% if history.renales %}<span class="badge bg-warning">Renales</span>{% endif %}
+                                {% if history.ulcera %}<span class="badge bg-warning">Úlcera Gástrica</span>{% endif %}
+                                {% if history.convulsiones %}<span class="badge bg-danger">Convulsiones</span>{% endif %}
+                                {% if history.fuma %}<span class="badge bg-secondary">Fuma ({{ history.tiempo_fumando or 'tiempo no especificado' }})</span>{% endif %}
+                                {% if history.drogas %}<span class="badge bg-danger">Drogas</span>{% endif %}
+                            </div>
+                            
+                            <h6>Otras Enfermedades:</h6>
+                            <p class="text-muted">{{ history.otras_enfermedades or 'Ninguna' }}</p>
+                        </div>
+                        
+                        <div class="col-md-4">
+                            <h6>Medicamentos Tomados:</h6>
+                            <p class="text-muted">
+                                {% if history.tomo_medicamento %}
+                                    Sí - {{ history.medicamento_detalle or 'Sin detalles' }}
+                                {% else %}
+                                    No
+                                {% endif %}
+                            </p>
+                            
+                            <h6>Dolor:</h6>
+                            {% if history.NivelDeDolor or history.dolor_tipo or history.dolor_localizacion %}
+                                <p class="text-muted">
+                                    <strong>Intensidad:</strong> 
+                                    {% if history.NivelDeDolor == 1 %}Suave
+                                    {% elif history.NivelDeDolor == 2 %}Moderado
+                                    {% elif history.NivelDeDolor == 3 %}Intenso
+                                    {% else %}No especificada{% endif %}<br>
+                                    <strong>Tipo:</strong> {{ history.dolor_tipo or 'No especificado' }}<br>
+                                    <strong>Localización:</strong> {{ history.dolor_localizacion or 'No especificada' }}<br>
+                                    <strong>Calmante:</strong> {{ history.Calmante or 'No especificado' }}
+                                </p>
+                            {% else %}
+                                <p class="text-muted">No reportado</p>
+                            {% endif %}
+                            
+                            <h6>Dificultades Funcionales:</h6>
+                            <p class="text-muted">{{ history.dificultades_funcionales or 'Ninguna' }}</p>
+                            
+                            <h6>Examen de Tejidos Blandos:</h6>
+                            <p class="text-muted">{{ history.examen_tejidos_blandos or 'No realizado' }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Motivo de Consulta -->
+            <div class="card mb-4">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0">
+                        <i class="bi bi-chat-dots me-2"></i>MOTIVO DE CONSULTA
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <p>{{ history.motivo_consulta or 'No especificado' }}</p>
+                </div>
+            </div>
+
+            <!-- Diagnóstico y Plan de Tratamiento -->
+            <div class="card mb-4">
+                <div class="card-header bg-danger text-white">
+                    <h5 class="mb-0">
+                        <i class="bi bi-clipboard-data me-2"></i>DIAGNÓSTICO Y PLAN DE TRATAMIENTO
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6>Diagnóstico Presuntivo:</h6>
+                            <p class="text-muted">{{ history.diagnostico_presuntivo or 'No especificado' }}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <h6>Plan de Tratamiento:</h6>
+                            <p class="text-muted">{{ history.plan_tratamiento or 'No especificado' }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Firmas -->
+            <div class="card">
+                <div class="card-header bg-secondary text-white">
+                    <h5 class="mb-0">
+                        <i class="bi bi-pen me-2"></i>FIRMAS
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6>Firma del Paciente:</h6>
+                            <p class="text-muted">{{ history.firma_paciente or 'No firmado' }}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <h6>Firma y Sello del Profesional:</h6>
+                            <p class="text-muted">{{ history.firma_profesional or 'No firmado' }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block styles %}
+<style>
+    .badge {
+        font-size: 0.75rem;
+        margin: 2px;
+    }
+    
+    .card {
+        border: 1px solid #dee2e6;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    
+    .card-header {
+        font-weight: bold;
+    }
+    
+    h6 {
+        color: #495057;
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+    }
+    
+    .text-muted {
+        line-height: 1.5;
+    }
+</style>
+{% endblock %}

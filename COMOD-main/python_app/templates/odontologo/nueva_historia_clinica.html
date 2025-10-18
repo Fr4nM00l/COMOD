@@ -9,10 +9,14 @@
             <!-- Header -->
             <div class="d-flex align-items-center justify-content-between mb-4">
                 <div class="d-flex align-items-center">
-                    <i class="bi bi-file-medical text-primary me-3" style="font-size: 2rem;"></i>
+                    <div class="text-center me-4">
+                        <i class="bi bi-tooth text-primary" style="font-size: 3rem;"></i>
+                        <div class="small text-muted">OD. LUNA JOSE LUIS</div>
+                        <div class="small text-muted">MP N°340</div>
+                    </div>
                     <div>
-                        <h3 class="mb-1">Nueva Historia Clínica</h3>
-                        <p class="text-muted mb-0">{{ patient.Nombre }} - {{ "now"|strftime('%d/%m/%Y') }}</p>
+                        <h2 class="mb-1 text-primary">HISTORIA CLÍNICA</h2>
+                        <p class="text-muted mb-0">{{ patient.Nombre }} - {{ fecha_actual }}</p>
                     </div>
                 </div>
                 <div>
@@ -93,94 +97,18 @@
                             <!-- Columna Izquierda -->
                             <div class="col-md-4">
                                 <div class="mb-3">
-                                    <label for="medicamentos_actuales" class="form-label">Medicamentos que consume actualmente</label>
-                                    <textarea class="form-control" id="medicamentos_actuales" rows="3" placeholder="Listar medicamentos y dosis"></textarea>
+                                    <label class="form-label">Sufre alguna enfermedad?</label>
+                                    <textarea class="form-control" id="enfermedades" rows="2" placeholder="Especificar enfermedades"></textarea>
                                 </div>
                                 
                                 <div class="mb-3">
-                                    <label class="form-label">Sufre alguna enfermedad?</label>
-                                    <div class="form-check">
-                                        <input class="form-check-input" type="checkbox" id="enfermedad_si">
-                                        <label class="form-check-label" for="enfermedad_si">Sí</label>
-                                    </div>
-                                    <textarea class="form-control mt-2" id="enfermedades" rows="2" placeholder="Especificar enfermedades"></textarea>
+                                    <label for="medicamentos_actuales" class="form-label">Medicamentos que consume actualmente</label>
+                                    <textarea class="form-control" id="medicamentos_actuales" rows="3" placeholder="Listar medicamentos y dosis"></textarea>
                                 </div>
 
                                 <div class="mb-3">
                                     <label class="form-label">Es alérgico? A qué?</label>
-                                    <div class="form-check">
-                                        <input class="form-check-input" type="checkbox" id="alergia_si">
-                                        <label class="form-check-label" for="alergia_si">Sí</label>
-                                    </div>
-                                    <textarea class="form-control mt-2" id="alergias" rows="2" placeholder="Especificar alergias"></textarea>
-                                </div>
-
-                                <div class="mb-3">
-                                    <label class="form-label">Problemas de colágeno (hiperlaxitud)?</label>
-                                    <div class="form-check">
-                                        <input class="form-check-input" type="checkbox" id="colageno_si">
-                                        <label class="form-check-label" for="colageno_si">Sí</label>
-                                    </div>
-                                </div>
-
-                                <div class="mb-3">
-                                    <label class="form-label">Fiebre reumática?</label>
-                                    <div class="form-check">
-                                        <input class="form-check-input" type="checkbox" id="fiebre_reumatica_si">
-                                        <label class="form-check-label" for="fiebre_reumatica_si">Sí</label>
-                                    </div>
-                                </div>
-
-                                <div class="mb-3">
-                                    <label class="form-label">Diabetes?</label>
-                                    <div class="form-check">
-                                        <input class="form-check-input" type="checkbox" id="diabetes_si">
-                                        <label class="form-check-label" for="diabetes_si">Sí</label>
-                                    </div>
-                                </div>
-
-                                <div class="mb-3">
-                                    <label class="form-label">Problema cardíaco?</label>
-                                    <div class="form-check">
-                                        <input class="form-check-input" type="checkbox" id="cardiaco_si">
-                                        <label class="form-check-label" for="cardiaco_si">Sí</label>
-                                    </div>
-                                </div>
-
-                                <div class="mb-3">
-                                    <label class="form-label">Hipertensión arterial?</label>
-                                    <div class="form-check">
-                                        <input class="form-check-input" type="checkbox" id="hipertension_si">
-                                        <label class="form-check-label" for="hipertension_si">Sí</label>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Columna Central -->
-                            <div class="col-md-4">
-                                <div class="mb-3">
-                                    <label class="form-label">Sífilis o gonorrea?</label>
-                                    <div class="form-check">
-                                        <input class="form-check-input" type="checkbox" id="sifilis_si">
-                                        <label class="form-check-label" for="sifilis_si">Sí</label>
-                                    </div>
-                                </div>
-
-                                <div class="mb-3">
-                                    <label class="form-label">Transfusiones?</label>
-                                    <div class="form-check">
-                                        <input class="form-check-input" type="checkbox" id="transfusiones_si">
-                                        <label class="form-check-label" for="transfusiones_si">Sí</label>
-                                    </div>
-                                </div>
-
-                                <div class="mb-3">
-                                    <label class="form-label">Embarazada?</label>
-                                    <div class="form-check">
-                                        <input class="form-check-input" type="checkbox" id="embarazada_si">
-                                        <label class="form-check-label" for="embarazada_si">Sí</label>
-                                    </div>
-                                    <input type="text" class="form-control mt-2" id="meses_embarazo" placeholder="Cuántos meses?">
+                                    <textarea class="form-control" id="alergias" rows="2" placeholder="Especificar alergias"></textarea>
                                 </div>
 
                                 <div class="mb-3">
@@ -190,6 +118,53 @@
                                         <label class="form-check-label" for="tratamiento_odontologico_si">Sí</label>
                                     </div>
                                     <textarea class="form-control mt-2" id="tratamiento_odontologico_detalle" rows="2" placeholder="Detalles del tratamiento"></textarea>
+                                </div>
+
+                                <!-- Lista de condiciones médicas -->
+                                <div class="mb-3">
+                                    <label class="form-label">Condiciones médicas:</label>
+                                    <div class="checkbox-group">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" id="colageno_si">
+                                            <label class="form-check-label" for="colageno_si">Problemas de colágeno (hiperlaxitud)?</label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" id="fiebre_reumatica_si">
+                                            <label class="form-check-label" for="fiebre_reumatica_si">Fiebre reumática?</label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" id="diabetes_si">
+                                            <label class="form-check-label" for="diabetes_si">Diabetes?</label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" id="cardiaco_si">
+                                            <label class="form-check-label" for="cardiaco_si">Problema cardíaco?</label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" id="hipertension_si">
+                                            <label class="form-check-label" for="hipertension_si">Hipertensión arterial?</label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" id="sifilis_si">
+                                            <label class="form-check-label" for="sifilis_si">Sífilis o gonorrea?</label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" id="transfusiones_si">
+                                            <label class="form-check-label" for="transfusiones_si">Transfusiones?</label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Columna Central -->
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label class="form-label">Embarazada?</label>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="embarazada_si">
+                                        <label class="form-check-label" for="embarazada_si">Sí</label>
+                                    </div>
+                                    <input type="text" class="form-control mt-2" id="meses_embarazo" placeholder="Cuántos meses?">
                                 </div>
 
                                 <div class="mb-3">
@@ -223,10 +198,7 @@
                                         <label class="form-check-label" for="ulcera_si">Sí</label>
                                     </div>
                                 </div>
-                            </div>
 
-                            <!-- Columna Derecha -->
-                            <div class="col-md-4">
                                 <div class="mb-3">
                                     <label class="form-label">Convulsiones?</label>
                                     <div class="form-check">
@@ -250,6 +222,23 @@
                                         <label class="form-check-label" for="fuma_si">Sí</label>
                                     </div>
                                     <input type="text" class="form-control mt-2" id="tiempo_fumando" placeholder="Cuánto tiempo?">
+                                </div>
+
+                                <div class="mb-3">
+                                    <label class="form-label">Hay alguna otra enfermedad o recomendación de su médico de la que quiera dejar constancia?</label>
+                                    <textarea class="form-control" id="otras_enfermedades" rows="3" placeholder="Otras enfermedades o recomendaciones médicas"></textarea>
+                                </div>
+                            </div>
+
+                            <!-- Columna Derecha -->
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label class="form-label">Tomó algún medicamento?</label>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="tomo_medicamento_si">
+                                        <label class="form-check-label" for="tomo_medicamento_si">Sí</label>
+                                    </div>
+                                    <input type="text" class="form-control mt-2" id="medicamento_detalle" placeholder="Cuál? Tiempo?">
                                 </div>
 
                                 <!-- Sección de Dolor -->
@@ -302,7 +291,7 @@
                                             </div>
                                         </div>
                                     </div>
-                                    <textarea class="form-control mt-2" id="dolor_detalle" rows="2" placeholder="Detalles del dolor"></textarea>
+                                    <textarea class="form-control mt-2" id="dolor_detalle" rows="2" placeholder="Puede calmarlo con algo?"></textarea>
                                 </div>
 
                                 <div class="mb-3">
@@ -324,11 +313,21 @@
                                         <label class="form-check-label" for="golpe_recibio_tratamiento">Recibió tratamiento?</label>
                                     </div>
                                 </div>
+
+                                <div class="mb-3">
+                                    <label class="form-label">Presenta dificultad para hablar, tragar, abrir la boca?</label>
+                                    <textarea class="form-control" id="dificultades_funcionales" rows="2" placeholder="Describir dificultades"></textarea>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label class="form-label">Examen de tejidos blandos</label>
+                                    <textarea class="form-control" id="examen_tejidos_blandos" rows="2" placeholder="Resultados del examen"></textarea>
+                                </div>
                             </div>
                         </div>
 
                         <!-- Declaración -->
-                        <div class="alert alert-info mt-4">
+                        <div class="alert alert-declaration mt-4">
                             <p class="mb-0">
                                 <strong>Declaración:</strong> Declaro que he contestado todas las preguntas con honestidad y según mi consentimiento. 
                                 Asimismo, he sido informado que los datos suministrados quedan reservados en la presente historia clínica y amparados en secreto profesional.
@@ -348,22 +347,6 @@
                         <div class="row">
                             <div class="col-md-6">
                                 <div class="mb-3">
-                                    <label class="form-label">Presencia de cálculo?</label>
-                                    <div class="form-check">
-                                        <input class="form-check-input" type="checkbox" id="calculo_si">
-                                        <label class="form-check-label" for="calculo_si">Sí</label>
-                                    </div>
-                                </div>
-
-                                <div class="mb-3">
-                                    <label class="form-label">Enfermedad periodontal?</label>
-                                    <div class="form-check">
-                                        <input class="form-check-input" type="checkbox" id="enfermedad_periodontal_si">
-                                        <label class="form-check-label" for="enfermedad_periodontal_si">Sí</label>
-                                    </div>
-                                </div>
-
-                                <div class="mb-3">
                                     <label class="form-label">Le sangran las encías?</label>
                                     <div class="form-check">
                                         <input class="form-check-input" type="checkbox" id="sangrado_encias_si">
@@ -379,18 +362,6 @@
                                     </div>
                                 </div>
 
-                                <div class="mb-3">
-                                    <label for="observaciones_dentales" class="form-label">Observaciones:</label>
-                                    <textarea class="form-control" id="observaciones_dentales" rows="4" placeholder="Observaciones sobre el estado dental"></textarea>
-                                </div>
-                            </div>
-
-                            <div class="col-md-6">
-                                <div class="mb-3">
-                                    <label class="form-label">Hay alguna otra enfermedad o recomendación de su médico de la que quiera dejar constancia?</label>
-                                    <textarea class="form-control" id="otras_enfermedades" rows="3" placeholder="Otras enfermedades o recomendaciones médicas"></textarea>
-                                </div>
-
                                 <!-- Odontograma Visual -->
                                 <div class="mb-3">
                                     <label class="form-label">Odontograma:</label>
@@ -404,21 +375,54 @@
                                 <!-- Referencias del Odontograma -->
                                 <div class="mb-3">
                                     <label class="form-label">Referencias:</label>
-                                    <div class="border rounded p-2 bg-light">
+                                    <div class="dental-references">
                                         <div class="row">
                                             <div class="col-6">
-                                                <small><strong>COLOR</strong></small><br>
-                                                <small>CORONA</small><br>
+                                                <small><strong>COLOR ROJO</strong></small><br>
+                                                <small><strong>COLOR AZUL</strong></small><br>
+                                                <small>PRÓTESIS FIJA</small><br>
                                                 <small>PRÓTESIS REMOVIBLE</small><br>
-                                                <small>PRÓTESIS FIJA</small>
+                                                <small>CORONA</small>
                                             </div>
                                             <div class="col-6">
                                                 <small><strong>CONDICIONES</strong></small><br>
                                                 <small>CARIES</small><br>
                                                 <small>AUSENCIA DE DIENTES</small><br>
-                                                <small>OTROS</small>
+                                                <small>OTROS</small><br>
+                                                <small>CANTIDAD DE DIENTES EXISTENTES:</small>
                                             </div>
                                         </div>
+                                        <input type="text" class="form-control mt-2" id="cantidad_dientes" placeholder="Número de dientes existentes">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label">Presencia de cálculo?</label>
+                                    <textarea class="form-control" id="calculo_detalle" rows="2" placeholder="Detalles sobre presencia de cálculo"></textarea>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label class="form-label">Enfermedad periodontal?</label>
+                                    <textarea class="form-control" id="enfermedad_periodontal_detalle" rows="2" placeholder="Detalles sobre enfermedad periodontal"></textarea>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="observaciones_dentales" class="form-label">Observaciones:</label>
+                                    <textarea class="form-control" id="observaciones_dentales" rows="4" placeholder="Observaciones sobre el estado dental"></textarea>
+                                </div>
+
+                                <!-- Firmas -->
+                                <div class="signature-section">
+                                    <div class="mb-3">
+                                        <label for="firma_paciente" class="form-label">Firma del paciente:</label>
+                                        <input type="text" class="form-control" id="firma_paciente" placeholder="Firma del paciente">
+                                    </div>
+
+                                    <div class="mb-3">
+                                        <label for="firma_profesional" class="form-label">Firma y sello del profesional:</label>
+                                        <input type="text" class="form-control" id="firma_profesional" placeholder="Firma y sello del profesional">
                                     </div>
                                 </div>
                             </div>
@@ -435,7 +439,7 @@
                     </div>
                     <div class="card-body">
                         <div class="mb-3">
-                            <label for="motivo_consulta" class="form-label">Motivo de consulta</label>
+                            <label for="motivo_consulta" class="form-label required-field">Motivo de consulta</label>
                             <textarea class="form-control" id="motivo_consulta" rows="4" placeholder="Describa el motivo de la consulta..." required></textarea>
                         </div>
                     </div>
@@ -488,6 +492,68 @@
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block styles %}
+<style>
+    .form-section {
+        border-left: 4px solid #007bff;
+        padding-left: 15px;
+        margin-bottom: 20px;
+    }
+    
+    .form-section h5 {
+        color: #007bff;
+        font-weight: bold;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+    
+    .checkbox-group {
+        background-color: #f8f9fa;
+        padding: 10px;
+        border-radius: 5px;
+        margin-bottom: 15px;
+    }
+    
+    .checkbox-group .form-check {
+        margin-bottom: 5px;
+    }
+    
+    .form-label {
+        font-weight: 600;
+        color: #495057;
+    }
+    
+    .required-field::after {
+        content: " *";
+        color: #dc3545;
+    }
+    
+    .dental-references {
+        background-color: #e9ecef;
+        border: 1px solid #dee2e6;
+        border-radius: 5px;
+        padding: 15px;
+    }
+    
+    .dental-references small {
+        font-weight: 600;
+    }
+    
+    .signature-section {
+        border-top: 2px solid #dee2e6;
+        padding-top: 20px;
+        margin-top: 20px;
+    }
+    
+    .alert-declaration {
+        background-color: #d1ecf1;
+        border-color: #bee5eb;
+        color: #0c5460;
+        font-style: italic;
+    }
+</style>
 {% endblock %}
 
 {% block scripts %}
@@ -560,9 +626,11 @@ function collectFormData() {
         plan: document.getElementById('plan').value,
         
         // Historia clínica general
-        medicamentos_actuales: document.getElementById('medicamentos_actuales').value,
         enfermedades: document.getElementById('enfermedades').value,
+        medicamentos_actuales: document.getElementById('medicamentos_actuales').value,
         alergias: document.getElementById('alergias').value,
+        tratamiento_odontologico: document.getElementById('tratamiento_odontologico_si').checked,
+        tratamiento_odontologico_detalle: document.getElementById('tratamiento_odontologico_detalle').value,
         
         // Checkboxes de enfermedades
         colageno: document.getElementById('colageno_si').checked,
@@ -574,8 +642,6 @@ function collectFormData() {
         transfusiones: document.getElementById('transfusiones_si').checked,
         embarazada: document.getElementById('embarazada_si').checked,
         meses_embarazo: document.getElementById('meses_embarazo').value,
-        tratamiento_odontologico: document.getElementById('tratamiento_odontologico_si').checked,
-        tratamiento_odontologico_detalle: document.getElementById('tratamiento_odontologico_detalle').value,
         chagas: document.getElementById('chagas_si').checked,
         hepatitis: document.getElementById('hepatitis_si').checked,
         renales: document.getElementById('renales_si').checked,
@@ -584,26 +650,33 @@ function collectFormData() {
         drogas: document.getElementById('drogas_si').checked,
         fuma: document.getElementById('fuma_si').checked,
         tiempo_fumando: document.getElementById('tiempo_fumando').value,
+        otras_enfermedades: document.getElementById('otras_enfermedades').value,
         
-        // Dolor
+        // Medicamentos y dolor
+        tomo_medicamento: document.getElementById('tomo_medicamento_si').checked,
+        medicamento_detalle: document.getElementById('medicamento_detalle').value,
         dolor_intensidad: document.querySelector('input[name="dolor_intensidad"]:checked')?.value,
         dolor_tipo: document.querySelector('input[name="dolor_tipo"]:checked')?.value,
         dolor_localizacion: document.querySelector('input[name="dolor_localizacion"]:checked')?.value,
         dolor_detalle: document.getElementById('dolor_detalle').value,
         
-        // Golpe en dientes
+        // Golpe en dientes y dificultades funcionales
         golpe_dientes: document.getElementById('golpe_dientes_si').checked,
         golpe_cuando: document.getElementById('golpe_cuando').value,
         golpe_como: document.getElementById('golpe_como').value,
         golpe_recibio_tratamiento: document.getElementById('golpe_recibio_tratamiento').checked,
+        dificultades_funcionales: document.getElementById('dificultades_funcionales').value,
+        examen_tejidos_blandos: document.getElementById('examen_tejidos_blandos').value,
         
         // Historia clínica dental
-        calculo: document.getElementById('calculo_si').checked,
-        enfermedad_periodontal: document.getElementById('enfermedad_periodontal_si').checked,
         sangrado_encias: document.getElementById('sangrado_encias_si').checked,
         movilidad_dentaria: document.getElementById('movilidad_dentaria_si').checked,
+        calculo_detalle: document.getElementById('calculo_detalle').value,
+        enfermedad_periodontal_detalle: document.getElementById('enfermedad_periodontal_detalle').value,
         observaciones_dentales: document.getElementById('observaciones_dentales').value,
-        otras_enfermedades: document.getElementById('otras_enfermedades').value,
+        cantidad_dientes: document.getElementById('cantidad_dientes').value,
+        firma_paciente: document.getElementById('firma_paciente').value,
+        firma_profesional: document.getElementById('firma_profesional').value,
         
         // Motivo de consulta
         motivo_consulta: document.getElementById('motivo_consulta').value,

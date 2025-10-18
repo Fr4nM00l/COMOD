@@ -67,6 +67,11 @@
                         <button class="btn btn-primary" onclick="createNewHistory()">
                             <i class="bi bi-file-medical me-1"></i>Nueva Historia Clínica
                         </button>
+                        {% if histories %}
+                        <a href="{{ url_for('paciente_historias_clinicas', patient_id=patient.id) }}" class="btn btn-info">
+                            <i class="bi bi-list-ul me-1"></i>Ver Historial ({{ histories|length }})
+                        </a>
+                        {% endif %}
                         <button class="btn btn-success" onclick="createNewOdontogram()">
                             <i class="bi bi-tooth me-1"></i>Nuevo Odontograma
                         </button>
@@ -87,9 +92,20 @@
                     <div>
                         <h3 class="mb-1">Consulta Médica</h3>
                         <p class="text-muted mb-0">{{ patient.Nombre }} - <span id="currentDateTime"></span></p>
+                        {% if appointment_info %}
+                        <div class="mt-2">
+                            <span class="badge bg-success">
+                                <i class="bi bi-calendar-check me-1"></i>
+                                Turno programado: {{ appointment_info.fecha.strftime('%d/%m/%Y') }} a las {{ appointment_info.hora|format_time }}
+                            </span>
+                        </div>
+                        {% endif %}
                     </div>
                 </div>
-                <div>
+                <div class="d-flex gap-2">
+                    <button class="btn btn-info" onclick="previewConsultation()">
+                        <i class="bi bi-eye me-1"></i>Vista Previa
+                    </button>
                     <button class="btn btn-success" onclick="saveConsultation()">
                         <i class="bi bi-save me-1"></i>Guardar Consulta
                     </button>
@@ -320,6 +336,85 @@ function editOdontogram(odontogramId) {
     notifications.info('Funcionalidad en desarrollo', 'La edición de odontogramas estará disponible próximamente.');
 }
 
+// Función para mostrar vista previa de la consulta
+function previewConsultation() {
+    const notes = document.getElementById('consultationNotes').value;
+    const nextAppointment = document.getElementById('nextAppointment').value;
+    const priority = document.getElementById('treatmentPriority').value;
+    
+    if (!notes.trim()) {
+        notifications.warning('Notas requeridas', 'Por favor, escribe al menos algunas notas de la consulta antes de ver la vista previa.');
+        return;
+    }
+    
+    // Llenar la vista previa
+    document.getElementById('preview-notes').textContent = notes;
+    document.getElementById('preview-datetime').textContent = new Date().toLocaleString('es-ES');
+    
+    if (nextAppointment) {
+        const date = new Date(nextAppointment);
+        document.getElementById('preview-next-appointment').textContent = date.toLocaleDateString('es-ES');
+    } else {
+        document.getElementById('preview-next-appointment').textContent = 'No programada';
+    }
+    
+    if (priority) {
+        const priorityText = {
+            'urgente': 'Urgente',
+            'alta': 'Alta',
+            'media': 'Media',
+            'baja': 'Baja'
+        };
+        document.getElementById('preview-priority').textContent = priorityText[priority] || priority;
+    } else {
+        document.getElementById('preview-priority').textContent = 'No especificada';
+    }
+    
+    // Calcular edad del paciente para la vista previa
+    const birthDateElement = document.getElementById('patient-age');
+    if (birthDateElement) {
+        const birthDate = new Date(birthDateElement.getAttribute('data-birth-date'));
+        const today = new Date();
+        let age = today.getFullYear() - birthDate.getFullYear();
+        const monthDiff = today.getMonth() - birthDate.getMonth();
+        
+        if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+            age--;
+        }
+        
+        document.getElementById('preview-patient-age').textContent = age;
+    }
+    
+    // Mostrar el modal
+    const modal = new bootstrap.Modal(document.getElementById('consultationPreviewModal'));
+    modal.show();
+}
+
+// Función para editar desde la vista previa
+function editFromPreview() {
+    // Cerrar el modal
+    const modal = bootstrap.Modal.getInstance(document.getElementById('consultationPreviewModal'));
+    modal.hide();
+    
+    // Hacer scroll hacia el formulario
+    document.getElementById('consultationNotes').scrollIntoView({ behavior: 'smooth' });
+    
+    // Enfocar el campo de notas
+    document.getElementById('consultationNotes').focus();
+    
+    notifications.info('Modo edición', 'Puedes editar los campos del formulario y volver a ver la vista previa.');
+}
+
+// Función para confirmar y guardar desde la vista previa
+function confirmSaveConsultation() {
+    // Cerrar el modal
+    const modal = bootstrap.Modal.getInstance(document.getElementById('consultationPreviewModal'));
+    modal.hide();
+    
+    // Llamar a la función de guardado original
+    saveConsultation();
+}
+
 function saveConsultation() {
     const notes = document.getElementById('consultationNotes').value;
     const nextAppointment = document.getElementById('nextAppointment').value;
@@ -379,4 +474,80 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 </script>
+
+<!-- Modal de Vista Previa de Consulta -->
+<div class="modal fade" id="consultationPreviewModal" tabindex="-1" aria-labelledby="consultationPreviewModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header bg-info text-white">
+                <h5 class="modal-title" id="consultationPreviewModalLabel">
+                    <i class="bi bi-eye me-2"></i>Vista Previa de la Consulta
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="card">
+                            <div class="card-header bg-primary text-white">
+                                <h6 class="mb-0"><i class="bi bi-person-circle me-2"></i>Información del Paciente</h6>
+                            </div>
+                            <div class="card-body">
+                                <h6>{{ patient.Nombre }}</h6>
+                                <p class="mb-1"><strong>DNI:</strong> {{ patient.DNI or 'No especificado' }}</p>
+                                <p class="mb-1"><strong>Teléfono:</strong> {{ patient.telefono or 'No especificado' }}</p>
+                                <p class="mb-1"><strong>Email:</strong> {{ patient.email or 'No especificado' }}</p>
+                                {% if patient.FechaNacimiento %}
+                                    <p class="mb-0"><strong>Edad:</strong> <span id="preview-patient-age"></span> años</p>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-8">
+                        <div class="card">
+                            <div class="card-header bg-success text-white">
+                                <h6 class="mb-0"><i class="bi bi-clipboard-data me-2"></i>Detalles de la Consulta</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="mb-3">
+                                    <h6><i class="bi bi-calendar-event me-2"></i>Fecha y Hora</h6>
+                                    <p class="mb-0" id="preview-datetime"></p>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <h6><i class="bi bi-journal-text me-2"></i>Notas de la Consulta</h6>
+                                    <div class="border rounded p-3 bg-light" id="preview-notes">
+                                        <!-- Se llenará dinámicamente -->
+                                    </div>
+                                </div>
+                                
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <h6><i class="bi bi-calendar-check me-2"></i>Próxima Cita</h6>
+                                        <p class="mb-0" id="preview-next-appointment">No programada</p>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <h6><i class="bi bi-exclamation-triangle me-2"></i>Prioridad</h6>
+                                        <p class="mb-0" id="preview-priority">No especificada</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="bi bi-x-lg me-1"></i>Cerrar
+                </button>
+                <button type="button" class="btn btn-warning" onclick="editFromPreview()">
+                    <i class="bi bi-pencil me-1"></i>Editar
+                </button>
+                <button type="button" class="btn btn-success" onclick="confirmSaveConsultation()">
+                    <i class="bi bi-check-lg me-1"></i>Confirmar y Guardar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
 {% endblock %}

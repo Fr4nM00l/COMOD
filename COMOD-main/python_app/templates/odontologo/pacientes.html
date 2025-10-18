@@ -77,16 +77,11 @@
                                     {% for patient in patients %}
                                     <tr class="patient-row" data-patient-id="{{ patient.id }}">
                                         <td>
-                                            <div class="d-flex align-items-center">
-                                                <div class="avatar-sm bg-primary text-white rounded-circle d-flex align-items-center justify-content-center me-3">
-                                                    {{ patient.Nombre[0].upper() }}
-                                                </div>
-                                                <div>
-                                                    <strong>{{ patient.Nombre }}</strong>
-                                                    {% if patient.FechaNacimiento %}
-                                                        <br><small class="text-muted">{{ patient.FechaNacimiento }} años</small>
-                                                    {% endif %}
-                                                </div>
+                                            <div>
+                                                <strong>{{ patient.Nombre }}</strong>
+                                                {% if patient.edad %}
+                                                    <br><small class="text-muted">{{ patient.edad }} años</small>
+                                                {% endif %}
                                             </div>
                                         </td>
                                         <td>{{ patient.DNI or 'No especificado' }}</td>
@@ -115,26 +110,16 @@
                                             {% endif %}
                                         </td>
                                         <td>
-                                            <div class="btn-group" role="group">
-                                                <a href="{{ url_for('odontologo_consulta', patient_id=patient.id) }}" 
-                                                   class="btn btn-primary btn-sm" title="Iniciar Consulta">
-                                                    <i class="bi bi-stethoscope"></i>
-                                                </a>
-                                                <button class="btn btn-info btn-sm" 
+                                            <div class="btn-group w-100" role="group">
+                                                <button class="btn btn-info btn-sm flex-fill" 
                                                         onclick="viewPatientDetails({{ patient.id }})" 
                                                         title="Ver Detalles">
-                                                    <i class="bi bi-eye"></i>
+                                                    <i class="bi bi-person-lines-fill"></i>
                                                 </button>
-                                                <button class="btn btn-success btn-sm" 
-                                                        onclick="createHistory({{ patient.id }})" 
-                                                        title="Crear Historia Clínica">
+                                                <a href="{{ url_for('paciente_historias_clinicas', patient_id=patient.id) }}" 
+                                                   class="btn btn-success btn-sm flex-fill" title="Ver Historias Clínicas">
                                                     <i class="bi bi-file-medical"></i>
-                                                </button>
-                                                <button class="btn btn-warning btn-sm" 
-                                                        onclick="createOdontogram({{ patient.id }})" 
-                                                        title="Crear Odontograma">
-                                                    <i class="bi bi-tooth"></i>
-                                                </button>
+                                                </a>
                                             </div>
                                         </td>
                                     </tr>
@@ -177,12 +162,44 @@
         </div>
     </div>
 </div>
-{% endblock %}
 
-{% block scripts %}
+<!-- Modal para mostrar detalles del paciente -->
+<div class="modal fade" id="patientDetailsModal" tabindex="-1" aria-labelledby="patientDetailsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="patientDetailsModalLabel">
+                    <i class="bi bi-person-circle me-2"></i>Información del Paciente
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div id="patientDetailsContent">
+                    <!-- El contenido se cargará dinámicamente -->
+                    <div class="text-center">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Cargando...</span>
+                        </div>
+                        <p class="mt-2">Cargando información del paciente...</p>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                <a href="#" id="consultPatientBtn" class="btn btn-primary">
+                    <i class="bi bi-clipboard-pulse me-1"></i>Iniciar Consulta
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
 // Variables globales
 let currentPatientId = null;
+
+// Función de prueba
+console.log('Script de pacientes cargado correctamente');
 
 // Filtros y búsqueda
 document.getElementById('searchInput').addEventListener('input', filterPatients);
@@ -243,37 +260,105 @@ function clearFilters() {
 
 // Ver detalles del paciente
 function viewPatientDetails(patientId) {
+    console.log('viewPatientDetails called with ID:', patientId);
     currentPatientId = patientId;
     
-    // Simular carga de datos (en una implementación real, harías una llamada AJAX)
-    const patientRow = document.querySelector(`[data-patient-id="${patientId}"]`);
-    const patientName = patientRow.querySelector('td:first-child strong').textContent;
-    const patientDNI = patientRow.cells[1].textContent;
-    const patientPhone = patientRow.cells[2].textContent;
-    const patientEmail = patientRow.cells[3].textContent;
+    // Mostrar el modal
+    const modal = new bootstrap.Modal(document.getElementById('patientDetailsModal'));
+    modal.show();
     
-    document.getElementById('patientDetailsContent').innerHTML = `
+    // Cargar datos del paciente
+    loadPatientDetails(patientId);
+}
+
+// Cargar detalles del paciente via AJAX
+function loadPatientDetails(patientId) {
+    console.log('Loading patient details for ID:', patientId);
+    fetch(`/api/paciente/${patientId}`)
+        .then(response => {
+            console.log('Response status:', response.status);
+            return response.json();
+        })
+        .then(data => {
+            console.log('Response data:', data);
+            if (data.success) {
+                displayPatientDetails(data.patient);
+                // Actualizar el enlace del botón de consulta
+                document.getElementById('consultPatientBtn').href = `/odontologo/consulta/${patientId}`;
+            } else {
+                showError('Error al cargar los datos del paciente: ' + (data.message || 'Error desconocido'));
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showError('Error de conexión al cargar los datos del paciente');
+        });
+}
+
+// Mostrar los detalles del paciente en el modal
+function displayPatientDetails(patient) {
+    const content = document.getElementById('patientDetailsContent');
+    
+    // Calcular edad si hay fecha de nacimiento
+    let edad = 'No especificada';
+    if (patient.FechaNacimiento) {
+        const fechaNac = new Date(patient.FechaNacimiento);
+        const hoy = new Date();
+        edad = hoy.getFullYear() - fechaNac.getFullYear();
+    }
+    
+    content.innerHTML = `
         <div class="row">
-            <div class="col-md-6">
-                <h6><i class="bi bi-person me-2"></i>Información Personal</h6>
-                <p><strong>Nombre:</strong> ${patientName}</p>
-                <p><strong>DNI:</strong> ${patientDNI}</p>
-                <p><strong>Teléfono:</strong> ${patientPhone}</p>
-                <p><strong>Email:</strong> ${patientEmail}</p>
+            <div class="col-md-4 text-center">
+                <div class="mb-3">
+                    <i class="bi bi-person-circle text-primary" style="font-size: 4rem;"></i>
+                </div>
+                <h4 class="text-primary">${patient.Nombre}</h4>
+                <p class="text-muted">Paciente #${patient.id}</p>
             </div>
-            <div class="col-md-6">
-                <h6><i class="bi bi-file-medical me-2"></i>Estado Médico</h6>
-                <p><strong>Historia Clínica:</strong> ${patientRow.cells[4].innerHTML}</p>
-                <p><strong>Odontograma:</strong> ${patientRow.cells[5].innerHTML}</p>
+            <div class="col-md-8">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6><i class="bi bi-card-text me-2"></i>Datos Personales</h6>
+                        <p><strong>DNI:</strong> ${patient.DNI || 'No especificado'}</p>
+                        <p><strong>Teléfono:</strong> ${patient.telefono || 'No especificado'}</p>
+                        <p><strong>Email:</strong> ${patient.email || 'No especificado'}</p>
+                        <p><strong>Edad:</strong> ${edad} años</p>
+                    </div>
+                    <div class="col-md-6">
+                        <h6><i class="bi bi-geo-alt me-2"></i>Información Adicional</h6>
+                        <p><strong>Dirección:</strong> ${patient.direccion || 'No especificada'}</p>
+                        <p><strong>Fecha de Nacimiento:</strong> ${patient.FechaNacimiento ? new Date(patient.FechaNacimiento).toLocaleDateString('es-ES') : 'No especificada'}</p>
+                        <p><strong>Fecha de Registro:</strong> ${patient.fecha_registro ? new Date(patient.fecha_registro).toLocaleDateString('es-ES') : 'No especificada'}</p>
+                    </div>
+                </div>
+                
+                <hr>
+                
+                <div class="row">
+                    <div class="col-12">
+                        <h6><i class="bi bi-file-medical me-2"></i>Estado Médico</h6>
+                        <div class="d-flex flex-wrap gap-2">
+                            <span class="badge bg-info">Historia Clínica: ${patient.historias_count || 0}</span>
+                            <span class="badge bg-success">Odontogramas: ${patient.odontogramas_count || 0}</span>
+                            <span class="badge bg-warning">Turnos: ${patient.turnos_count || 0}</span>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     `;
-    
-    document.getElementById('startConsultationBtn').onclick = () => {
-        window.location.href = `/odontologo/consulta/${patientId}`;
-    };
-    
-    new bootstrap.Modal(document.getElementById('patientDetailsModal')).show();
+}
+
+// Mostrar error en el modal
+function showError(message) {
+    const content = document.getElementById('patientDetailsContent');
+    content.innerHTML = `
+        <div class="alert alert-danger" role="alert">
+            <i class="bi bi-exclamation-triangle me-2"></i>
+            ${message}
+        </div>
+    `;
 }
 
 // Crear historia clínica

@@ -35,6 +35,16 @@ def create_app() -> Flask:
     
     # Inicializar el servicio de email
     email_service.init_app(app)
+    
+    # Registrar filtros de Jinja2
+    from utils import format_time_from_timedelta
+    
+    @app.template_filter('format_time')
+    def format_time_filter(timedelta_obj):
+        """Filtro para formatear objetos timedelta como tiempo"""
+        if timedelta_obj is None:
+            return ""
+        return format_time_from_timedelta(timedelta_obj)
 
     @app.route("/", methods=["GET", "POST"])
     def login():
@@ -102,6 +112,18 @@ def create_app() -> Flask:
         """Vista de pacientes para odontólogos"""
         try:
             patients = PatientService.get_all_patients()
+            
+            # Calcular edad para cada paciente
+            from datetime import datetime
+            for patient in patients:
+                if patient.get('FechaNacimiento'):
+                    today = datetime.now()
+                    birth_date = patient['FechaNacimiento']
+                    age = today.year - birth_date.year - ((today.month, today.day) < (birth_date.month, birth_date.day))
+                    patient['edad'] = age
+                else:
+                    patient['edad'] = None
+            
             return render_template("odontologo/pacientes.html", patients=patients)
         except Exception as e:
             handle_load_error(e, "pacientes", flash)
@@ -117,6 +139,42 @@ def create_app() -> Flask:
         except Exception as e:
             handle_load_error(e, "historias clínicas", flash)
             return render_template("odontologo/historias_clinicas.html", histories=[])
+
+    @app.route("/odontologo/paciente/<int:patient_id>/historias")
+    @require_odontologo
+    def paciente_historias_clinicas(patient_id):
+        """Vista de historias clínicas de un paciente específico"""
+        try:
+            # Obtener información del paciente
+            patient = PatientService.get_patient_by_id(patient_id)
+            if not patient:
+                flash("Paciente no encontrado", "error")
+                return redirect(url_for("odontologo_pacientes"))
+            
+            # Obtener todas las historias clínicas del paciente
+            histories = ClinicalHistoryService.get_clinical_histories_by_patient(patient_id)
+            
+            return render_template("odontologo/paciente_historias.html", 
+                                 patient=patient, 
+                                 histories=histories)
+        except Exception as e:
+            handle_load_error(e, "historias del paciente", flash)
+            return redirect(url_for("odontologo_pacientes"))
+
+    @app.route("/odontologo/historia-clinica/<int:history_id>")
+    @require_odontologo
+    def ver_historia_clinica(history_id):
+        """Vista detallada de una historia clínica específica"""
+        try:
+            history = ClinicalHistoryService.get_clinical_history_by_id(history_id)
+            if not history:
+                flash("Historia clínica no encontrada", "error")
+                return redirect(url_for("odontologo_historias"))
+            
+            return render_template("odontologo/ver_historia_clinica.html", history=history)
+        except Exception as e:
+            handle_load_error(e, "historia clínica", flash)
+            return redirect(url_for("odontologo_historias"))
 
     @app.route("/odontologo/odontogramas")
     @require_odontologo
@@ -139,6 +197,21 @@ def create_app() -> Flask:
                 flash("Paciente no encontrado", "error")
                 return redirect(url_for("odontologo_pacientes"))
             
+            # Verificar si el paciente tiene un turno programado para hoy
+            from datetime import datetime, date
+            today = date.today()
+            odontologo_id = session.get('user_id')
+            
+            # Verificar si hay un turno para este paciente hoy
+            has_appointment_today = AppointmentService.check_patient_appointment_today(patient_id, odontologo_id, today)
+            
+            if not has_appointment_today:
+                flash(f"El paciente {patient['Nombre']} no tiene un turno programado para hoy. Solo se pueden realizar consultas a pacientes con turnos activos.", "warning")
+                return redirect(url_for("odontologo_dashboard"))
+            
+            # Obtener información del turno de hoy
+            appointment_info = AppointmentService.get_patient_appointment_today(patient_id, odontologo_id, today)
+            
             # Obtener historias clínicas del paciente
             histories = ClinicalHistoryService.get_clinical_histories_by_patient(patient_id)
             
@@ -148,7 +221,8 @@ def create_app() -> Flask:
             return render_template("odontologo/consulta.html", 
                                  patient=patient, 
                                  histories=histories, 
-                                 odontogramas=odontogramas)
+                                 odontogramas=odontogramas,
+                                 appointment_info=appointment_info)
         except Exception as e:
             handle_load_error(e, "consulta", flash)
             return redirect(url_for("odontologo_pacientes"))
@@ -163,7 +237,10 @@ def create_app() -> Flask:
                 flash("Paciente no encontrado", "error")
                 return redirect(url_for("odontologo_pacientes"))
             
-            return render_template("odontologo/nueva_historia_clinica.html", patient=patient)
+            # Formatear fecha actual
+            fecha_actual = datetime.now().strftime('%d/%m/%Y')
+            
+            return render_template("odontologo/nueva_historia_clinica.html", patient=patient, fecha_actual=fecha_actual)
         except Exception as e:
             handle_load_error(e, "formulario", flash)
             return redirect(url_for("odontologo_pacientes"))
@@ -1155,6 +1232,38 @@ def test_duplicate_appointments():
 def test_notifications():
     """Ruta para probar el sistema de notificaciones"""
     return render_template('test_notifications.html')
+
+# API para obtener datos del paciente
+@app.route("/api/paciente/<int:patient_id>")
+@require_odontologo
+def api_paciente_details(patient_id):
+    """API para obtener detalles completos de un paciente"""
+    try:
+        patient = PatientService.get_patient_by_id(patient_id)
+        if not patient:
+            return create_error_response("Paciente no encontrado")
+        
+        # Obtener estadísticas del paciente
+        histories_count = ClinicalHistoryService.get_clinical_histories_by_patient(patient_id)
+        histories_count = len(histories_count) if histories_count else 0
+        
+        # Obtener conteo de turnos
+        try:
+            turnos_count = AppointmentService.get_appointments_count_by_patient(patient_id)
+        except Exception as e:
+            print(f"Error obteniendo conteo de turnos: {e}")
+            turnos_count = 0
+        
+        # Agregar estadísticas al objeto paciente
+        patient_data = dict(patient)
+        patient_data['historias_count'] = histories_count
+        patient_data['odontogramas_count'] = 0  # Por ahora 0, se implementará más adelante
+        patient_data['turnos_count'] = turnos_count
+        
+        return create_success_response("Datos del paciente obtenidos", {"patient": patient_data})
+        
+    except Exception as e:
+        return create_error_response(f"Error al obtener datos del paciente: {str(e)}")
 
 if __name__ == "__main__":
     port = int(os.getenv("PORT", "5000"))

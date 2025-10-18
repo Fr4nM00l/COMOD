@@ -1,6 +1,8 @@
+
 """
 Servicios para operaciones de base de datos
 """
+from datetime import datetime
 from db_utils import get_db_cursor, get_db_cursor_with_commit
 from utils import process_appointments_time, format_time_from_timedelta
 
@@ -209,6 +211,95 @@ class AppointmentService:
                     time_str = format_time_from_timedelta(row[0])
                     occupied_times.append(time_str)
             return occupied_times
+    
+    @staticmethod
+    def get_appointments_count_by_patient(patient_id):
+        """Obtener el número total de turnos de un paciente"""
+        try:
+            with get_db_cursor() as cursor:
+                cursor.execute(
+                    """
+                    SELECT COUNT(*) as count
+                    FROM detalleturno 
+                    WHERE Paciente_id = %s
+                    """,
+                    (patient_id,)
+                )
+                result = cursor.fetchone()
+                if result:
+                    # Manejar tanto diccionarios como tuplas
+                    if isinstance(result, dict):
+                        return result.get('count', 0)
+                    else:
+                        return result[0]
+                return 0
+        except Exception as e:
+            print(f"Error en get_appointments_count_by_patient: {e}")
+            return 0
+    
+    @staticmethod
+    def check_patient_appointment_today(patient_id, odontologo_id, date):
+        """Verificar si un paciente tiene un turno programado para una fecha específica con un odontólogo"""
+        try:
+            with get_db_cursor() as cursor:
+                cursor.execute(
+                    """
+                    SELECT COUNT(*) as count
+                    FROM detalleturno 
+                    WHERE Paciente_id = %s 
+                      AND Odontologo_id = %s 
+                      AND FechaTurno = %s
+                    """,
+                    (patient_id, odontologo_id, date)
+                )
+                result = cursor.fetchone()
+                if result:
+                    # Manejar tanto diccionarios como tuplas
+                    if isinstance(result, dict):
+                        count = result.get('count', 0)
+                    else:
+                        count = result[0]
+                    return count > 0
+                return False
+        except Exception as e:
+            print(f"Error en check_patient_appointment_today: {e}")
+            return False
+    
+    @staticmethod
+    def get_patient_appointment_today(patient_id, odontologo_id, date):
+        """Obtener información del turno de un paciente para una fecha específica"""
+        try:
+            with get_db_cursor() as cursor:
+                cursor.execute(
+                    """
+                    SELECT dt.FechaTurno, dt.HoraTurno, dt.id
+                    FROM detalleturno dt
+                    WHERE dt.Paciente_id = %s 
+                      AND dt.Odontologo_id = %s 
+                      AND dt.FechaTurno = %s
+                    LIMIT 1
+                    """,
+                    (patient_id, odontologo_id, date)
+                )
+                result = cursor.fetchone()
+                if result:
+                    # Manejar tanto diccionarios como tuplas
+                    if isinstance(result, dict):
+                        return {
+                            'fecha': result.get('FechaTurno'),
+                            'hora': result.get('HoraTurno'),
+                            'id': result.get('id')
+                        }
+                    else:
+                        return {
+                            'fecha': result[0],
+                            'hora': result[1],
+                            'id': result[2]
+                        }
+                return None
+        except Exception as e:
+            print(f"Error en get_patient_appointment_today: {e}")
+            return None
 
 
 class DentistService:
@@ -289,24 +380,61 @@ class ClinicalHistoryService:
             cursor.execute(
                 """
                 INSERT INTO historiaclinica 
-                (Paciente_id, Fecha, MotivoConsulta, Diagnostico, PlanTratamiento, 
-                 MedicamentosActuales, Alergias, Enfermedades, Observaciones,
-                 Calculo, EnfermedadPeriodontal, OdontogramaData)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                (Paciente_id, Fecha, ObraSocial, NumAfiliado, Alergias, Enfermedades, 
+                 Fuma, Drogas, Medicamentos, NivelDeDolor, Calmante, GolpeEnDientes, FechaGolpe,
+                 domicilio, edad, tratamiento_odontologico, tratamiento_odontologico_detalle,
+                 colageno, fiebre_reumatica, diabetes, cardiaco, hipertension, sifilis, transfusiones,
+                 embarazada, meses_embarazo, chagas, hepatitis, renales, ulcera, convulsiones,
+                 tiempo_fumando, otras_enfermedades, tomo_medicamento, medicamento_detalle,
+                 dolor_tipo, dolor_localizacion, dificultades_funcionales, examen_tejidos_blandos,
+                 firma_paciente, firma_profesional, motivo_consulta, diagnostico_presuntivo, plan_tratamiento)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                 """,
                 (
                     data["paciente_id"],
                     data.get("fecha", datetime.now().date()),
-                    data["motivo_consulta"],
-                    data.get("diagnostico"),
-                    data.get("plan_tratamiento"),
-                    data.get("medicamentos_actuales"),
+                    data.get("obra_social"),
+                    data.get("plan"),
                     data.get("alergias"),
                     data.get("enfermedades"),
-                    data.get("observaciones"),
-                    data.get("calculo"),
-                    data.get("enfermedad_periodontal"),
-                    data.get("odontograma_data")
+                    data.get("fuma", False),
+                    data.get("drogas", ""),
+                    data.get("medicamentos_actuales"),
+                    data.get("dolor_intensidad"),
+                    data.get("dolor_detalle"),
+                    data.get("golpe_dientes", False),
+                    data.get("golpe_cuando") if data.get("golpe_dientes") else None,
+                    data.get("domicilio"),
+                    data.get("edad"),
+                    data.get("tratamiento_odontologico", False),
+                    data.get("tratamiento_odontologico_detalle"),
+                    data.get("colageno", False),
+                    data.get("fiebre_reumatica", False),
+                    data.get("diabetes", False),
+                    data.get("cardiaco", False),
+                    data.get("hipertension", False),
+                    data.get("sifilis", False),
+                    data.get("transfusiones", False),
+                    data.get("embarazada", False),
+                    data.get("meses_embarazo"),
+                    data.get("chagas", False),
+                    data.get("hepatitis", False),
+                    data.get("renales", False),
+                    data.get("ulcera", False),
+                    data.get("convulsiones", False),
+                    data.get("tiempo_fumando"),
+                    data.get("otras_enfermedades"),
+                    data.get("tomo_medicamento", False),
+                    data.get("medicamento_detalle"),
+                    data.get("dolor_tipo"),
+                    data.get("dolor_localizacion"),
+                    data.get("dificultades_funcionales"),
+                    data.get("examen_tejidos_blandos"),
+                    data.get("firma_paciente"),
+                    data.get("firma_profesional"),
+                    data.get("motivo_consulta"),
+                    data.get("diagnostico_presuntivo"),
+                    data.get("plan_tratamiento")
                 )
             )
             return cursor.lastrowid
@@ -318,23 +446,64 @@ class ClinicalHistoryService:
             cursor.execute(
                 """
                 UPDATE historiaclinica SET
-                Fecha = %s, MotivoConsulta = %s, Diagnostico = %s, PlanTratamiento = %s,
-                MedicamentosActuales = %s, Alergias = %s, Enfermedades = %s, Observaciones = %s,
-                Calculo = %s, EnfermedadPeriodontal = %s, OdontogramaData = %s
+                Fecha = %s, ObraSocial = %s, NumAfiliado = %s, Alergias = %s, Enfermedades = %s,
+                Fuma = %s, Drogas = %s, Medicamentos = %s, NivelDeDolor = %s, Calmante = %s,
+                GolpeEnDientes = %s, FechaGolpe = %s, domicilio = %s, edad = %s,
+                tratamiento_odontologico = %s, tratamiento_odontologico_detalle = %s,
+                colageno = %s, fiebre_reumatica = %s, diabetes = %s, cardiaco = %s,
+                hipertension = %s, sifilis = %s, transfusiones = %s, embarazada = %s,
+                meses_embarazo = %s, chagas = %s, hepatitis = %s, renales = %s,
+                ulcera = %s, convulsiones = %s, tiempo_fumando = %s, otras_enfermedades = %s,
+                tomo_medicamento = %s, medicamento_detalle = %s, dolor_tipo = %s,
+                dolor_localizacion = %s, dificultades_funcionales = %s, examen_tejidos_blandos = %s,
+                firma_paciente = %s, firma_profesional = %s, motivo_consulta = %s,
+                diagnostico_presuntivo = %s, plan_tratamiento = %s
                 WHERE id = %s
                 """,
                 (
                     data.get("fecha", datetime.now().date()),
-                    data["motivo_consulta"],
-                    data.get("diagnostico"),
-                    data.get("plan_tratamiento"),
-                    data.get("medicamentos_actuales"),
+                    data.get("obra_social"),
+                    data.get("plan"),
                     data.get("alergias"),
                     data.get("enfermedades"),
-                    data.get("observaciones"),
-                    data.get("calculo"),
-                    data.get("enfermedad_periodontal"),
-                    data.get("odontograma_data"),
+                    data.get("fuma", False),
+                    data.get("drogas", ""),
+                    data.get("medicamentos_actuales"),
+                    data.get("dolor_intensidad"),
+                    data.get("dolor_detalle"),
+                    data.get("golpe_dientes", False),
+                    data.get("golpe_cuando") if data.get("golpe_dientes") else None,
+                    data.get("domicilio"),
+                    data.get("edad"),
+                    data.get("tratamiento_odontologico", False),
+                    data.get("tratamiento_odontologico_detalle"),
+                    data.get("colageno", False),
+                    data.get("fiebre_reumatica", False),
+                    data.get("diabetes", False),
+                    data.get("cardiaco", False),
+                    data.get("hipertension", False),
+                    data.get("sifilis", False),
+                    data.get("transfusiones", False),
+                    data.get("embarazada", False),
+                    data.get("meses_embarazo"),
+                    data.get("chagas", False),
+                    data.get("hepatitis", False),
+                    data.get("renales", False),
+                    data.get("ulcera", False),
+                    data.get("convulsiones", False),
+                    data.get("tiempo_fumando"),
+                    data.get("otras_enfermedades"),
+                    data.get("tomo_medicamento", False),
+                    data.get("medicamento_detalle"),
+                    data.get("dolor_tipo"),
+                    data.get("dolor_localizacion"),
+                    data.get("dificultades_funcionales"),
+                    data.get("examen_tejidos_blandos"),
+                    data.get("firma_paciente"),
+                    data.get("firma_profesional"),
+                    data.get("motivo_consulta"),
+                    data.get("diagnostico_presuntivo"),
+                    data.get("plan_tratamiento"),
                     history_id
                 )
             )

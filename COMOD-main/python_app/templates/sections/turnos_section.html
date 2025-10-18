@@ -31,7 +31,7 @@
                                         {% for appointment in next_appointments %}
                                         <tr>
                                             <td>{{ appointment.FechaTurno.strftime('%d/%m/%Y') }}</td>
-                                            <td>{{ appointment.HoraTurno }}</td>
+                                            <td>{{ appointment.HoraTurno|format_time }}</td>
                                             <td>{{ appointment.Paciente }}</td>
                                             <td>{{ appointment.Odontologo }}</td>
                                             <td><span class="badge bg-success">Programado</span></td>

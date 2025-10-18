@@ -97,7 +97,7 @@
                 </h6>
                 <p class="mb-1">
                     <i class="bi bi-clock me-2"></i>
-                    {{ appointment.HoraTurno.strftime('%H:%M') }}
+                    {{ appointment.HoraTurno|format_time }}
                 </p>
                 <p class="mb-1">
                     <i class="bi bi-person me-2"></i>

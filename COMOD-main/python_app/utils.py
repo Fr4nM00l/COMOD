@@ -120,7 +120,11 @@ def validate_appointment_datetime(fecha_str, hora_str):
             appointment_time = datetime.strptime(hora_str, "%H:%M").time()
             now = datetime.now().time()
             
-            if appointment_time <= now:
+            # Permitir turnos hasta 15 minutos en el pasado para flexibilidad
+            from datetime import timedelta
+            now_minus_15 = (datetime.now() - timedelta(minutes=15)).time()
+            
+            if appointment_time < now_minus_15:
                 return False, "No se pueden programar turnos en horarios pasados. Por favor, selecciona una hora futura."
         
         return True, None
