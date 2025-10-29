@@ -108,8 +108,13 @@
                                             {# Botón Visualizar (Enlace) - Lleva al último o a uno 'nuevo' implícito #}
                                             {% if patient.TieneOdontograma %}
                                             <a href="{{ url_for('ver_odontograma_visual', odontograma_id=patient.OdontogramaID) }}" class="btn btn-sm btn-info" title="Ver Último Odontograma">
-                                                <i class="bi bi-eye-fill"></i> Visualizar
+                                                <i class="bi bi-eye-fill"></i> Ver Odontograma
                                             </a>
+                                            {% if patient.HistoriaClinicaID %}
+                                            <a href="{{ url_for('ver_historia_clinica', history_id=patient.HistoriaClinicaID) }}" class="btn btn-sm btn-primary ms-1" title="Ver Última Historia Clínica">
+                                                <i class="bi bi-file-medical"></i> Ver Historia
+                                            </a>
+                                            {% endif %}
                                             {% else %}
                                             {# Si no tiene, el botón podría ir a crear uno, o a una vista vacía #}
                                             {# Opción A: Botón deshabilitado o con otro texto #}

@@ -501,34 +501,52 @@ class ClinicalHistoryService:
                             )
                             detallediente_id = cursor.lastrowid
                             
-                            # Guardar Afecciones
+                            # Guardar Afecciones (case-insensitive, crear si no existe)
                             for afeccion in data_diente.get('afecciones', []):
-                                cursor.execute("SELECT id FROM afeccion WHERE NombreAfeccion = %s LIMIT 1", (afeccion['nombre'],))
+                                nombre_af = afeccion['nombre']
+                                # Búsqueda case-insensitive
+                                cursor.execute("SELECT id FROM afeccion WHERE LOWER(NombreAfeccion) = LOWER(%s) LIMIT 1", (nombre_af,))
                                 afeccion_row = cursor.fetchone()
-                                if afeccion_row:
+                                if not afeccion_row:
+                                    # Crear registro de catálogo si no existe
                                     cursor.execute(
-                                        "INSERT INTO detalleafeccion (DetalleDiente_id, Afeccion_id, ZonaDiente) VALUES (%s, %s, %s)",
-                                        (detallediente_id, afeccion_row['id'], afeccion['zona'])
+                                        "INSERT INTO afeccion (NombreAfeccion, CodigoSNOMED) VALUES (%s, %s)",
+                                        (nombre_af, None)
                                     )
+                                    afeccion_id = cursor.lastrowid
+                                else:
+                                    afeccion_id = afeccion_row['id']
+                                cursor.execute(
+                                    "INSERT INTO detalleafeccion (DetalleDiente_id, Afeccion_id, ZonaDiente) VALUES (%s, %s, %s)",
+                                    (detallediente_id, afeccion_id, afeccion['zona'])
+                                )
                                     
-                            # Guardar Procedimientos
+                            # Guardar Procedimientos (case-insensitive, crear si no existe)
                             for proc in data_diente.get('procedimientos', []):
-                                cursor.execute("SELECT id FROM procedimientos WHERE NombreProcedimiento = %s LIMIT 1", (proc['nombre'],))
+                                nombre_pr = proc['nombre']
+                                cursor.execute("SELECT id FROM procedimientos WHERE LOWER(NombreProcedimiento) = LOWER(%s) LIMIT 1", (nombre_pr,))
                                 proc_row = cursor.fetchone()
-                                if proc_row:
+                                if not proc_row:
                                     cursor.execute(
-                                        """
-                                        INSERT INTO detalleprocedimiento 
-                                        (DetalleDiente_id, Procedimiento_id, Odontologo_id, Fecha, ZonaDiente, Estado, Observaciones)
-                                        VALUES (%s, %s, %s, %s, %s, %s, %s)
-                                        """,
-                                        (
-                                            detallediente_id, proc_row['id'], odontologo_id,
-                                            data.get("fecha", datetime.now().date()), # Usar la fecha de la historia
-                                            proc['zona'], proc['estado'],
-                                            "Registrado desde odontograma interactivo"
-                                        )
+                                        "INSERT INTO procedimientos (NombreProcedimiento, CodigoSNOMED, Activo) VALUES (%s, %s, 1)",
+                                        (nombre_pr, None)
                                     )
+                                    procedimiento_id = cursor.lastrowid
+                                else:
+                                    procedimiento_id = proc_row['id']
+                                cursor.execute(
+                                    """
+                                    INSERT INTO detalleprocedimiento 
+                                    (DetalleDiente_id, Procedimiento_id, Odontologo_id, Fecha, ZonaDiente, Estado, Observaciones)
+                                    VALUES (%s, %s, %s, %s, %s, %s, %s)
+                                    """,
+                                    (
+                                        detallediente_id, procedimiento_id, odontologo_id,
+                                        data.get("fecha", datetime.now().date()), # Usar la fecha de la historia
+                                        proc['zona'], proc['estado'],
+                                        "Registrado desde odontograma interactivo"
+                                    )
+                                )
                 
                 return history_id # Devolver el ID de la historia clínica creada
 
@@ -908,8 +926,10 @@ class OdontogramaService:
                 num_diente_str = num_diente_map.get(detallediente_id) # Obtener el num diente como string
                 print(f"DEBUG: Procesando afeccion ID {afeccion['Afeccion_id']} para detallediente_id {detallediente_id} -> num_diente_str {num_diente_str}") # DEBUG
                 if num_diente_str and num_diente_str in details['dientes']: # Verificar existencia con string
+                    # Normalizar zona (puede venir en minúsculas o nula)
+                    zona = (afeccion.get('ZonaDiente') or '').upper()
                     details['dientes'][num_diente_str]['afecciones'].append({ # Usar string como clave
-                        'zona': afeccion['ZonaDiente'],
+                        'zona': zona,
                         'nombre': afeccion['NombreAfeccion'],
                         'id': afeccion['Afeccion_id']
                     })
@@ -922,10 +942,13 @@ class OdontogramaService:
                 num_diente_str = num_diente_map.get(detallediente_id) # Obtener el num diente como string
                 print(f"DEBUG: Procesando proc ID {proc['Procedimiento_id']} para detallediente_id {detallediente_id} -> num_diente_str {num_diente_str}") # DEBUG
                 if num_diente_str and num_diente_str in details['dientes']: # Verificar existencia con string
+                    zona = proc.get('ZonaDiente')
+                    zona_norm = None if zona in (None, '') else str(zona).upper()
+                    estado = (proc.get('Estado') or '').lower()
                     details['dientes'][num_diente_str]['procedimientos'].append({ # Usar string como clave
-                        'zona': proc['ZonaDiente'],
+                        'zona': zona_norm,
                         'nombre': proc['NombreProcedimiento'],
-                        'estado': proc['Estado'],
+                        'estado': estado,
                         'id': proc['Procedimiento_id']
                     })
                 else:

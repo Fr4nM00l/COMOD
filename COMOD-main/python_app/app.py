@@ -439,7 +439,7 @@ def create_app() -> Flask:
 
             if not is_valid_fields:
                 error_response, status_code = handle_validation_error(missing_fields)
-            return error_response
+                return error_response, status_code
 
         # Guardar historia clínica
             appointment_id = data.get('appointment_id') # Obtener el ID del turno si existe
@@ -452,47 +452,36 @@ def create_app() -> Flask:
                 history_id = ClinicalHistoryService.create_clinical_history(data)
                 message = "Historia clínica creada exitosamente"
 
-        # --- NUEVO: Actualizar estado del turno si corresponde ---
+            # --- NUEVO: Actualizar estado del turno si corresponde ---
             if history_id and appointment_id:
                 try:
-                # Usar el servicio para actualizar el estado
-                # (Necesitarás crear este método si no existe)
+                    # Usar el servicio para actualizar el estado
+                    # (Necesitarás crear este método si no existe)
                     AppointmentService.update_appointment_status(appointment_id, 'completado')
                     print(f"✅ Estado del turno {appointment_id} actualizado a 'completado'")
                 except Exception as e_status:
                     print(f"⚠️ Error al actualizar estado del turno {appointment_id}: {str(e_status)}")
                 # No fallar la respuesta principal por esto, pero loguear el error.
-        # --- FIN NUEVO ---
+            # --- FIN NUEVO ---
 
             return create_success_response(message, {"history_id": history_id})
 
         except Exception as e:
-        # Imprimir el error en la consola del servidor para depuración
+            # Imprimir el error en la consola del servidor para depuración
             print(f"Error executing guardar_historia_clinica: {str(e)}")
             import traceback
-            traceback.print_exc() # Muestra el traceback completo
+            traceback.print_exc()  # Muestra el traceback completo
 
-        # --- NUEVO: Verificar si estamos en un contexto de solicitud ---
+            # --- NUEVO: Verificar si estamos en un contexto de solicitud ---
             from flask import has_request_context
             if has_request_context():
-            # Si estamos manejando una solicitud web real, devolver error JSON
-            # NOTA: Asegúrate que la función create_error_response esté definida ANTES en utils.py
-            # si no lo está, mueve su definición o importa flask.jsonify aquí directamente.
-            # from flask import jsonify # Podrías necesitar esto si create_error_response falla aquí
-            # return jsonify(success=False, message=f"Error al guardar historia clínica: {str(e)}"), 500
-
-            # Asumiendo que create_error_response está bien definida y disponible:
+                # Devolver error JSON en solicitudes web reales
                 return create_error_response(f"Error al guardar historia clínica: {str(e)}", 500)
             else:
-            # Si esto se ejecuta durante el inicio de la app (el error original),
-            # es mejor simplemente lanzar la excepción original para que falle el inicio
-            # y quede claro que el problema es de configuración/ejecución temprana.
+                # Si se ejecuta fuera de contexto de solicitud, relanzar la excepción
                 print("¡¡¡ ERROR CRÍTICO: La función 'guardar_historia_clinica' se ejecutó fuera de contexto durante el inicio de la app !!!")
-            # No intentes devolver una respuesta aquí. Deja que la app falle al iniciar.
-            # Opcional: podrías simplemente imprimir y no hacer 'raise e' si quieres
-            # que intente seguir, pero fallar es más claro.
-                raise e # Vuelve a lanzar el error original (RuntimeError)
-        # --- FIN NUEVO ---
+                raise e  # Vuelve a lanzar el error original (RuntimeError)
+            # --- FIN NUEVO ---
 
     # Rutas para gestión de disponibilidad
 

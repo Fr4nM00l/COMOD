@@ -42,10 +42,15 @@
                 {% include 'odontologo/_odontograma_svg.html' with context %}
             </div>
 
-            <div class="mt-3">
+            <div class="mt-3 d-flex gap-2">
                 <a href="{{ url_for('odontologo_odontogramas') }}" class="btn btn-secondary">
                     <i class="bi bi-arrow-left me-1"></i> Volver a la Lista
                 </a>
+                {% if odontograma.info.HistoriaClinica_id %}
+                <a href="{{ url_for('ver_historia_clinica', history_id=odontograma.info.HistoriaClinica_id) }}" class="btn btn-primary">
+                    <i class="bi bi-file-medical me-1"></i> Ver Historia Clínica
+                </a>
+                {% endif %}
             </div>
         </div>
     </div>
