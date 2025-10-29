@@ -1,0 +1,157 @@
+﻿<svg viewBox="0 0 900 400" class="odontograma-svg" xmlns="http://www.w3.org/2000/svg">
+    {% macro dibujar_diente(numero, x, y, forma='molar', diente_data=None) %}
+    {# 1. Calcular estado final ANTES de dibujar #}
+    {% set caras_estado_final = {} %}
+    {% set default_estado = {'clase': 'sano', 'nombre': 'Sano'} %}
+    {% set diente_completo_estado = None %} {# Para estados que afectan todo el diente #}
+    {% set diente_completo_encontrado = namespace(valor=false) %} {# Flag para simular break #}
+
+    {% if diente_data %}
+    {# ----- PASO 1.1: Revisar PROCEDIMIENTOS ESPECIALES (Diente completo) ----- #}
+    {% for proc in diente_data.procedimientos %}
+    {% if not diente_completo_encontrado.valor and (proc.zona == None or proc.zona == '') and (proc.estado == 'realizado' or proc.estado == 'pendiente') %}
+    {% set clase_proc = 'procedimiento' %}{% set nombre_proc = proc.nombre %} {# Default azul #}
+    {% if 'Corona' in proc.nombre %}{% set clase_proc = 'corona' %}
+    {% elif 'Extracción' in proc.nombre %}
+    {% if proc.estado == 'realizado' %}{% set clase_proc = 'extraccion' %}
+    {% elif proc.estado == 'pendiente' %}{% set clase_proc = 'extraccion-indicada' %}{% set nombre_proc = nombre_proc + ' (Indicada)' %}
+    {% endif %}
+    {% elif 'Endodoncia' in proc.nombre or 'Tratamiento de conducto' in proc.nombre %}{% set clase_proc = 'endodoncia' %}{% set nombre_proc = 'Endodoncia' %}
+    {% endif %}
+    {# Asignar y activar flag si es un estado especial #}
+    {% if clase_proc in ['corona', 'extraccion', 'extraccion-indicada', 'endodoncia'] %}
+    {% set diente_completo_estado = {'clase': clase_proc, 'nombre': nombre_proc} %}
+    {% set diente_completo_encontrado.valor = true %} {# Activar flag #}
+    {% endif %}
+    {% endif %}
+    {% endfor %}
+
+    {# ----- PASO 1.2: Si NO hay estado especial, procesar CARAS ----- #}
+    {% if diente_completo_estado == None %}
+    {# Inicializar todas las caras como sanas #}
+    {% for cara_key in ['O', 'V', 'L', 'M', 'D'] %}
+    {% set _ = caras_estado_final.update({cara_key: default_estado}) %}
+    {% endfor %}
+
+    {# Marcar Procedimientos REALIZADOS por cara (prioridad alta = azul) #}
+    {% for proc in diente_data.procedimientos %}
+    {% if proc.zona and proc.estado == 'realizado' %}
+    {# Usar clase genérica 'procedimiento', pero nombre específico #}
+    {% set _ = caras_estado_final.update({proc.zona: {'clase': 'procedimiento', 'nombre': proc.nombre}}) %}
+    {% endif %}
+    {% endfor %}
+
+    {# Marcar Afecciones por cara (prioridad baja = rojo, solo si la cara aún está 'sano') #}
+    {% for afeccion in diente_data.afecciones %}
+    {% if afeccion.zona %}
+    {# Solo aplicar si no hay ya un procedimiento en esa cara #}
+    {% if caras_estado_final[afeccion.zona].clase == 'sano' %}
+    {# Usar clase genérica 'afeccion', pero nombre específico #}
+    {% set _ = caras_estado_final.update({afeccion.zona: {'clase': 'afeccion', 'nombre': afeccion.nombre}}) %}
+    {% endif %}
+    {% endif %}
+    {% endfor %}
+    {% endif %} {# Fin if diente_completo_estado == None #}
+
+    {% endif %} {# Fin if diente_data #}
+
+    {# ----- PASO 2: Dibujar el diente y APLICAR el estado calculado ----- #}
+    <g class="diente {% if diente_completo_estado %}{{ diente_completo_estado.clase }}{% endif %}"
+       transform="translate({{ x }}, {{ y }})" data-diente="{{ numero }}">
+
+        {# Forma base del diente #}
+        {% if forma == 'molar' %}
+        <rect x="-15" y="-15" width="30" height="30" rx="3" class="diente-base-shape" />
+        
+        {% elif forma == 'incisivo' %}
+        <rect x="-10" y="-15" width="20" height="30" rx="2" class="diente-base-shape" />
+        
+        {% endif %}
+        {# Asegúrate de tener la definición completa de 'caras' aquí como la tenías antes #}
+        {% if forma == 'molar' %}
+        {% set caras = [
+        {'key': 'O', 'path': "M -10 -10 H 10 V 10 H -10 Z", 'nombre': 'Oclusal'},
+        {'key': 'V', 'path': "M -10 -15 H 10 V -10 H -10 Z", 'nombre': 'Vestibular'},
+        {'key': 'L', 'path': "M -10 10 H 10 V 15 H -10 Z", 'nombre': 'Lingual'},
+        {'key': 'M', 'path': "M -15 -10 H -10 V 10 H -15 Z", 'nombre': 'Mesial'},
+        {'key': 'D', 'path': "M 10 -10 H 15 V 10 H 10 Z", 'nombre': 'Distal'}
+        ] %}
+        {% elif forma == 'incisivo' %}
+        {% set caras = [
+        {'key': 'O', 'path': "M -5 -10 H 5 V 10 H -5 Z", 'nombre': 'Incisal/Oclusal'},
+        {'key': 'V', 'path': "M -5 -15 H 5 V -10 H -5 Z", 'nombre': 'Vestibular'},
+        {'key': 'L', 'path': "M -5 10 H 5 V 15 H -5 Z", 'nombre': 'Lingual'},
+        {'key': 'M', 'path': "M -10 -10 H -5 V 10 H -10 Z", 'nombre': 'Mesial'},
+        {'key': 'D', 'path': "M 5 -10 H 10 V 10 H 5 Z", 'nombre': 'Distal'}
+        ] %}
+        {% endif %}
+
+
+        {# Dibujar cada cara aplicando estado #}
+        {% for cara in caras %}
+        {% set estado_cara = diente_completo_estado if diente_completo_estado else caras_estado_final.get(cara.key, default_estado) %}
+        {# Usar la clase calculada (puede ser 'sano', 'afeccion', 'procedimiento', o una especial) #}
+        {% set clase_final = estado_cara.clase if estado_cara.clase != 'sano' else '' %}
+        {% set tooltip_final = estado_cara.nombre %} {# El nombre sigue siendo específico #}
+
+        <path class="cara {{ clase_final }}"
+              d="{{ cara.path }}"
+              data-cara="{{ cara.key }}"
+              onclick="abrirModalDiente({{ numero }}, '{{ cara.key }}', '{{ cara.nombre }}')"
+              title="{{ tooltip_final }}">
+            {# El title sigue mostrando el nombre específico #}
+        </path>
+        {% endfor %}
+
+        <text class="numero-diente" y="25">{{ numero }}</text>
+    </g>
+    {% endmacro %}
+    {# --- CÓDIGO FALTANTE A AÑADIR --- #}
+    {# Este bloque es el que realmente dibuja los dientes usando la macro #}
+
+    {# Líneas guía (opcional, pero ayuda a visualizar) #}
+    <line x1="435" y1="20" x2="435" y2="380" stroke="#ccc" stroke-width="1" />
+    <line x1="20" y1="175" x2="850" y2="175" stroke="#ccc" stroke-width="1" />
+
+    {# Cuadrante Superior Derecho (11-18) #}
+    {{ dibujar_diente(18, 50, 50, forma='molar', diente_data=odontograma.dientes.get('18')) }}
+    {{ dibujar_diente(17, 100, 50, forma='molar', diente_data=odontograma.dientes.get('17')) }}
+    {{ dibujar_diente(16, 150, 50, forma='molar', diente_data=odontograma.dientes.get('16')) }}
+    {{ dibujar_diente(15, 200, 50, forma='incisivo', diente_data=odontograma.dientes.get('15')) }} {# Premolar #}
+    {{ dibujar_diente(14, 250, 50, forma='incisivo', diente_data=odontograma.dientes.get('14')) }} {# Premolar #}
+    {{ dibujar_diente(13, 300, 50, forma='incisivo', diente_data=odontograma.dientes.get('13')) }} {# Canino #}
+    {{ dibujar_diente(12, 350, 50, forma='incisivo', diente_data=odontograma.dientes.get('12')) }} {# Incisivo Lateral #}
+    {{ dibujar_diente(11, 400, 50, forma='incisivo', diente_data=odontograma.dientes.get('11')) }} {# Incisivo Central #}
+
+    {# Cuadrante Superior Izquierdo (21-28) #}
+    {{ dibujar_diente(21, 470, 50, forma='incisivo', diente_data=odontograma.dientes.get('21')) }}
+    {{ dibujar_diente(22, 520, 50, forma='incisivo', diente_data=odontograma.dientes.get('22')) }}
+    {{ dibujar_diente(23, 570, 50, forma='incisivo', diente_data=odontograma.dientes.get('23')) }}
+    {{ dibujar_diente(24, 620, 50, forma='incisivo', diente_data=odontograma.dientes.get('24')) }}
+    {{ dibujar_diente(25, 670, 50, forma='incisivo', diente_data=odontograma.dientes.get('25')) }}
+    {{ dibujar_diente(26, 720, 50, forma='molar', diente_data=odontograma.dientes.get('26')) }}
+    {{ dibujar_diente(27, 770, 50, forma='molar', diente_data=odontograma.dientes.get('27')) }}
+    {{ dibujar_diente(28, 820, 50, forma='molar', diente_data=odontograma.dientes.get('28')) }}
+
+    {# Cuadrante Inferior Derecho (41-48) #}
+    {{ dibujar_diente(48, 50, 300, forma='molar', diente_data=odontograma.dientes.get('48')) }}
+    {{ dibujar_diente(47, 100, 300, forma='molar', diente_data=odontograma.dientes.get('47')) }}
+    {{ dibujar_diente(46, 150, 300, forma='molar', diente_data=odontograma.dientes.get('46')) }}
+    {{ dibujar_diente(45, 200, 300, forma='incisivo', diente_data=odontograma.dientes.get('45')) }}
+    {{ dibujar_diente(44, 250, 300, forma='incisivo', diente_data=odontograma.dientes.get('44')) }}
+    {{ dibujar_diente(43, 300, 300, forma='incisivo', diente_data=odontograma.dientes.get('43')) }}
+    {{ dibujar_diente(42, 350, 300, forma='incisivo', diente_data=odontograma.dientes.get('42')) }}
+    {{ dibujar_diente(41, 400, 300, forma='incisivo', diente_data=odontograma.dientes.get('41')) }}
+
+    {# Cuadrante Inferior Izquierdo (31-38) #}
+    {{ dibujar_diente(31, 470, 300, forma='incisivo', diente_data=odontograma.dientes.get('31')) }}
+    {{ dibujar_diente(32, 520, 300, forma='incisivo', diente_data=odontograma.dientes.get('32')) }}
+    {{ dibujar_diente(33, 570, 300, forma='incisivo', diente_data=odontograma.dientes.get('33')) }}
+    {{ dibujar_diente(34, 620, 300, forma='incisivo', diente_data=odontograma.dientes.get('34')) }}
+    {{ dibujar_diente(35, 670, 300, forma='incisivo', diente_data=odontograma.dientes.get('35')) }}
+    {{ dibujar_diente(36, 720, 300, forma='molar', diente_data=odontograma.dientes.get('36')) }}
+    {{ dibujar_diente(37, 770, 300, forma='molar', diente_data=odontograma.dientes.get('37')) }}
+    {{ dibujar_diente(38, 820, 300, forma='molar', diente_data=odontograma.dientes.get('38')) }}
+    {# --- FIN CÓDIGO FALTANTE --- #}
+
+</svg>

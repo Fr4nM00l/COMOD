@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Funciones comunes para la aplicación COMOD
  */
 
@@ -300,31 +300,43 @@ const LoadingUtils = {
     }
 };
 
-// Inicialización común
-document.addEventListener('DOMContentLoaded', function() {
-    // Inicializar tooltips
-    const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
-    tooltipTriggerList.map(function (tooltipTriggerEl) {
-        return new bootstrap.Tooltip(tooltipTriggerEl);
-    });
+//// ------------------ FUNCION DE TOOLTIPS PARA EL ODONTOGRAMA PERO NO FUNCIONA BIEN CON SVG ---------------------
+//document.addEventListener('DOMContentLoaded', function () {
+//    // --- INICIALIZACIÓN DE TOOLTIPS (CORREGIDA) ---
+//    const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+//    tooltipTriggerList.map(function (tooltipTriggerEl) {
+//        // Inicializar con container: 'body'
+//        const tooltipInstance = new bootstrap.Tooltip(tooltipTriggerEl, {
+//            container: 'body' // Asegura que se adjunte al body
+//        });
 
-    // Inicializar popovers
+//        // Añadir listener para forzar actualización al mostrar (especialmente útil para SVG)
+//        tooltipTriggerEl.addEventListener('show.bs.tooltip', () => {
+//            // Usar setTimeout con 0ms para ejecutar en el siguiente ciclo de eventos
+//            setTimeout(() => {
+//                tooltipInstance.update(); // Forzar recálculo de posición
+//            }, 0);
+//        });
+
+//        return tooltipInstance; // Devolver la instancia creada
+//    });
+//    // --- FIN INICIALIZACIÓN DE TOOLTIPS ---
+
+    // Inicializar popovers (sin cambios necesarios aquí)
     const popoverTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="popover"]'));
     popoverTriggerList.map(function (popoverTriggerEl) {
         return new bootstrap.Popover(popoverTriggerEl);
     });
 
-    // Actualizar fecha actual
+    // Actualizar fecha actual (si tienes este elemento)
     const currentDateElement = document.getElementById('current-date');
     if (currentDateElement) {
-        currentDateElement.textContent = new Date().toLocaleDateString('es-ES', {
-            weekday: 'long',
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric'
-        });
+        const now = new Date();
+        const options = { year: 'numeric', month: 'long', day: 'numeric' };
+        currentDateElement.textContent = now.toLocaleDateString('es-ES', options);
     }
-});
+    // ... (Puedes añadir más inicializaciones aquí si las necesitas) ...
+
 
 // Exportar utilidades para uso global
 window.FormUtils = FormUtils;

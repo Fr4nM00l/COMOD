@@ -1,4 +1,5 @@
-import os
+﻿import os
+import mysql.connector
 from flask import Flask, render_template, request, redirect, url_for, session, flash, jsonify
 from dotenv import load_dotenv
 from datetime import datetime, date
@@ -12,6 +13,8 @@ from services import (
     ClinicalHistoryService, OdontogramaService, AvailabilityService
 )
 from email_service import email_service
+from flask_moment import Moment
+from utils import format_time_from_timedelta, escapejs_filter
 
 
 load_dotenv()
@@ -19,8 +22,8 @@ load_dotenv()
 
 def create_app() -> Flask:
     app = Flask(__name__)
-    # moment = Moment(app)
-    # moment.locale('es')
+    moment = Moment(app)
+    #moment.locale('es')
     secret_key = os.getenv("SECRET_KEY", "dev-secret-key-change-me")
     app.config["SECRET_KEY"] = secret_key
     app.config["SESSION_PERMANENT"] = False
@@ -36,8 +39,17 @@ def create_app() -> Flask:
     # Inicializar el servicio de email
     email_service.init_app(app)
     
-    # Registrar filtros de Jinja2
-    from utils import format_time_from_timedelta
+    # --- REGISTRAR FILTROS DE JINJA2 ---
+    @app.template_filter('format_time')
+    def format_time_filter_wrapper(timedelta_obj): # Renombrar para evitar conflicto
+        if timedelta_obj is None: return ""
+        return format_time_from_timedelta(timedelta_obj)
+
+    # --- AÑADIR ESTA LÍNEA PARA REGISTRAR escapejs ---
+    app.jinja_env.filters['escapejs'] = escapejs_filter
+    # --- FIN AÑADIR LÍNEA ---
+
+
     
     @app.template_filter('format_time')
     def format_time_filter(timedelta_obj):
@@ -91,40 +103,98 @@ def create_app() -> Flask:
     @app.route("/odontologo")
     @require_odontologo
     def odontologo_dashboard():
-        odontologo_id = session.get("user_id")
-        
-        try:
-            upcoming_appointments = AppointmentService.get_upcoming_appointments(odontologo_id, limit=10)
-        except Exception as e:
-            handle_load_error(e, "turnos", flash)
-            upcoming_appointments = []
+        # Inicializar variables fuera del try para que existan en caso de error
+        nombre_usuario = None
+        upcoming_appointments = []
+        odontologo_id = None
 
-        return render_template(
-            "odontologo_dashboard.html",
-            nombre=session.get("nombre"),
-            upcoming_appointments=upcoming_appointments,
-        )
+        try:
+            # --- OBTENER DATOS DE SESIÓN Y BD DENTRO DEL TRY ---
+            odontologo_id = session.get("user_id") # Acceder a session aquí dentro
+            nombre_usuario = session.get("nombre")   # Acceder a session aquí dentro
+
+            print(f"DEBUG: Intentando obtener turnos para odontólogo ID: {odontologo_id}")
+            upcoming_appointments = AppointmentService.get_upcoming_appointments(odontologo_id, limit=10)
+            print(f"DEBUG: Turnos obtenidos: {len(upcoming_appointments)}")
+
+            # --- MOVER RENDER_TEMPLATE AQUÍ DENTRO ---
+            # Si todo hasta aquí funcionó, renderizar la plantilla
+            return render_template(
+                "odontologo_dashboard.html",
+                nombre=nombre_usuario, # Usar la variable obtenida
+                upcoming_appointments=upcoming_appointments,
+            )
+            # --- FIN RENDER_TEMPLATE MOVIDO ---
+
+        except mysql.connector.Error as db_err:
+            print(f"!!!!!!!! ERROR DE BASE DE DATOS al obtener turnos: {db_err} !!!!!!!!")
+            flash(f"Error de base de datos al cargar turnos: {db_err}. Verifique la conexión.", "error")
+            # --- AÑADIR RETURN EN EXCEPT ---
+            # Renderizar la plantilla con datos vacíos o un mensaje de error si ocurre un error de BD
+            return render_template(
+                "odontologo_dashboard.html",
+                nombre=nombre_usuario, # Puede ser None si el error fue antes
+                upcoming_appointments=[], # Lista vacía
+                error_message=f"Error de BD: {db_err}" # Pasar mensaje de error (opcional)
+            )
+            # --- FIN RETURN EN EXCEPT ---
+        except Exception as e:
+            print(f"ERROR: Excepción general al obtener turnos o renderizar: {e}") # Mensaje actualizado
+            handle_load_error(e, "el dashboard", flash) # Mensaje actualizado
+            # --- AÑADIR RETURN EN EXCEPT ---
+            # Renderizar la plantilla con datos vacíos o un mensaje de error
+            return render_template(
+                "odontologo_dashboard.html",
+                nombre=nombre_usuario, # Puede ser None si el error fue antes
+                upcoming_appointments=[], # Lista vacía
+                error_message=f"Error general: {e}" # Pasar mensaje de error (opcional)
+            )
+            # --- FIN RETURN EN EXCEPT ---
+        # No debería haber un 'return' fuera del try/except si todos los caminos devuelven algo
 
     # Rutas específicas para odontólogos
     @app.route("/odontologo/pacientes")
     @require_odontologo
     def odontologo_pacientes():
-        """Vista de pacientes para odontólogos"""
+        """Vista de pacientes para odontólogos, incluyendo estado de historia y odontograma."""
         try:
-            patients = PatientService.get_all_patients()
+            # 1. Obtener todos los pacientes (usamos get_all_patients que trae más datos)
+            all_patients_raw = PatientService.get_all_patients()
             
-            # Calcular edad para cada paciente
-            from datetime import datetime
-            for patient in patients:
-                if patient.get('FechaNacimiento'):
-                    today = datetime.now()
-                    birth_date = patient['FechaNacimiento']
-                    age = today.year - birth_date.year - ((today.month, today.day) < (birth_date.month, birth_date.day))
-                    patient['edad'] = age
-                else:
-                    patient['edad'] = None
+            patients_with_status = []
             
-            return render_template("odontologo/pacientes.html", patients=patients)
+            # 2. Para cada paciente, verificar historia y último odontograma
+            for patient in all_patients_raw:
+                patient_id = patient['id']
+                
+                # Verificar si tiene historias clínicas
+                histories = ClinicalHistoryService.get_clinical_histories_by_patient(patient_id)
+                patient['has_history'] = bool(histories) # True si la lista no está vacía
+                
+                # Verificar si tiene odontogramas
+                odontogramas = OdontogramaService.get_odontogramas_by_patient(patient_id)
+                patient['has_odontogram'] = bool(odontogramas) # True si la lista no está vacía
+
+                # Calcular edad (si no viene ya calculada)
+                if 'edad' not in patient and patient.get('FechaNacimiento'):
+                    try:
+                        today = date.today()
+                        birth_date = patient['FechaNacimiento']
+                        # Verificar que birth_date sea un objeto date
+                        if isinstance(birth_date, date):
+                            age = today.year - birth_date.year - ((today.month, today.day) < (birth_date.month, birth_date.day))
+                            patient['edad'] = age
+                        else:
+                             patient['edad'] = None
+                    except:
+                        patient['edad'] = None # En caso de error al calcular
+                elif 'edad' not in patient:
+                     patient['edad'] = None
+
+                patients_with_status.append(patient)
+
+            return render_template("odontologo/pacientes.html", patients=patients_with_status)
+
         except Exception as e:
             handle_load_error(e, "pacientes", flash)
             return render_template("odontologo/pacientes.html", patients=[])
@@ -179,50 +249,73 @@ def create_app() -> Flask:
     @app.route("/odontologo/odontogramas")
     @require_odontologo
     def odontologo_odontogramas():
-        """Vista de odontogramas para odontólogos"""
+        """Vista de odontogramas para odontólogos, mostrando todos los pacientes."""
         try:
-            odontogramas = OdontogramaService.get_all_odontogramas()
-            return render_template("odontologo/odontogramas.html", odontogramas=odontogramas)
+            # 1. Obtener todos los pacientes
+            all_patients = PatientService.get_all_patients_basic()
+            
+            patients_with_odontogram_status = []
+            
+            # 2. Para cada paciente, buscar su último odontograma
+            for patient in all_patients:
+                latest_odontogram = OdontogramaService.get_latest_odontograma_info_by_patient(patient['id'])
+                
+                patient_data = {
+                    'PacienteID': patient['id'],
+                    'PacienteNombre': patient['Nombre'],
+                    'PacienteDNI': patient['DNI'],
+                    'OdontogramaID': None,
+                    'OdontogramaFecha': None,
+                    'OdontogramaFechaFormatted': None,
+                    'HistoriaClinicaID': None,
+                    'TieneOdontograma': False
+                }
+                
+                if latest_odontogram:
+                    patient_data['OdontogramaID'] = latest_odontogram['id']
+                    patient_data['OdontogramaFecha'] = latest_odontogram['Fecha']
+                    patient_data['OdontogramaFechaFormatted'] = latest_odontogram.get('Fecha_formatted')
+                    patient_data['HistoriaClinicaID'] = latest_odontogram['HistoriaClinica_id']
+                    patient_data['TieneOdontograma'] = True
+                    
+                patients_with_odontogram_status.append(patient_data)
+
+            return render_template("odontologo/odontogramas.html",
+                                 patients_data=patients_with_odontogram_status) # Cambiado nombre de variable
+
         except Exception as e:
-            handle_load_error(e, "odontogramas", flash)
-            return render_template("odontologo/odontogramas.html", odontogramas=[])
+            handle_load_error(e, "pacientes y odontogramas", flash)
+            return render_template("odontologo/odontogramas.html", patients_data=[])
 
     @app.route("/odontologo/consulta/<int:patient_id>")
     @require_odontologo
     def odontologo_consulta(patient_id):
-        """Vista de consulta médica para un paciente específico"""
+        """
+        Verifica si una consulta es válida (turno hoy) y REDIRIGE 
+        al formulario de nueva historia clínica.
+        """
         try:
             patient = PatientService.get_patient_by_id(patient_id)
             if not patient:
                 flash("Paciente no encontrado", "error")
                 return redirect(url_for("odontologo_pacientes"))
             
-            # Verificar si el paciente tiene un turno programado para hoy
-            from datetime import datetime, date
+            from datetime import date
             today = date.today()
             odontologo_id = session.get('user_id')
             
-            # Verificar si hay un turno para este paciente hoy
-            has_appointment_today = AppointmentService.check_patient_appointment_today(patient_id, odontologo_id, today)
+            # REGLA DE NEGOCIO: Verificar si hay un turno para este paciente hoy
+            appointment_info = AppointmentService.get_patient_appointment_today(patient_id, odontologo_id, today)
             
-            if not has_appointment_today:
+            if not appointment_info:
                 flash(f"El paciente {patient['Nombre']} no tiene un turno programado para hoy. Solo se pueden realizar consultas a pacientes con turnos activos.", "warning")
                 return redirect(url_for("odontologo_dashboard"))
             
-            # Obtener información del turno de hoy
-            appointment_info = AppointmentService.get_patient_appointment_today(patient_id, odontologo_id, today)
-            
-            # Obtener historias clínicas del paciente
-            histories = ClinicalHistoryService.get_clinical_histories_by_patient(patient_id)
-            
-            # Obtener odontogramas del paciente
-            odontogramas = OdontogramaService.get_odontogramas_by_patient(patient_id)
-            
-            return render_template("odontologo/consulta.html", 
-                                 patient=patient, 
-                                 histories=histories, 
-                                 odontogramas=odontogramas,
-                                 appointment_info=appointment_info)
+            # ¡Éxito! Redirigir al formulario de nueva historia, pasando el ID del turno
+            return redirect(url_for('nueva_historia_clinica', 
+                                  patient_id=patient_id, 
+                                  appointment_id=appointment_info['id']))
+
         except Exception as e:
             handle_load_error(e, "consulta", flash)
             return redirect(url_for("odontologo_pacientes"))
@@ -230,20 +323,70 @@ def create_app() -> Flask:
     @app.route("/odontologo/historia-clinica/nueva/<int:patient_id>")
     @require_odontologo
     def nueva_historia_clinica(patient_id):
-        """Crear nueva historia clínica para un paciente"""
+        """
+        Muestra el formulario para crear una nueva historia clínica.
+        Carga el último odontograma del paciente para visualización.
+        """
         try:
+            # Obtener el ID del turno desde los argumentos de la URL (enviado por la redirección)
+            appointment_id = request.args.get('appointment_id')
             patient = PatientService.get_patient_by_id(patient_id)
+            
             if not patient:
                 flash("Paciente no encontrado", "error")
                 return redirect(url_for("odontologo_pacientes"))
             
-            # Formatear fecha actual
+            appointment_info = None
+            if appointment_id:
+                appointment_info = AppointmentService.get_appointment_by_id(appointment_id)
+                # Formatear hora si es necesario (asumiendo que get_appointment_by_id devuelve objeto timedelta)
+                if appointment_info and appointment_info.get('HoraTurno'):
+                    appointment_info['HoraTurno'] = format_time_from_timedelta(appointment_info['HoraTurno'])
+
             fecha_actual = datetime.now().strftime('%d/%m/%Y')
+
+            # --- LÓGICA DE ODONTOGRAMA MEJORADA ---
+            # Cargar el ÚLTIMO odontograma existente del paciente
+            odontograma_data = None
+            latest_odontogram_info = OdontogramaService.get_latest_odontograma_info_by_patient(patient_id)
             
-            return render_template("odontologo/nueva_historia_clinica.html", patient=patient, fecha_actual=fecha_actual)
+            if latest_odontogram_info:
+                # Cargar los detalles completos de ESE odontograma
+                odontograma_data = OdontogramaService.get_odontograma_details(latest_odontogram_info['id'])
+                # Usamos la fecha de HOY para la "nueva" historia, pero los datos del odontograma son del último
+                odontograma_data['info']['Fecha_formatted'] = fecha_actual
+            
+            # Si no hay ningún odontograma previo, preparamos uno vacío
+            if not odontograma_data:
+                odontograma_data = {
+                    'info': {'PacienteNombre': patient['Nombre'], 'Fecha_formatted': fecha_actual, 'id': None},
+                    'dientes': {} # Vacío
+                }
+            
+            # --- NUEVO: Cargar catálogos para el modal ---
+            afecciones_list = OdontogramaService.get_afecciones()
+            procedimientos_list = OdontogramaService.get_procedimientos()
+            # --- FIN NUEVO ---
+
+            return render_template("odontologo/nueva_historia_clinica.html",
+                                 patient=patient,
+                                 fecha_actual=fecha_actual,
+                                 odontograma=odontograma_data,
+                                 appointment_info=appointment_info,
+                                 history_id=None,
+                                 afecciones_list=afecciones_list,      # <-- Pasar afecciones
+                                 procedimientos_list=procedimientos_list # <-- Pasar procedimientos
+                                )
+
         except Exception as e:
-            handle_load_error(e, "formulario", flash)
-            return redirect(url_for("odontologo_pacientes"))
+            handle_load_error(e, "formulario de historia clínica", flash)
+            return render_template("odontologo/nueva_historia_clinica.html",
+                                 patient=patient if patient else {},
+                                 fecha_actual=datetime.now().strftime('%d/%m/%Y'),
+                                 odontograma={'info': {}, 'dientes': {}},
+                                 afecciones_list=[],
+                                 procedimientos_list=[]
+                                )
 
     @app.route("/odontologo/historia-clinica/editar/<int:history_id>")
     @require_odontologo
@@ -262,35 +405,94 @@ def create_app() -> Flask:
             handle_load_error(e, "historia", flash)
             return redirect(url_for("odontologo_historias"))
 
+    @app.route("/odontologo/odontograma/<int:odontograma_id>")
+    @require_odontologo
+    def ver_odontograma_visual(odontograma_id):
+        """Muestra el odontograma visual detallado."""
+        try:
+            odontograma_data = OdontogramaService.get_odontograma_details(odontograma_id)
+
+            if not odontograma_data:
+                flash(f"Odontograma con ID {odontograma_id} no encontrado.", "error")
+                return redirect(url_for("odontologo_odontogramas"))
+
+            # Pasar los datos a la plantilla
+            return render_template("odontologo/odontograma_visual.html",
+                                 odontograma=odontograma_data)
+
+        except Exception as e:
+            handle_load_error(e, f"odontograma {odontograma_id}", flash)
+            return redirect(url_for("odontologo_odontogramas"))
+
     @app.route("/odontologo/historia-clinica/guardar", methods=["POST"])
     @require_odontologo
     def guardar_historia_clinica():
         """Guardar historia clínica (crear o actualizar)"""
         try:
             data = request.get_json()
-            
-            # Validar campos obligatorios
-            required_fields = ["paciente_id", "motivo_consulta"]
+
+            data['odontologo_id'] = session.get('user_id')
+
+            # --- CORRECCIÓN: Validar campos obligatorios actualizados ---
+            required_fields = ["paciente_id", "motivo_consulta", "plan_tratamiento", "diagnostico_presuntivo"]
             is_valid_fields, missing_fields = validate_required_fields(data, required_fields)
-            
+
             if not is_valid_fields:
                 error_response, status_code = handle_validation_error(missing_fields)
-                return error_response
-            
-            # Guardar historia clínica
+            return error_response
+
+        # Guardar historia clínica
+            appointment_id = data.get('appointment_id') # Obtener el ID del turno si existe
+
             if data.get('history_id'):
-                # Actualizar historia existente
                 history_id = ClinicalHistoryService.update_clinical_history(data['history_id'], data)
                 message = "Historia clínica actualizada exitosamente"
             else:
-                # Crear nueva historia
+            # Crear nueva historia
                 history_id = ClinicalHistoryService.create_clinical_history(data)
                 message = "Historia clínica creada exitosamente"
-            
+
+        # --- NUEVO: Actualizar estado del turno si corresponde ---
+            if history_id and appointment_id:
+                try:
+                # Usar el servicio para actualizar el estado
+                # (Necesitarás crear este método si no existe)
+                    AppointmentService.update_appointment_status(appointment_id, 'completado')
+                    print(f"✅ Estado del turno {appointment_id} actualizado a 'completado'")
+                except Exception as e_status:
+                    print(f"⚠️ Error al actualizar estado del turno {appointment_id}: {str(e_status)}")
+                # No fallar la respuesta principal por esto, pero loguear el error.
+        # --- FIN NUEVO ---
+
             return create_success_response(message, {"history_id": history_id})
-            
+
         except Exception as e:
-            return create_error_response(f"Error al guardar historia clínica: {str(e)}")
+        # Imprimir el error en la consola del servidor para depuración
+            print(f"Error executing guardar_historia_clinica: {str(e)}")
+            import traceback
+            traceback.print_exc() # Muestra el traceback completo
+
+        # --- NUEVO: Verificar si estamos en un contexto de solicitud ---
+            from flask import has_request_context
+            if has_request_context():
+            # Si estamos manejando una solicitud web real, devolver error JSON
+            # NOTA: Asegúrate que la función create_error_response esté definida ANTES en utils.py
+            # si no lo está, mueve su definición o importa flask.jsonify aquí directamente.
+            # from flask import jsonify # Podrías necesitar esto si create_error_response falla aquí
+            # return jsonify(success=False, message=f"Error al guardar historia clínica: {str(e)}"), 500
+
+            # Asumiendo que create_error_response está bien definida y disponible:
+                return create_error_response(f"Error al guardar historia clínica: {str(e)}", 500)
+            else:
+            # Si esto se ejecuta durante el inicio de la app (el error original),
+            # es mejor simplemente lanzar la excepción original para que falle el inicio
+            # y quede claro que el problema es de configuración/ejecución temprana.
+                print("¡¡¡ ERROR CRÍTICO: La función 'guardar_historia_clinica' se ejecutó fuera de contexto durante el inicio de la app !!!")
+            # No intentes devolver una respuesta aquí. Deja que la app falle al iniciar.
+            # Opcional: podrías simplemente imprimir y no hacer 'raise e' si quieres
+            # que intente seguir, pero fallar es más claro.
+                raise e # Vuelve a lanzar el error original (RuntimeError)
+        # --- FIN NUEVO ---
 
     # Rutas para gestión de disponibilidad
 
@@ -691,6 +893,36 @@ def create_app() -> Flask:
                 
         except Exception as e:
             return create_error_response(f"Error al verificar DNI: {str(e)}", 500)
+
+    @app.route("/api/historia-clinica/detalles/<int:history_id>")
+    @require_odontologo # O el rol que corresponda
+    def api_get_historia_detalles(history_id):
+        """API para obtener detalles completos de una historia y su odontograma"""
+        try:
+            history = ClinicalHistoryService.get_clinical_history_by_id(history_id)
+            if not history:
+                return create_error_response("Historia clínica no encontrada", 404)
+
+        # Formatear la fecha si existe
+            if history.get('Fecha'):
+                history['Fecha_formatted'] = history['Fecha'].strftime('%d/%m/%Y')
+
+        # Buscar el odontograma asociado a ESTA historia específica
+            odontograma_data = None
+            with get_db_cursor() as cursor:
+             cursor.execute("SELECT id FROM odontograma WHERE HistoriaClinica_id = %s LIMIT 1", (history_id,))
+             odontograma_info = cursor.fetchone()
+
+            if odontograma_info:
+            # Si se encontró un odontograma para ESTA historia, cargar sus detalles
+                odontograma_data = OdontogramaService.get_odontograma_details(odontograma_info['id'])
+
+            return create_success_response(data={"history": history, "odontograma": odontograma_data})
+
+        except Exception as e:
+            print(f"Error en /api/historia-clinica/detalles: {str(e)}")
+            return create_error_response(f"Error al obtener detalles: {str(e)}", 500)
+
 
     @app.route("/secretario/paciente/<int:patient_id>", methods=["DELETE"])
     @require_secretario
@@ -1217,56 +1449,70 @@ def create_app() -> Flask:
         except Exception as e:
             return create_error_response(f"Error al crear turno: {str(e)}", 500)
 
-    return app
+        # --- RUTAS MOVIDAS AQUÍ ---
+    @app.route('/test-duplicate-appointments')
+    def test_duplicate_appointments():
+        """Ruta para probar la restricción de turnos duplicados"""
+        return render_template('test_duplicate_appointments.html')
 
+    @app.route('/test-notifications')
+    def test_notifications():
+        """Ruta para probar el sistema de notificaciones"""
+        return render_template('test_notifications.html')
 
-app = create_app()
-
-
-@app.route('/test-duplicate-appointments')
-def test_duplicate_appointments():
-    """Ruta para probar la restricción de turnos duplicados"""
-    return render_template('test_duplicate_appointments.html')
-
-@app.route('/test-notifications')
-def test_notifications():
-    """Ruta para probar el sistema de notificaciones"""
-    return render_template('test_notifications.html')
-
-# API para obtener datos del paciente
-@app.route("/api/paciente/<int:patient_id>")
-@require_odontologo
-def api_paciente_details(patient_id):
-    """API para obtener detalles completos de un paciente"""
-    try:
-        patient = PatientService.get_patient_by_id(patient_id)
-        if not patient:
-            return create_error_response("Paciente no encontrado")
-        
-        # Obtener estadísticas del paciente
-        histories_count = ClinicalHistoryService.get_clinical_histories_by_patient(patient_id)
-        histories_count = len(histories_count) if histories_count else 0
-        
-        # Obtener conteo de turnos
+    # API para obtener datos del paciente
+    @app.route("/api/paciente/<int:patient_id>")
+    @require_odontologo # O @require_secretario si ambos pueden acceder
+    def api_paciente_details(patient_id):
+        """API para obtener detalles completos de un paciente"""
         try:
+            patient = PatientService.get_patient_by_id(patient_id)
+            if not patient:
+                # Usar has_request_context por si acaso
+                from flask import has_request_context
+                if has_request_context():
+                     return create_error_response("Paciente no encontrado", 404)
+                else:
+                     print(f"ERROR CRITICO: api_paciente_details ejecutado sin contexto buscando ID {patient_id}")
+                     raise RuntimeError("Error interno: Contexto de solicitud no encontrado.")
+
+
+            # Obtener estadísticas del paciente
+            histories = ClinicalHistoryService.get_clinical_histories_by_patient(patient_id)
+            histories_count = len(histories) if histories else 0
+
+            odontogramas = OdontogramaService.get_odontogramas_by_patient(patient_id)
+            odontogramas_count = len(odontogramas) if odontogramas else 0
+
             turnos_count = AppointmentService.get_appointments_count_by_patient(patient_id)
+
+            # Agregar estadísticas al objeto paciente
+            patient_data = dict(patient) # Convertir a dict si no lo es
+            patient_data['historias_count'] = histories_count
+            patient_data['odontogramas_count'] = odontogramas_count # Usar el conteo real
+            patient_data['turnos_count'] = turnos_count
+
+            return create_success_response("Datos del paciente obtenidos", {"patient": patient_data})
+
         except Exception as e:
-            print(f"Error obteniendo conteo de turnos: {e}")
-            turnos_count = 0
-        
-        # Agregar estadísticas al objeto paciente
-        patient_data = dict(patient)
-        patient_data['historias_count'] = histories_count
-        patient_data['odontogramas_count'] = 0  # Por ahora 0, se implementará más adelante
-        patient_data['turnos_count'] = turnos_count
-        
-        return create_success_response("Datos del paciente obtenidos", {"patient": patient_data})
-        
-    except Exception as e:
-        return create_error_response(f"Error al obtener datos del paciente: {str(e)}")
+             print(f"Error en api_paciente_details: {e}")
+             # Usar has_request_context por si acaso
+             from flask import has_request_context
+             if has_request_context():
+                 return create_error_response(f"Error al obtener datos del paciente: {str(e)}", 500)
+             else:
+                  print(f"ERROR CRITICO: api_paciente_details ejecutado sin contexto. Error: {e}")
+                  raise e # Relanzar error si no hay contexto
+
+    # --- FIN RUTAS MOVIDAS ---
+
+    return app # Esta debe ser la ÚLTIMA línea de create_app()
 
 if __name__ == "__main__":
-    port = int(os.getenv("PORT", "5000"))
-    app.run(host="0.0.0.0", port=port, debug=True)
+        app = create_app() # <-- LLAMAR A create_app() AQUÍ DENTRO
+        port = int(os.getenv("PORT", "5000"))
+        # Ejecutar la app (asegúrate que 'app' sea la variable correcta)
+        app.run(host="0.0.0.0", port=port, debug=True)  
+
 
 

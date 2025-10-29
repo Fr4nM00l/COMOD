@@ -1,6 +1,7 @@
-"""
+﻿"""
 Utilidades comunes para la aplicación
 """
+import json
 from datetime import datetime, date, timedelta
 from flask import jsonify
 
@@ -212,6 +213,19 @@ def check_duplicate_appointment(cursor, fecha_str, hora_str, odontologo_id, paci
     except Exception as e:
         return False, f"Error al verificar turnos duplicados: {str(e)}"
 
+
+def escapejs_filter(value):
+    """
+    Filtro Jinja para escapar strings de forma segura para JavaScript.
+    Usa json.dumps para manejar comillas, barras invertidas, etc.
+    """
+    if value is None:
+        return 'null'
+    # json.dumps convierte el valor Python a una representación JSON string,
+    # lo cual es seguro para insertar directamente en JavaScript.
+    # Por ejemplo: "Juan's" -> '"Juan\'s"'
+    return json.dumps(value)
+# --- FIN AÑADIR FUNCIÓN ---
 
 def validate_appointment_availability(cursor, fecha_str, hora_str, odontologo_id, paciente_id=None):
     """

@@ -1,4 +1,4 @@
-{% extends 'base.html' %}
+﻿{% extends 'base.html' %}
 
 {% block title %}Historias Clínicas - Panel Odontólogo{% endblock %}
 
@@ -74,41 +74,46 @@
                                         <td>
                                             <div class="d-flex align-items-center">
                                                 <div class="avatar-sm bg-info text-white rounded-circle d-flex align-items-center justify-content-center me-3">
-                                                    {{ history.PacienteNombre[0].upper() }}
+                                                    {# CORRECCIÓN: Usar history.Paciente #}
+                                                    {{ history.Paciente[0].upper() if history.Paciente else '?' }}
                                                 </div>
                                                 <div>
-                                                    <strong>{{ history.PacienteNombre }}</strong>
+                                                    {# CORRECCIÓN: Usar history.Paciente #}
+                                                    <strong>{{ history.Paciente }}</strong>
                                                 </div>
                                             </div>
                                         </td>
                                         <td>
                                             <i class="bi bi-calendar-event me-1"></i>
+                                            {# Usar strftime como método, no filtro #}
                                             {{ history.Fecha.strftime('%d/%m/%Y') if history.Fecha else 'No especificada' }}
                                         </td>
                                         <td>
-                                            <span class="text-truncate d-inline-block" style="max-width: 200px;" title="{{ history.MotivoConsulta or 'No especificado' }}">
-                                                {{ history.MotivoConsulta or 'No especificado' }}
+                                            {# Usar MotivoConsulta como en la ruta, si existe #}
+                                            <span class="text-truncate d-inline-block" style="max-width: 200px;" title="{{ history.motivo_consulta or 'No especificado' }}">
+                                                {{ history.motivo_consulta or 'No especificado' }}
                                             </span>
                                         </td>
                                         <td>
-                                            <span class="text-truncate d-inline-block" style="max-width: 200px;" title="{{ history.Diagnostico or 'No especificado' }}">
-                                                {{ history.Diagnostico or 'No especificado' }}
+                                            {# Usar diagnostico_presuntivo como en la ruta, si existe #}
+                                            <span class="text-truncate d-inline-block" style="max-width: 200px;" title="{{ history.diagnostico_presuntivo or 'No especificado' }}">
+                                                {{ history.diagnostico_presuntivo or 'No especificado' }}
                                             </span>
                                         </td>
                                         <td>
                                             <div class="btn-group" role="group">
-                                                <button class="btn btn-primary btn-sm" 
-                                                        onclick="viewHistory({{ history.id }})" 
+                                                <button class="btn btn-primary btn-sm"
+                                                        onclick="viewHistory({{ history.id }})"
                                                         title="Ver Historia Completa">
                                                     <i class="bi bi-eye"></i>
                                                 </button>
-                                                <button class="btn btn-warning btn-sm" 
-                                                        onclick="editHistory({{ history.id }})" 
+                                                <button class="btn btn-warning btn-sm"
+                                                        onclick="editHistory({{ history.id }})"
                                                         title="Editar Historia">
                                                     <i class="bi bi-pencil"></i>
                                                 </button>
-                                                <button class="btn btn-success btn-sm" 
-                                                        onclick="createOdontogramFromHistory({{ history.id }})" 
+                                                <button class="btn btn-success btn-sm"
+                                                        onclick="createOdontogramFromHistory({{ history.id }})"
                                                         title="Crear Odontograma">
                                                     <i class="bi bi-tooth"></i>
                                                 </button>
@@ -210,47 +215,110 @@ function clearFilters() {
     filterHistories();
 }
 
-// Ver historia clínica completa
-function viewHistory(historyId) {
-    currentHistoryId = historyId;
-    
-    // Simular carga de datos (en una implementación real, harías una llamada AJAX)
-    const historyRow = document.querySelector(`[data-history-id="${historyId}"]`);
-    const patientName = historyRow.querySelector('td:first-child strong').textContent;
-    const historyDate = historyRow.cells[1].textContent;
-    const motivo = historyRow.cells[2].textContent.trim();
-    const diagnostico = historyRow.cells[3].textContent.trim();
-    
-    document.getElementById('historyContent').innerHTML = `
-        <div class="row">
-            <div class="col-md-6">
-                <h6><i class="bi bi-person me-2"></i>Información del Paciente</h6>
-                <p><strong>Paciente:</strong> ${patientName}</p>
-                <p><strong>Fecha de Consulta:</strong> ${historyDate}</p>
+    // Ver historia clínica completa en modal
+    async function viewHistory(historyId) {
+        currentHistoryId = historyId; // Guardar ID actual si necesitas usarlo en los botones del modal
+        const modal = new bootstrap.Modal(document.getElementById('historyModal'));
+        const contentDiv = document.getElementById('historyContent');
+        const editBtn = document.getElementById('editHistoryBtn');
+        const odontogramBtn = document.getElementById('createOdontogramBtn');
+
+        // Mostrar spinner de carga
+        contentDiv.innerHTML = `
+        <div class="text-center">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Cargando...</span>
             </div>
-            <div class="col-md-6">
-                <h6><i class="bi bi-file-medical me-2"></i>Detalles de la Consulta</h6>
-                <p><strong>Motivo:</strong> ${motivo}</p>
-                <p><strong>Diagnóstico:</strong> ${diagnostico}</p>
-            </div>
-        </div>
-        <hr>
-        <div class="row">
-            <div class="col-12">
-                <h6><i class="bi bi-clipboard-data me-2"></i>Historia Clínica Detallada</h6>
-                <div class="alert alert-info">
-                    <i class="bi bi-info-circle me-2"></i>
-                    La vista completa de la historia clínica estará disponible próximamente.
+            <p class="mt-2">Cargando detalles de la historia clínica...</p>
+        </div>`;
+        modal.show();
+
+        try {
+            const response = await fetch(`/api/historia-clinica/detalles/${historyId}`);
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            const data = await response.json();
+
+            if (data.success) {
+                const history = data.history;
+                const odontograma = data.odontograma;
+
+                // --- Construir el HTML del contenido ---
+                let historyHTML = `
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <h5><i class="bi bi-person-badge me-2"></i>Paciente</h5>
+                        <p><strong>Nombre:</strong> ${history.PacienteNombre || 'N/A'}</p>
+                        <p><strong>DNI:</strong> ${history.paciente_dni || 'N/A'}</p>
+                        <p><strong>Fecha Consulta:</strong> ${history.Fecha_formatted || 'N/A'}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <h5><i class="bi bi-info-circle me-2"></i>Consulta</h5>
+                        <p><strong>Motivo:</strong> ${history.motivo_consulta || 'No especificado'}</p>
+                        <p><strong>Diagnóstico:</strong> ${history.diagnostico_presuntivo || 'No especificado'}</p>
+                        <p><strong>Plan Tratamiento:</strong> ${history.plan_tratamiento || 'No especificado'}</p>
+                    </div>
                 </div>
-            </div>
-        </div>
-    `;
-    
-    document.getElementById('editHistoryBtn').onclick = () => editHistory(historyId);
-    document.getElementById('createOdontogramBtn').onclick = () => createOdontogramFromHistory(historyId);
-    
-    new bootstrap.Modal(document.getElementById('historyModal')).show();
-}
+                <hr>
+                <h5><i class="bi bi-heart-pulse me-2"></i>Detalles Generales</h5>
+                <div class="row">
+                    <div class="col-md-4">
+                        <p><strong>Alergias:</strong> ${history.Alergias || 'Ninguna'}</p>
+                        <p><strong>Enfermedades:</strong> ${history.Enfermedades || 'Ninguna'}</p>
+                    </div>
+                    <div class="col-md-4">
+                        <p><strong>Fuma:</strong> ${history.Fuma ? 'Sí' : 'No'}</p>
+                        <p><strong>Embarazada:</strong> ${history.embarazada ? ('Sí (' + (history.meses_embarazo || 'N/E') + ' meses)') : 'No'}</p>
+                    </div>
+                     <div class="col-md-4">
+                         <p><strong>Medicamentos:</strong> ${history.Medicamentos || 'Ninguno'}</p>
+                         {# Puedes añadir más campos de 'history' aquí si lo necesitas #}
+                     </div>
+                </div>
+                <hr>
+                <h5><i class="bi bi-tooth me-2"></i>Odontograma Asociado</h5>`;
+
+                if (odontograma && odontograma.info) {
+                    // Si hay odontograma, incluir el SVG (requiere que el SVG esté en un template separado)
+                    // Asumimos que tienes '_odontograma_svg_view.html' que solo contiene el SVG
+                    // y que puedes pasarle `odontograma.dientes`
+                    // Esta parte es compleja de hacer dinámicamente en JS puro.
+                    // Una alternativa más simple es mostrar un enlace al odontograma visual:
+                    historyHTML += `
+                    <p>Odontograma registrado el ${odontograma.info.Fecha_formatted}.</p>
+                    <a href="/odontologo/odontograma/${odontograma.info.id}" class="btn btn-info" target="_blank">
+                       <i class="bi bi-eye"></i> Ver Odontograma Visual
+                    </a>`;
+
+                    // Si quieres embeber el SVG dinámicamente, necesitarías
+                    // 1. Una ruta que devuelva solo el HTML del SVG renderizado
+                    // 2. Hacer otra llamada fetch para obtener ese HTML y ponerlo aquí.
+                    // Ejemplo simplificado:
+                    // historyHTML += `<div id="odontogramaSvgContainer"><p>Cargando odontograma...</p></div>`;
+                    // fetch(`/api/odontograma/svg/${odontograma.info.id}`)
+                    //   .then(svgResponse => svgResponse.text())
+                    //   .then(svgHtml => document.getElementById('odontogramaSvgContainer').innerHTML = svgHtml);
+
+                } else {
+                    historyHTML += `<p class="text-muted">No se encontró un odontograma asociado directamente a esta historia clínica.</p>`;
+                }
+
+                contentDiv.innerHTML = historyHTML;
+
+                // Configurar botones del modal
+                editBtn.onclick = () => editHistory(historyId); // Usar la función existente
+                odontogramBtn.onclick = () => createOdontogramFromHistory(historyId); // Usar la función existente
+
+            } else {
+                contentDiv.innerHTML = `<div class="alert alert-danger">${data.message || 'Error al cargar datos.'}</div>`;
+            }
+
+        } catch (error) {
+            console.error('Error fetching history details:', error);
+            contentDiv.innerHTML = `<div class="alert alert-danger">Error de conexión al cargar detalles: ${error.message}</div>`;
+        }
+    }
 
 // Editar historia clínica
 function editHistory(historyId) {

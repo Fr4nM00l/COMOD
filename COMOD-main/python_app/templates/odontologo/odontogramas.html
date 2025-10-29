@@ -1,4 +1,4 @@
-{% extends 'base.html' %}
+﻿{% extends 'base.html' %}
 
 {% block title %}Odontogramas - Panel Odontólogo{% endblock %}
 
@@ -56,87 +56,97 @@
                     </h5>
                 </div>
                 <div class="card-body p-0">
-                    {% if odontogramas %}
-                        <div class="table-responsive">
-                            <table class="table table-hover mb-0" id="odontogramasTable">
-                                <thead class="table-light">
-                                    <tr>
-                                        <th><i class="bi bi-person me-1"></i>Paciente</th>
-                                        <th><i class="bi bi-calendar me-1"></i>Fecha</th>
-                                        <th><i class="bi bi-file-medical me-1"></i>Historia Clínica</th>
-                                        <th><i class="bi bi-clipboard-data me-1"></i>Estado</th>
-                                        <th><i class="bi bi-gear me-1"></i>Acciones</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {% for odontograma in odontogramas %}
-                                    <tr class="odontogram-row" data-odontogram-id="{{ odontograma.id }}">
-                                        <td>
-                                            <div class="d-flex align-items-center">
-                                                <div class="avatar-sm bg-success text-white rounded-circle d-flex align-items-center justify-content-center me-3">
-                                                    {{ odontograma.PacienteNombre[0].upper() }}
-                                                </div>
-                                                <div>
-                                                    <strong>{{ odontograma.PacienteNombre }}</strong>
-                                                </div>
+                    {% if patients_data %}
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0" id="odontogramasTable">
+                            <thead class="table-light">
+                                <tr>
+                                    <th><i class="bi bi-person me-1"></i>PACIENTE</th>
+                                    <th><i class="bi bi-calendar me-1"></i>ÚLT. ODONTOGRAMA</th>
+                                    <th><i class="bi bi-file-medical me-1"></i>HISTORIA CLÍNICA</th>
+                                    <th><i class="bi bi-gear me-1"></i>ACCIONES</th>
+                                </tr>
+                            </thead>
+                            <tbody id="odontogramasTableBody">
+                                {% for patient in patients_data %}
+                                <tr class="odontogram-row" data-patient-id="{{ patient.PacienteID }}">
+                                    {# Columna 1: Paciente #}
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <div class="avatar-sm bg-info text-white rounded-circle d-flex align-items-center justify-content-center me-3">
+                                                {{ patient.PacienteNombre[0].upper() if patient.PacienteNombre else '?' }}
                                             </div>
-                                        </td>
-                                        <td>
-                                            <i class="bi bi-calendar-event me-1"></i>
-                                            {{ odontograma.Fecha.strftime('%d/%m/%Y') if odontograma.Fecha else 'No especificada' }}
-                                        </td>
-                                        <td>
-                                            <i class="bi bi-calendar-event me-1"></i>
-                                            {{ odontograma.HistoriaFecha.strftime('%d/%m/%Y') if odontograma.HistoriaFecha else 'No especificada' }}
-                                        </td>
-                                        <td>
-                                            {% if odontograma.Estado == 'completo' %}
-                                                <span class="badge bg-success">
-                                                    <i class="bi bi-check-circle me-1"></i>Completo
-                                                </span>
-                                            {% elif odontograma.Estado == 'en_progreso' %}
-                                                <span class="badge bg-warning">
-                                                    <i class="bi bi-clock me-1"></i>En Progreso
-                                                </span>
+                                            <div>
+                                                <strong>{{ patient.PacienteNombre }}</strong>
+                                                <br><small class="text-muted">DNI: {{ patient.PacienteDNI or 'N/A' }}</small>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    {# Columna 2: Fecha Último Odontograma #}
+                                    <td>
+                                        {% if patient.TieneOdontograma %}
+                                        <i class="bi bi-calendar-event me-1"></i>
+                                        {{ patient.OdontogramaFechaFormatted or patient.OdontogramaFecha.strftime('%d/%m/%Y') }}
+                                        {% else %}
+                                        <span class="badge bg-warning text-dark">
+                                            <i class="bi bi-exclamation-circle me-1"></i>Sin Odontograma
+                                        </span>
+                                        {% endif %}
+                                    </td>
+                                    {# Columna 3: Historia Clínica (ID) #}
+                                    <td>
+                                        <i class="bi bi-file-medical me-1"></i>
+                                        {% if patient.HistoriaClinicaID %}
+                                        <span class="badge bg-secondary">ID HC: {{ patient.HistoriaClinicaID }}</span>
+                                        {% else %}
+                                        <span class="badge bg-light text-dark">N/A</span>
+                                        {% endif %}
+                                    </td>
+                                    {# Columna 4: Acciones #}
+                                    <td>
+                                        <div class="btn-group" role="group">
+                                            {# Botón Visualizar (Enlace) - Lleva al último o a uno 'nuevo' implícito #}
+                                            {% if patient.TieneOdontograma %}
+                                            <a href="{{ url_for('ver_odontograma_visual', odontograma_id=patient.OdontogramaID) }}" class="btn btn-sm btn-info" title="Ver Último Odontograma">
+                                                <i class="bi bi-eye-fill"></i> Visualizar
+                                            </a>
                                             {% else %}
-                                                <span class="badge bg-secondary">
-                                                    <i class="bi bi-dash-circle me-1"></i>Inicial
-                                                </span>
+                                            {# Si no tiene, el botón podría ir a crear uno, o a una vista vacía #}
+                                            {# Opción A: Botón deshabilitado o con otro texto #}
+                                            <button class="btn btn-sm btn-outline-secondary" disabled title="No hay odontograma para visualizar">
+                                                <i class="bi bi-eye-slash-fill"></i> Visualizar
+                                            </button>
+                                            {# Opción B: Botón que lleva a crear (si tienes esa ruta) #}
+                                            {# <button onclick="crearOdontogramaParaPaciente({{ patient.PacienteID }})" class="btn btn-sm btn-success" title="Crear Odontograma">
+                                                <i class="bi bi-plus-circle"></i> Crear
+                                            </button> #}
                                             {% endif %}
-                                        </td>
-                                        <td>
-                                            <div class="btn-group" role="group">
-                                                <button class="btn btn-primary btn-sm" 
-                                                        onclick="viewOdontogram({{ odontograma.id }})" 
-                                                        title="Ver Odontograma">
-                                                    <i class="bi bi-eye"></i>
-                                                </button>
-                                                <button class="btn btn-warning btn-sm" 
-                                                        onclick="editOdontogram({{ odontograma.id }})" 
-                                                        title="Editar Odontograma">
-                                                    <i class="bi bi-pencil"></i>
-                                                </button>
-                                                <button class="btn btn-info btn-sm" 
-                                                        onclick="printOdontogram({{ odontograma.id }})" 
-                                                        title="Imprimir Odontograma">
-                                                    <i class="bi bi-printer"></i>
-                                                </button>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                    {% endfor %}
-                                </tbody>
-                            </table>
-                        </div>
+
+                                            {# Botón Editar (Solo si tiene odontograma) #}
+                                            <button class="btn btn-sm btn-warning {% if not patient.TieneOdontograma %}disabled{% endif %}"
+                                                    {% if patient.TieneOdontograma %}onclick="editOdontogram({{ patient.OdontogramaID }})" {% endif %}
+                                                    title="Editar Odontograma">
+                                                <i class="bi bi-pencil"></i>
+                                            </button>
+                                            {# Botón Imprimir (Solo si tiene odontograma) #}
+                                            <button class="btn btn-sm btn-secondary {% if not patient.TieneOdontograma %}disabled{% endif %}"
+                                                    {% if patient.TieneOdontograma %}onclick="printOdontogram({{ patient.OdontogramaID }})" {% endif %}
+                                                    title="Imprimir Odontograma">
+                                                <i class="bi bi-printer"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
                     {% else %}
-                        <div class="text-center py-5">
-                            <i class="bi bi-tooth text-muted" style="font-size: 4rem;"></i>
-                            <h4 class="text-muted mt-3">No hay odontogramas registrados</h4>
-                            <p class="text-muted">Los odontogramas aparecerán aquí una vez que sean creados.</p>
-                            <button class="btn btn-primary" onclick="createNewOdontogram()">
-                                <i class="bi bi-plus-circle me-1"></i>Crear Primer Odontograma
-                            </button>
-                        </div>
+                    <div class="text-center py-5">
+                        <i class="bi bi-people text-muted" style="font-size: 4rem;"></i>
+                        <h4 class="text-muted mt-3">No hay pacientes registrados</h4>
+                        <p class="text-muted">Registre pacientes para poder gestionar sus odontogramas.</p>
+                    </div>
                     {% endif %}
                 </div>
             </div>

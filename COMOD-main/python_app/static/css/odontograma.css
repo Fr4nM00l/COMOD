@@ -1,0 +1,160 @@
+﻿/* static/css/odontograma.css (Limpio y Corregido) */
+
+/* Contenedor del SVG */
+.odontograma-container {
+    text-align: center;
+    overflow-x: auto;
+}
+
+.odontograma-svg {
+    max-width: 100%;
+    height: auto;
+    border: 1px solid #eee;
+    background-color: #f9f9f9;
+}
+
+/* Estilos base del diente (grupo G) */
+.diente {
+    stroke: #444; /* Borde exterior DELGADO del diente */
+    stroke-width: 0.5px;
+    fill: none; /* Asegura que el grupo G NO tenga relleno */
+    font-family: Arial, sans-serif;
+    cursor: default;
+    transition: transform 0.1s ease-in-out;
+}
+
+/* Estilo para el RECTÁNGULO base (forma blanca del diente) */
+.diente-base-shape {
+    fill: #ffffff; /* Relleno BLANCO para la base del diente */
+    stroke: none; /* Sin borde extra en el rectángulo base */
+}
+
+/* Estilo para el número del diente */
+.diente .numero-diente {
+    font-size: 10px;
+    text-anchor: middle;
+    dominant-baseline: hanging;
+    fill: #666;
+    pointer-events: none;
+    user-select: none;
+}
+
+/* Estilos base de las CARAS (paths) */
+.diente .cara {
+    fill: #ffffff; /* Color por defecto SANO (BLANCO) */
+    stroke: #cccccc; /* Borde MUY FINO entre caras */
+    stroke-width: 0.5px;
+    transition: fill 0.2s ease, stroke 0.2s ease;
+}
+
+    /* Efecto hover sobre una cara */
+    .diente .cara:hover {
+        stroke: #007bff; /* Resalta el borde */
+        stroke-width: 1px; /* Engrosa un poco */
+    }
+
+    /* --- CLASES DE ESTADO PARA COLOREAR LAS CARAS --- */
+    /* Usamos .diente .cara.clase para asegurar especificidad */
+
+    .diente .cara.sano {
+        fill: #ffffff;
+    }
+
+
+.odontograma-container { /* ... */
+}
+
+.odontograma-svg { /* ... */
+}
+
+.diente { /* ... */
+}
+
+.diente-base-shape { /* ... */
+}
+
+.diente .numero-diente { /* ... */
+}
+
+/* Estilos base de las CARAS (paths) */
+.diente .cara {
+    fill: #ffffff; /* SANO (BLANCO) */
+    stroke: #cccccc;
+    stroke-width: 0.5px;
+    transition: fill 0.2s ease, stroke 0.2s ease;
+    cursor: pointer;
+}
+
+    .diente .cara:hover {
+        stroke: #007bff;
+        stroke-width: 1px;
+    }
+
+    /* --- CLASES GENÉRICAS Y ESPECIALES --- */
+    .diente .cara.sano {
+        fill: #ffffff; /* Blanco */
+    }
+
+    .diente .cara.afeccion {
+        fill: #dc3545; /* Rojo para TODAS las afecciones */
+    }
+
+    .diente .cara.procedimiento {
+        fill: #0d6efd; /* Azul para TODOS los procedimientos realizados */
+    }
+
+    /* Procedimientos/Estados Especiales (Diente completo o visualización diferente) */
+    .diente.endodoncia .cara, /* Si el diente TIENE endodoncia, todas sus caras amarillas */
+    .diente .cara.endodoncia { /* Si la CARA específica tiene endodoncia (menos común) */
+        fill: #ffc107; /* Amarillo */
+    }
+
+    .diente.corona .cara, /* Si el diente TIENE corona */
+    .diente .cara.corona { /* Si la CARA específica tiene corona */
+        fill: #6f42c1; /* Púrpura */
+    }
+
+    .diente.extraccion .cara, /* Diente con extracción REALIZADA */
+    .diente .cara.extraccion {
+        fill: none;
+        stroke: #6c757d;
+        stroke-width: 1px;
+        stroke-dasharray: 2, 2;
+    }
+
+    .diente.extraccion-indicada .cara, /* Diente con extracción PENDIENTE */
+    .diente .cara.extraccion-indicada {
+        fill: none;
+        stroke: #dc3545; /* Borde rojo punteado */
+        stroke-width: 1px;
+        stroke-dasharray: 3, 3;
+    }
+
+
+/* Estado general 'pendiente' (si se usa en JS para aplicar a cualquier procedimiento pendiente) */
+.pendiente {
+    opacity: 0.7; /* Hace el color un poco más tenue */
+}
+
+/* --- CLASES ESPECÍFICAS PARA CARAS (Normalmente no necesitan estilos propios) --- */
+/* Se usan más como selectores en el SVG/JS */
+.cara.oclusal {
+}
+
+.cara.vestibular {
+}
+
+.cara.lingual {
+}
+
+.cara.mesial {
+}
+
+.cara.distal {
+}
+
+/* Badge personalizado para la leyenda (si lo usas en otro lado) */
+.badge.bg-purple {
+    background-color: #6f42c1;
+    color: white;
+}

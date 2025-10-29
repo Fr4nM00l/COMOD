@@ -1,4 +1,4 @@
-
+﻿
 """
 Servicios para operaciones de base de datos
 """
@@ -10,6 +10,13 @@ from utils import process_appointments_time, format_time_from_timedelta
 class PatientService:
     """Servicio para operaciones relacionadas con pacientes"""
     
+    @staticmethod
+    def get_all_patients_basic():
+        """Obtener ID, Nombre y DNI de todos los pacientes"""
+        with get_db_cursor() as cursor:
+            cursor.execute("SELECT id, Nombre, DNI FROM paciente ORDER BY Nombre")
+            return cursor.fetchall()
+
     @staticmethod
     def get_all_patients():
         """Obtener todos los pacientes"""
@@ -82,38 +89,79 @@ class AppointmentService:
     """Servicio para operaciones relacionadas con turnos"""
     
     @staticmethod
+    def update_appointment_status(appointment_id, new_status):
+        """Actualiza el estado de un turno específico"""
+        with get_db_cursor_with_commit() as cursor:
+            cursor.execute(
+                """
+                UPDATE detalleturno 
+                SET estado = %s 
+                WHERE id = %s
+                """,
+                (new_status, appointment_id)
+            )
+            return cursor.rowcount
+
+
+    # Dentro de AppointmentService.get_upcoming_appointments
+    @staticmethod
     def get_upcoming_appointments(odontologo_id=None, limit=10):
-        """Obtener próximos turnos"""
-        with get_db_cursor() as cursor:
-            if odontologo_id:
-                cursor.execute(
-                    """
+        """Obtener próximos turnos (pendientes o en curso)"""
+        print(f"DEBUG [service]: Iniciando get_upcoming_appointments para odontologo_id={odontologo_id}") # Debug
+        try: # Añadir un try/except general aquí también es buena idea
+            with get_db_cursor() as cursor: # Intenta obtener el cursor
+                # --- NUEVO PRINT ---
+                if cursor:
+                    print("DEBUG [service]: Cursor obtenido DENTRO de get_upcoming_appointments.")
+                else:
+                    # Esto no debería pasar si get_db_cursor lanza excepción, pero por si acaso
+                    print("!!!!!!!! ERROR [service]: ¡El cursor es None DENTRO de get_upcoming_appointments! !!!!!!!!")
+                    raise mysql.connector.Error("Cursor no válido obtenido.")
+                # --- FIN NUEVO PRINT ---
+
+                # El resto de la lógica de la consulta como estaba...
+                base_query = """
                     SELECT dt.FechaTurno, dt.HoraTurno, p.Nombre AS Paciente, dt.Paciente_id AS PacienteID
                     FROM detalleturno dt
                     INNER JOIN paciente p ON p.id = dt.Paciente_id
-                    WHERE dt.Odontologo_id = %s
-                      AND TIMESTAMP(dt.FechaTurno, dt.HoraTurno) >= NOW()
-                    ORDER BY dt.FechaTurno ASC, dt.HoraTurno ASC
-                    LIMIT %s
-                    """,
-                    (odontologo_id, limit)
-                )
-            else:
-                cursor.execute(
-                    """
-                    SELECT dt.FechaTurno, dt.HoraTurno, p.Nombre AS Paciente, o.Nombre AS Odontologo, dt.id, dt.Paciente_id AS PacienteID
-                    FROM detalleturno dt
-                    INNER JOIN paciente p ON p.id = dt.Paciente_id
-                    INNER JOIN odontologo o ON o.id = dt.Odontologo_id
                     WHERE TIMESTAMP(dt.FechaTurno, dt.HoraTurno) >= NOW()
-                    ORDER BY dt.FechaTurno ASC, dt.HoraTurno ASC
-                    LIMIT %s
-                    """,
-                    (limit,)
-                )
-            
-            appointments = cursor.fetchall()
-            return process_appointments_time(appointments)
+                      AND dt.estado IN ('pendiente', 'en_curso')
+                    """
+                params = []
+
+                if odontologo_id:
+                    query = base_query + """
+                        AND dt.Odontologo_id = %s
+                        ORDER BY dt.FechaTurno ASC, dt.HoraTurno ASC
+                        LIMIT %s
+                    """
+                    params = [odontologo_id, limit]
+                else:
+                     query = """
+                        SELECT dt.FechaTurno, dt.HoraTurno, p.Nombre AS Paciente, o.Nombre AS Odontologo, dt.id, dt.Paciente_id AS PacienteID
+                        FROM detalleturno dt
+                        INNER JOIN paciente p ON p.id = dt.Paciente_id
+                        INNER JOIN odontologo o ON o.id = dt.Odontologo_id
+                        WHERE TIMESTAMP(dt.FechaTurno, dt.HoraTurno) >= NOW()
+                          AND dt.estado IN ('pendiente', 'en_curso')
+                        ORDER BY dt.FechaTurno ASC, dt.HoraTurno ASC
+                        LIMIT %s
+                     """
+                     params = [limit]
+
+                print(f"DEBUG [service]: Ejecutando consulta de turnos...") # Debug antes de execute
+                cursor.execute(query, tuple(params)) # Asegurarse que params sea tupla
+                print(f"DEBUG [service]: Consulta de turnos ejecutada.") # Debug después de execute
+                appointments = cursor.fetchall()
+                return process_appointments_time(appointments)
+        except mysql.connector.Error as db_err_service:
+            # Captura errores específicos que puedan ocurrir aquí
+            print(f"!!!!!!!! ERROR DE BASE DE DATOS DENTRO de get_upcoming_appointments: {db_err_service} !!!!!!!!")
+            # Si el error es "Cursor is not connected", podría ser aquí.
+            raise db_err_service # Relanzar para que la ruta lo maneje
+        except Exception as e_service:
+             print(f"ERROR GENERAL DENTRO de get_upcoming_appointments: {e_service}")
+             raise e_service # Relanzar para que la ruta lo maneje
     
     @staticmethod
     def get_all_appointments():
@@ -375,69 +423,118 @@ class ClinicalHistoryService:
     
     @staticmethod
     def create_clinical_history(data):
-        """Crear nueva historia clínica"""
+        """
+        Crear nueva historia clínica Y el odontograma asociado.
+        Esta operación es transaccional.
+        """
+        # Extraer datos del odontograma y del odontólogo antes de procesar la historia
+        odontograma_data = data.pop('odontograma_data', None)
+        odontologo_id = data.pop('odontologo_id', None)
+        
         with get_db_cursor_with_commit() as cursor:
-            cursor.execute(
-                """
-                INSERT INTO historiaclinica 
-                (Paciente_id, Fecha, ObraSocial, NumAfiliado, Alergias, Enfermedades, 
-                 Fuma, Drogas, Medicamentos, NivelDeDolor, Calmante, GolpeEnDientes, FechaGolpe,
-                 domicilio, edad, tratamiento_odontologico, tratamiento_odontologico_detalle,
-                 colageno, fiebre_reumatica, diabetes, cardiaco, hipertension, sifilis, transfusiones,
-                 embarazada, meses_embarazo, chagas, hepatitis, renales, ulcera, convulsiones,
-                 tiempo_fumando, otras_enfermedades, tomo_medicamento, medicamento_detalle,
-                 dolor_tipo, dolor_localizacion, dificultades_funcionales, examen_tejidos_blandos,
-                 firma_paciente, firma_profesional, motivo_consulta, diagnostico_presuntivo, plan_tratamiento)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-                """,
-                (
-                    data["paciente_id"],
-                    data.get("fecha", datetime.now().date()),
-                    data.get("obra_social"),
-                    data.get("plan"),
-                    data.get("alergias"),
-                    data.get("enfermedades"),
-                    data.get("fuma", False),
-                    data.get("drogas", ""),
-                    data.get("medicamentos_actuales"),
-                    data.get("dolor_intensidad"),
-                    data.get("dolor_detalle"),
-                    data.get("golpe_dientes", False),
-                    data.get("golpe_cuando") if data.get("golpe_dientes") else None,
-                    data.get("domicilio"),
-                    data.get("edad"),
-                    data.get("tratamiento_odontologico", False),
-                    data.get("tratamiento_odontologico_detalle"),
-                    data.get("colageno", False),
-                    data.get("fiebre_reumatica", False),
-                    data.get("diabetes", False),
-                    data.get("cardiaco", False),
-                    data.get("hipertension", False),
-                    data.get("sifilis", False),
-                    data.get("transfusiones", False),
-                    data.get("embarazada", False),
-                    data.get("meses_embarazo"),
-                    data.get("chagas", False),
-                    data.get("hepatitis", False),
-                    data.get("renales", False),
-                    data.get("ulcera", False),
-                    data.get("convulsiones", False),
-                    data.get("tiempo_fumando"),
-                    data.get("otras_enfermedades"),
-                    data.get("tomo_medicamento", False),
-                    data.get("medicamento_detalle"),
-                    data.get("dolor_tipo"),
-                    data.get("dolor_localizacion"),
-                    data.get("dificultades_funcionales"),
-                    data.get("examen_tejidos_blandos"),
-                    data.get("firma_paciente"),
-                    data.get("firma_profesional"),
-                    data.get("motivo_consulta"),
-                    data.get("diagnostico_presuntivo"),
-                    data.get("plan_tratamiento")
+            try:
+                # --- PASO 1: Insertar la Historia Clínica ---
+                # Esta consulta INSERT incluye TODOS los campos del formulario
+                cursor.execute(
+                    """
+                    INSERT INTO historiaclinica 
+                    (Paciente_id, Fecha, ObraSocial, NumAfiliado, Alergias, Enfermedades, 
+                     Fuma, Drogas, Medicamentos, NivelDeDolor, Calmante, GolpeEnDientes, FechaGolpe,
+                    domicilio, edad, tratamiento_odontologico, tratamiento_odontologico_detalle,
+                    colageno, fiebre_reumatica, diabetes, cardiaco, hipertension, sifilis, transfusiones,
+                    embarazada, meses_embarazo, chagas, hepatitis, renales, ulcera, convulsiones,
+                    tiempo_fumando, otras_enfermedades, tomo_medicamento, medicamento_detalle,
+                    dolor_tipo, dolor_localizacion, dificultades_funcionales, examen_tejidos_blandos,
+                    firma_paciente, firma_profesional, motivo_consulta, diagnostico_presuntivo, plan_tratamiento)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) 
+                    """, # <-- CORRECCIÓN: Ahora hay 44 %s, coincidiendo con las 44 columnas listadas
+                    (
+                        # CORRECCIÓN: Tupla de valores ajustada para coincidir con las columnas
+                        data.get("paciente_id"),
+                        data.get("fecha", datetime.now().date()),
+                        data.get("obra_social"), data.get("num_afiliado"), data.get("alergias"), data.get("enfermedades"), # NumAfiliado en lugar de plan
+                        data.get("fuma", False), data.get("drogas"), data.get("medicamentos_actuales"), # Medicamentos actuales en lugar de Medicamentos
+                        data.get("dolor_intensidad"), data.get("dolor_detalle"), # Usar dolor_detalle para Calmante según tu comentario
+                        data.get("golpe_dientes", False),
+                        data.get("golpe_cuando") if data.get("golpe_dientes") else None,
+                        data.get("domicilio"), data.get("edad"),
+                        data.get("tratamiento_odontologico", False), data.get("tratamiento_odontologico_detalle"),
+                        data.get("colageno", False), data.get("fiebre_reumatica", False), data.get("diabetes", False),
+                        data.get("cardiaco", False), data.get("hipertension", False), data.get("sifilis", False),
+                        data.get("transfusiones", False), data.get("embarazada", False), data.get("meses_embarazo"),
+                        data.get("chagas", False), data.get("hepatitis", False), data.get("renales", False),
+                        data.get("ulcera", False), data.get("convulsiones", False), data.get("tiempo_fumando"),
+                        data.get("otras_enfermedades"), data.get("tomo_medicamento", False), data.get("medicamento_detalle"),
+                        data.get("dolor_tipo"), data.get("dolor_localizacion"), data.get("dificultades_funcionales"),
+                        data.get("examen_tejidos_blandos"), data.get("firma_paciente"), data.get("firma_profesional"),
+                        data.get("motivo_consulta"), data.get("diagnostico_presuntivo"), data.get("plan_tratamiento")
+                    # Campos removidos: golpe_como, golpe_recibio_tratamiento, sangrado_encias, movilidad_dentaria,
+                    # calculo_detalle, enfermedad_periodontal_detalle, observaciones_dentales, cantidad_dientes
+                    # Campo NumAfiliado usado en lugar de 'plan'
+                    # Campo Medicamentos actualizado a 'medicamentos_actuales'
+                    # Campo Calmante ahora se maneja dentro de 'dolor_detalle'
+                    )
                 )
-            )
-            return cursor.lastrowid
+                history_id = cursor.lastrowid
+                
+                # --- PASO 2: Procesar y guardar el Odontograma ---
+                if odontograma_data and history_id:
+                    # Crear el odontograma principal
+                    cursor.execute(
+                        """
+                        INSERT INTO odontograma (Fecha, HistoriaClinica_id)
+                        VALUES (%s, %s)
+                        """,
+                        (data.get("fecha", datetime.now().date()), history_id)
+                    )
+                    odontograma_id = cursor.lastrowid
+                    
+                    # Iterar sobre el estado del odontograma (dientes)
+                    for num_diente, data_diente in odontograma_data.items():
+                        # Solo crear detallediente si tiene afecciones o procedimientos
+                        if data_diente.get('afecciones') or data_diente.get('procedimientos'):
+                            
+                            # Crear el detallediente
+                            cursor.execute(
+                                "INSERT INTO detallediente (Odontograma_id, NumDiente) VALUES (%s, %s)",
+                                (odontograma_id, int(num_diente))
+                            )
+                            detallediente_id = cursor.lastrowid
+                            
+                            # Guardar Afecciones
+                            for afeccion in data_diente.get('afecciones', []):
+                                cursor.execute("SELECT id FROM afeccion WHERE NombreAfeccion = %s LIMIT 1", (afeccion['nombre'],))
+                                afeccion_row = cursor.fetchone()
+                                if afeccion_row:
+                                    cursor.execute(
+                                        "INSERT INTO detalleafeccion (DetalleDiente_id, Afeccion_id, ZonaDiente) VALUES (%s, %s, %s)",
+                                        (detallediente_id, afeccion_row['id'], afeccion['zona'])
+                                    )
+                                    
+                            # Guardar Procedimientos
+                            for proc in data_diente.get('procedimientos', []):
+                                cursor.execute("SELECT id FROM procedimientos WHERE NombreProcedimiento = %s LIMIT 1", (proc['nombre'],))
+                                proc_row = cursor.fetchone()
+                                if proc_row:
+                                    cursor.execute(
+                                        """
+                                        INSERT INTO detalleprocedimiento 
+                                        (DetalleDiente_id, Procedimiento_id, Odontologo_id, Fecha, ZonaDiente, Estado, Observaciones)
+                                        VALUES (%s, %s, %s, %s, %s, %s, %s)
+                                        """,
+                                        (
+                                            detallediente_id, proc_row['id'], odontologo_id,
+                                            data.get("fecha", datetime.now().date()), # Usar la fecha de la historia
+                                            proc['zona'], proc['estado'],
+                                            "Registrado desde odontograma interactivo"
+                                        )
+                                    )
+                
+                return history_id # Devolver el ID de la historia clínica creada
+
+            except Exception as e:
+                # La transacción se revierte automáticamente por el context manager
+                raise e # Re-lanzar la excepción para que app.py la capture
     
     @staticmethod
     def update_clinical_history(history_id, data):
@@ -710,6 +807,131 @@ class AvailabilityService:
 
 class OdontogramaService:
     """Servicio para operaciones relacionadas con odontogramas"""
+
+    @staticmethod
+    def get_odontograma_details(odontograma_id):
+        """
+        Obtener todos los detalles de un odontograma específico para la visualización.
+        """
+        details = {
+            'info': None,
+            'dientes': {} # Diccionario para almacenar info por NumDiente (usará STRINGS como claves)
+        }
+        with get_db_cursor() as cursor:
+            # 1. Obtener información básica del odontograma y paciente
+            cursor.execute("""
+                SELECT o.id, o.Fecha, hc.id as HistoriaClinica_id, p.id as Paciente_id, p.Nombre as PacienteNombre
+                FROM odontograma o
+                JOIN historiaclinica hc ON o.HistoriaClinica_id = hc.id
+                JOIN paciente p ON hc.Paciente_id = p.id
+                WHERE o.id = %s
+            """, (odontograma_id,))
+            details['info'] = cursor.fetchone()
+
+            if not details['info']:
+                return None # Odontograma no encontrado
+
+            # Formatear fecha si existe
+            if details['info'] and details['info'].get('Fecha'): # Usar .get() para seguridad
+                 # Asegurarse que sea un objeto date/datetime antes de formatear
+                 if hasattr(details['info']['Fecha'], 'strftime'):
+                     details['info']['Fecha_formatted'] = details['info']['Fecha'].strftime('%d/%m/%Y')
+                 else:
+                     details['info']['Fecha_formatted'] = str(details['info']['Fecha']) # Fallback a string
+
+
+            # 2. Obtener todos los dientes registrados en este odontograma
+            cursor.execute("""
+                SELECT id, NumDiente
+                FROM detallediente
+                WHERE Odontograma_id = %s
+            """, (odontograma_id,))
+            dientes_odontograma = cursor.fetchall()
+
+            # --- MODIFICACIÓN: Usar str(NumDiente) como clave ---
+            num_diente_map = {} # Mapa de detallediente_id -> NumDiente (string)
+            for diente in dientes_odontograma:
+                num_diente_str = str(diente['NumDiente']) # Convertir a string
+                details['dientes'][num_diente_str] = { # Usar string como clave
+                    'detallediente_id': diente['id'],
+                    'afecciones': [],
+                    'procedimientos': []
+                }
+                num_diente_map[diente['id']] = num_diente_str # Guardar el string en el mapa
+            # --- FIN MODIFICACIÓN ---
+            print(f"DEBUG: num_diente_map = {num_diente_map}") # DEBUG (ahora con strings)
+
+
+            # --- CORRECCIÓN: Verificar si hay IDs antes de consultar ---
+            afecciones = [] # Inicializar como lista vacía
+            procedimientos = [] # Inicializar como lista vacía
+
+            if dientes_odontograma: # Solo continuar si encontramos dientes en la tabla detallediente
+                detallediente_ids = [d['id'] for d in dientes_odontograma]
+
+                # Asegurarse de que realmente hay IDs antes de formar la consulta
+                if detallediente_ids:
+                    placeholders = ', '.join(['%s'] * len(detallediente_ids))
+                    ids_tuple = tuple(detallediente_ids)
+
+                    # 3. Obtener afecciones
+                    print(f"DEBUG: Buscando afecciones para IDs: {ids_tuple}") # Debug
+                    cursor.execute(f"""
+                        SELECT da.DetalleDiente_id, da.ZonaDiente, a.id as Afeccion_id, a.NombreAfeccion, a.CodigoSNOMED
+                        FROM detalleafeccion da
+                        JOIN afeccion a ON da.Afeccion_id = a.id
+                        WHERE da.DetalleDiente_id IN ({placeholders})
+                    """, ids_tuple)
+                    afecciones = cursor.fetchall()
+                    print(f"DEBUG: Afecciones encontradas: {len(afecciones)}") # Debug
+
+                    # 4. Obtener procedimientos
+                    print(f"DEBUG: Buscando procedimientos para IDs: {ids_tuple}") # Debug
+                    cursor.execute(f"""
+                        SELECT dp.DetalleDiente_id, dp.ZonaDiente, dp.Estado, pr.id as Procedimiento_id, pr.NombreProcedimiento, pr.CodigoSNOMED
+                        FROM detalleprocedimiento dp
+                        JOIN procedimientos pr ON dp.Procedimiento_id = pr.id
+                        WHERE dp.DetalleDiente_id IN ({placeholders})
+                    """, ids_tuple)
+                    procedimientos = cursor.fetchall()
+                    print(f"DEBUG: Procedimientos encontrados: {len(procedimientos)}") # Debug
+                else:
+                    print("DEBUG: La lista detallediente_ids está vacía (posiblemente un odontograma sin dientes registrados), saltando consultas de afecciones/procedimientos.") # Debug
+            else:
+                 print("DEBUG: La lista dientes_odontograma está vacía (no hay entradas en detallediente para este odontograma_id), saltando consultas de afecciones/procedimientos.") # Debug
+            # --- FIN CORRECCIÓN ---
+
+
+            # 5. Organizar datos usando CLAVES DE TEXTO
+            for afeccion in afecciones:
+                detallediente_id = afeccion['DetalleDiente_id']
+                num_diente_str = num_diente_map.get(detallediente_id) # Obtener el num diente como string
+                print(f"DEBUG: Procesando afeccion ID {afeccion['Afeccion_id']} para detallediente_id {detallediente_id} -> num_diente_str {num_diente_str}") # DEBUG
+                if num_diente_str and num_diente_str in details['dientes']: # Verificar existencia con string
+                    details['dientes'][num_diente_str]['afecciones'].append({ # Usar string como clave
+                        'zona': afeccion['ZonaDiente'],
+                        'nombre': afeccion['NombreAfeccion'],
+                        'id': afeccion['Afeccion_id']
+                    })
+                else:
+                     print(f"WARN: No se encontró mapeo para detallediente_id {detallediente_id} o diente {num_diente_str} no inicializado (afeccion)")
+
+
+            for proc in procedimientos:
+                detallediente_id = proc['DetalleDiente_id']
+                num_diente_str = num_diente_map.get(detallediente_id) # Obtener el num diente como string
+                print(f"DEBUG: Procesando proc ID {proc['Procedimiento_id']} para detallediente_id {detallediente_id} -> num_diente_str {num_diente_str}") # DEBUG
+                if num_diente_str and num_diente_str in details['dientes']: # Verificar existencia con string
+                    details['dientes'][num_diente_str]['procedimientos'].append({ # Usar string como clave
+                        'zona': proc['ZonaDiente'],
+                        'nombre': proc['NombreProcedimiento'],
+                        'estado': proc['Estado'],
+                        'id': proc['Procedimiento_id']
+                    })
+                else:
+                    print(f"WARN: No se encontró mapeo para detallediente_id {detallediente_id} o diente {num_diente_str} no inicializado (procedimiento)")
+
+        return details
     
     @staticmethod
     def get_all_odontogramas():
@@ -748,6 +970,31 @@ class OdontogramaService:
             cursor.execute("SELECT * FROM procedimientos WHERE Activo = 1 ORDER BY NombreProcedimiento")
             return cursor.fetchall()
     
+    @staticmethod
+    def get_afecciones():
+        """Obtener catálogo de afecciones"""
+        with get_db_cursor() as cursor:
+            cursor.execute("SELECT * FROM afeccion ORDER BY NombreAfeccion")
+            return cursor.fetchall()
+
+    @staticmethod
+    def get_latest_odontograma_info_by_patient(patient_id):
+        """Obtener la info básica del último odontograma de un paciente"""
+        with get_db_cursor() as cursor:
+            cursor.execute("""
+                SELECT o.id, o.Fecha, o.HistoriaClinica_id
+                FROM odontograma o
+                JOIN historiaclinica hc ON o.HistoriaClinica_id = hc.id
+                WHERE hc.Paciente_id = %s
+                ORDER BY o.Fecha DESC, o.id DESC
+                LIMIT 1
+            """, (patient_id,))
+            odontograma_info = cursor.fetchone()
+            if odontograma_info and odontograma_info.get('Fecha'):
+                # Añadir fecha formateada si existe
+                odontograma_info['Fecha_formatted'] = odontograma_info['Fecha'].strftime('%d/%m/%Y')
+            return odontograma_info
+
     @staticmethod
     def get_odontogramas_by_patient(patient_id):
         """Obtener odontogramas de un paciente específico"""

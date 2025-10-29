@@ -1,12 +1,16 @@
-{% extends 'base.html' %}
+﻿{% extends "base_improved.html" %} {# Hereda de la base correcta #}
 
 {% block title %}Nueva Historia Clínica - {{ patient.Nombre }}{% endblock %}
+
+{# Cargar CSS específico del odontograma #}
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/odontograma.css') }}">
+{% endblock %}
 
 {% block content %}
 <div class="container-fluid">
     <div class="row">
         <div class="col-12">
-            <!-- Header -->
             <div class="d-flex align-items-center justify-content-between mb-4">
                 <div class="d-flex align-items-center">
                     <div class="text-center me-4">
@@ -20,22 +24,19 @@
                     </div>
                 </div>
                 <div>
-                    <a href="{{ url_for('odontologo_consulta', patient_id=patient.id) }}" class="btn btn-outline-secondary">
-                        <i class="bi bi-arrow-left me-1"></i>Volver a Consulta
+                    <a href="{{ url_for('odontologo_pacientes') }}" class="btn btn-outline-secondary">
+                        <i class="bi bi-arrow-left me-1"></i>Volver a Pacientes
                     </a>
                 </div>
             </div>
 
-            <!-- Formulario de Historia Clínica -->
-            <form id="historiaClinicaForm">
+            <form id="historiaClinicaForm" onsubmit="return false;">
+                {# Evitar envío por defecto #}
                 <input type="hidden" id="paciente_id" value="{{ patient.id }}">
-                
-                <!-- Sección 1: Datos Personales -->
+
                 <div class="card mb-4">
                     <div class="card-header bg-primary text-white">
-                        <h5 class="mb-0">
-                            <i class="bi bi-person me-2"></i>DATOS PERSONALES
-                        </h5>
+                        <h5 class="mb-0"><i class="bi bi-person me-2"></i>DATOS PERSONALES</h5>
                     </div>
                     <div class="card-body">
                         <div class="row">
@@ -46,11 +47,11 @@
                                 </div>
                                 <div class="mb-3">
                                     <label for="obra_social" class="form-label">Obra social y n° afiliado</label>
-                                    <input type="text" class="form-control" id="obra_social" placeholder="Ej: OSDE 12345678">
+                                    <input type="text" class="form-control" id="obra_social" name="obra_social" placeholder="Ej: OSDE 12345678">
                                 </div>
                                 <div class="mb-3">
                                     <label for="domicilio" class="form-label">Domicilio</label>
-                                    <input type="text" class="form-control" id="domicilio" value="{{ patient.direccion or '' }}" placeholder="Dirección completa">
+                                    <input type="text" class="form-control" id="domicilio" name="domicilio" value="{{ patient.direccion or '' }}" placeholder="Dirección completa">
                                 </div>
                             </div>
                             <div class="col-md-6">
@@ -66,313 +67,123 @@
                                     <div class="col-md-6">
                                         <div class="mb-3">
                                             <label for="fecha_nacimiento" class="form-label">Fecha de nac.</label>
-                                            <input type="date" class="form-control" id="fecha_nacimiento" value="{{ patient.FechaNacimiento or '' }}" readonly>
+                                            <input type="date" class="form-control" id="fecha_nacimiento" value="{{ patient.FechaNacimiento if patient.FechaNacimiento else '' }}" readonly>
                                         </div>
                                     </div>
                                     <div class="col-md-6">
                                         <div class="mb-3">
                                             <label for="edad" class="form-label">Edad</label>
-                                            <input type="number" class="form-control" id="edad" placeholder="Años">
+                                            <input type="number" class="form-control" id="edad" name="edad" placeholder="Años">
                                         </div>
                                     </div>
                                 </div>
                                 <div class="mb-3">
                                     <label for="plan" class="form-label">Plan</label>
-                                    <input type="text" class="form-control" id="plan" placeholder="Tipo de plan">
+                                    <input type="text" class="form-control" id="plan" name="plan" placeholder="Tipo de plan">
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <!-- Sección 2: Historia Clínica General -->
                 <div class="card mb-4">
                     <div class="card-header bg-success text-white">
-                        <h5 class="mb-0">
-                            <i class="bi bi-heart-pulse me-2"></i>HISTORIA CLÍNICA GENERAL
-                        </h5>
+                        <h5 class="mb-0"><i class="bi bi-heart-pulse me-2"></i>HISTORIA CLÍNICA GENERAL</h5>
                     </div>
                     <div class="card-body">
                         <div class="row">
-                            <!-- Columna Izquierda -->
                             <div class="col-md-4">
-                                <div class="mb-3">
-                                    <label class="form-label">Sufre alguna enfermedad?</label>
-                                    <textarea class="form-control" id="enfermedades" rows="2" placeholder="Especificar enfermedades"></textarea>
-                                </div>
-                                
-                                <div class="mb-3">
-                                    <label for="medicamentos_actuales" class="form-label">Medicamentos que consume actualmente</label>
-                                    <textarea class="form-control" id="medicamentos_actuales" rows="3" placeholder="Listar medicamentos y dosis"></textarea>
-                                </div>
-
-                                <div class="mb-3">
-                                    <label class="form-label">Es alérgico? A qué?</label>
-                                    <textarea class="form-control" id="alergias" rows="2" placeholder="Especificar alergias"></textarea>
-                                </div>
-
+                                <div class="mb-3"><label class="form-label">Sufre alguna enfermedad?</label><textarea class="form-control" id="enfermedades" name="enfermedades" rows="2" placeholder="Especificar enfermedades"></textarea></div>
+                                <div class="mb-3"><label for="medicamentos_actuales" class="form-label">Medicamentos que consume actualmente</label><textarea class="form-control" id="medicamentos_actuales" name="medicamentos_actuales" rows="3" placeholder="Listar medicamentos y dosis"></textarea></div>
+                                <div class="mb-3"><label class="form-label">Es alérgico? A qué?</label><textarea class="form-control" id="alergias" name="alergias" rows="2" placeholder="Especificar alergias"></textarea></div>
                                 <div class="mb-3">
                                     <label class="form-label">Estuvo bajo tratamiento odontológico?</label>
-                                    <div class="form-check">
-                                        <input class="form-check-input" type="checkbox" id="tratamiento_odontologico_si">
-                                        <label class="form-check-label" for="tratamiento_odontologico_si">Sí</label>
-                                    </div>
-                                    <textarea class="form-control mt-2" id="tratamiento_odontologico_detalle" rows="2" placeholder="Detalles del tratamiento"></textarea>
+                                    <div class="form-check"><input class="form-check-input" type="checkbox" id="tratamiento_odontologico_si" name="tratamiento_odontologico"><label class="form-check-label" for="tratamiento_odontologico_si">Sí</label></div>
+                                    <textarea class="form-control mt-2" id="tratamiento_odontologico_detalle" name="tratamiento_odontologico_detalle" rows="2" placeholder="Detalles del tratamiento"></textarea>
                                 </div>
-
-                                <!-- Lista de condiciones médicas -->
                                 <div class="mb-3">
                                     <label class="form-label">Condiciones médicas:</label>
                                     <div class="checkbox-group">
-                                        <div class="form-check">
-                                            <input class="form-check-input" type="checkbox" id="colageno_si">
-                                            <label class="form-check-label" for="colageno_si">Problemas de colágeno (hiperlaxitud)?</label>
-                                        </div>
-                                        <div class="form-check">
-                                            <input class="form-check-input" type="checkbox" id="fiebre_reumatica_si">
-                                            <label class="form-check-label" for="fiebre_reumatica_si">Fiebre reumática?</label>
-                                        </div>
-                                        <div class="form-check">
-                                            <input class="form-check-input" type="checkbox" id="diabetes_si">
-                                            <label class="form-check-label" for="diabetes_si">Diabetes?</label>
-                                        </div>
-                                        <div class="form-check">
-                                            <input class="form-check-input" type="checkbox" id="cardiaco_si">
-                                            <label class="form-check-label" for="cardiaco_si">Problema cardíaco?</label>
-                                        </div>
-                                        <div class="form-check">
-                                            <input class="form-check-input" type="checkbox" id="hipertension_si">
-                                            <label class="form-check-label" for="hipertension_si">Hipertensión arterial?</label>
-                                        </div>
-                                        <div class="form-check">
-                                            <input class="form-check-input" type="checkbox" id="sifilis_si">
-                                            <label class="form-check-label" for="sifilis_si">Sífilis o gonorrea?</label>
-                                        </div>
-                                        <div class="form-check">
-                                            <input class="form-check-input" type="checkbox" id="transfusiones_si">
-                                            <label class="form-check-label" for="transfusiones_si">Transfusiones?</label>
-                                        </div>
+                                        <div class="form-check"><input class="form-check-input" type="checkbox" id="colageno_si" name="colageno"><label class="form-check-label" for="colageno_si">Problemas de colágeno?</label></div>
+                                        <div class="form-check"><input class="form-check-input" type="checkbox" id="fiebre_reumatica_si" name="fiebre_reumatica"><label class="form-check-label" for="fiebre_reumatica_si">Fiebre reumática?</label></div>
+                                        <div class="form-check"><input class="form-check-input" type="checkbox" id="diabetes_si" name="diabetes"><label class="form-check-label" for="diabetes_si">Diabetes?</label></div>
+                                        <div class="form-check"><input class="form-check-input" type="checkbox" id="cardiaco_si" name="cardiaco"><label class="form-check-label" for="cardiaco_si">Problema cardíaco?</label></div>
+                                        <div class="form-check"><input class="form-check-input" type="checkbox" id="hipertension_si" name="hipertension"><label class="form-check-label" for="hipertension_si">Hipertensión arterial?</label></div>
+                                        <div class="form-check"><input class="form-check-input" type="checkbox" id="sifilis_si" name="sifilis"><label class="form-check-label" for="sifilis_si">Sífilis o gonorrea?</label></div>
+                                        <div class="form-check"><input class="form-check-input" type="checkbox" id="transfusiones_si" name="transfusiones"><label class="form-check-label" for="transfusiones_si">Transfusiones?</label></div>
                                     </div>
                                 </div>
                             </div>
-
-                            <!-- Columna Central -->
                             <div class="col-md-4">
                                 <div class="mb-3">
                                     <label class="form-label">Embarazada?</label>
-                                    <div class="form-check">
-                                        <input class="form-check-input" type="checkbox" id="embarazada_si">
-                                        <label class="form-check-label" for="embarazada_si">Sí</label>
-                                    </div>
-                                    <input type="text" class="form-control mt-2" id="meses_embarazo" placeholder="Cuántos meses?">
+                                    <div class="form-check"><input class="form-check-input" type="checkbox" id="embarazada_si" name="embarazada"><label class="form-check-label" for="embarazada_si">Sí</label></div>
+                                    <input type="text" class="form-control mt-2" id="meses_embarazo" name="meses_embarazo" placeholder="Cuántos meses?">
                                 </div>
-
-                                <div class="mb-3">
-                                    <label class="form-label">Chagas?</label>
-                                    <div class="form-check">
-                                        <input class="form-check-input" type="checkbox" id="chagas_si">
-                                        <label class="form-check-label" for="chagas_si">Sí</label>
-                                    </div>
-                                </div>
-
-                                <div class="mb-3">
-                                    <label class="form-label">Hepatitis?</label>
-                                    <div class="form-check">
-                                        <input class="form-check-input" type="checkbox" id="hepatitis_si">
-                                        <label class="form-check-label" for="hepatitis_si">Sí</label>
-                                    </div>
-                                </div>
-
-                                <div class="mb-3">
-                                    <label class="form-label">Problemas renales?</label>
-                                    <div class="form-check">
-                                        <input class="form-check-input" type="checkbox" id="renales_si">
-                                        <label class="form-check-label" for="renales_si">Sí</label>
-                                    </div>
-                                </div>
-
-                                <div class="mb-3">
-                                    <label class="form-label">Úlcera gástrica?</label>
-                                    <div class="form-check">
-                                        <input class="form-check-input" type="checkbox" id="ulcera_si">
-                                        <label class="form-check-label" for="ulcera_si">Sí</label>
-                                    </div>
-                                </div>
-
-                                <div class="mb-3">
-                                    <label class="form-label">Convulsiones?</label>
-                                    <div class="form-check">
-                                        <input class="form-check-input" type="checkbox" id="convulsiones_si">
-                                        <label class="form-check-label" for="convulsiones_si">Sí</label>
-                                    </div>
-                                </div>
-
-                                <div class="mb-3">
-                                    <label class="form-label">Drogas?</label>
-                                    <div class="form-check">
-                                        <input class="form-check-input" type="checkbox" id="drogas_si">
-                                        <label class="form-check-label" for="drogas_si">Sí</label>
-                                    </div>
-                                </div>
-
+                                <div class="mb-3"><label class="form-label">Chagas?</label><div class="form-check"><input class="form-check-input" type="checkbox" id="chagas_si" name="chagas"><label class="form-check-label" for="chagas_si">Sí</label></div></div>
+                                <div class="mb-3"><label class="form-label">Hepatitis?</label><div class="form-check"><input class="form-check-input" type="checkbox" id="hepatitis_si" name="hepatitis"><label class="form-check-label" for="hepatitis_si">Sí</label></div></div>
+                                <div class="mb-3"><label class="form-label">Problemas renales?</label><div class="form-check"><input class="form-check-input" type="checkbox" id="renales_si" name="renales"><label class="form-check-label" for="renales_si">Sí</label></div></div>
+                                <div class="mb-3"><label class="form-label">Úlcera gástrica?</label><div class="form-check"><input class="form-check-input" type="checkbox" id="ulcera_si" name="ulcera"><label class="form-check-label" for="ulcera_si">Sí</label></div></div>
+                                <div class="mb-3"><label class="form-label">Convulsiones?</label><div class="form-check"><input class="form-check-input" type="checkbox" id="convulsiones_si" name="convulsiones"><label class="form-check-label" for="convulsiones_si">Sí</label></div></div>
+                                <div class="mb-3"><label class="form-label">Drogas?</label><div class="form-check"><input class="form-check-input" type="checkbox" id="drogas_si" name="drogas"><label class="form-check-label" for="drogas_si">Sí</label></div></div>
                                 <div class="mb-3">
                                     <label class="form-label">Fuma?</label>
-                                    <div class="form-check">
-                                        <input class="form-check-input" type="checkbox" id="fuma_si">
-                                        <label class="form-check-label" for="fuma_si">Sí</label>
-                                    </div>
-                                    <input type="text" class="form-control mt-2" id="tiempo_fumando" placeholder="Cuánto tiempo?">
+                                    <div class="form-check"><input class="form-check-input" type="checkbox" id="fuma_si" name="fuma"><label class="form-check-label" for="fuma_si">Sí</label></div>
+                                    <input type="text" class="form-control mt-2" id="tiempo_fumando" name="tiempo_fumando" placeholder="Cuánto tiempo?">
                                 </div>
-
                                 <div class="mb-3">
-                                    <label class="form-label">Hay alguna otra enfermedad o recomendación de su médico de la que quiera dejar constancia?</label>
-                                    <textarea class="form-control" id="otras_enfermedades" rows="3" placeholder="Otras enfermedades o recomendaciones médicas"></textarea>
+                                    <label class="form-label">Otras enfermedades/recomendaciones?</label>
+                                    <textarea class="form-control" id="otras_enfermedades" name="otras_enfermedades" rows="3" placeholder="Otras enfermedades o recomendaciones médicas"></textarea>
                                 </div>
                             </div>
-
-                            <!-- Columna Derecha -->
                             <div class="col-md-4">
                                 <div class="mb-3">
                                     <label class="form-label">Tomó algún medicamento?</label>
-                                    <div class="form-check">
-                                        <input class="form-check-input" type="checkbox" id="tomo_medicamento_si">
-                                        <label class="form-check-label" for="tomo_medicamento_si">Sí</label>
-                                    </div>
-                                    <input type="text" class="form-control mt-2" id="medicamento_detalle" placeholder="Cuál? Tiempo?">
+                                    <div class="form-check"><input class="form-check-input" type="checkbox" id="tomo_medicamento_si" name="tomo_medicamento"><label class="form-check-label" for="tomo_medicamento_si">Sí</label></div>
+                                    <input type="text" class="form-control mt-2" id="medicamento_detalle" name="medicamento_detalle" placeholder="Cuál? Tiempo?">
                                 </div>
-
-                                <!-- Sección de Dolor -->
                                 <div class="mb-3">
                                     <label class="form-label">Dolor?</label>
-                                    <div class="row">
-                                        <div class="col-12">
-                                            <label class="form-label small">Intensidad:</label>
-                                            <div class="form-check form-check-inline">
-                                                <input class="form-check-input" type="radio" name="dolor_intensidad" id="dolor_suave" value="suave">
-                                                <label class="form-check-label" for="dolor_suave">Suave</label>
-                                            </div>
-                                            <div class="form-check form-check-inline">
-                                                <input class="form-check-input" type="radio" name="dolor_intensidad" id="dolor_moderado" value="moderado">
-                                                <label class="form-check-label" for="dolor_moderado">Moderado</label>
-                                            </div>
-                                            <div class="form-check form-check-inline">
-                                                <input class="form-check-input" type="radio" name="dolor_intensidad" id="dolor_intenso" value="intenso">
-                                                <label class="form-check-label" for="dolor_intenso">Intenso</label>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div class="row mt-2">
-                                        <div class="col-12">
-                                            <label class="form-label small">Tipo:</label>
-                                            <div class="form-check form-check-inline">
-                                                <input class="form-check-input" type="radio" name="dolor_tipo" id="dolor_continuo" value="continuo">
-                                                <label class="form-check-label" for="dolor_continuo">Continuo</label>
-                                            </div>
-                                            <div class="form-check form-check-inline">
-                                                <input class="form-check-input" type="radio" name="dolor_tipo" id="dolor_intermitente" value="intermitente">
-                                                <label class="form-check-label" for="dolor_intermitente">Intermitente</label>
-                                            </div>
-                                            <div class="form-check form-check-inline">
-                                                <input class="form-check-input" type="radio" name="dolor_tipo" id="dolor_provocado" value="provocado">
-                                                <label class="form-check-label" for="dolor_provocado">Provocado</label>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div class="row mt-2">
-                                        <div class="col-12">
-                                            <label class="form-label small">Localización:</label>
-                                            <div class="form-check form-check-inline">
-                                                <input class="form-check-input" type="radio" name="dolor_localizacion" id="dolor_localizado" value="localizado">
-                                                <label class="form-check-label" for="dolor_localizado">Localizado</label>
-                                            </div>
-                                            <div class="form-check form-check-inline">
-                                                <input class="form-check-input" type="radio" name="dolor_localizacion" id="dolor_irradiado" value="irradiado">
-                                                <label class="form-check-label" for="dolor_irradiado">Irradiado</label>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <textarea class="form-control mt-2" id="dolor_detalle" rows="2" placeholder="Puede calmarlo con algo?"></textarea>
+                                    <div class="row"><div class="col-12"><label class="form-label small">Intensidad:</label><div class="form-check form-check-inline"><input class="form-check-input" type="radio" name="dolor_intensidad" id="dolor_suave" value="suave"><label class="form-check-label" for="dolor_suave">Suave</label></div><div class="form-check form-check-inline"><input class="form-check-input" type="radio" name="dolor_intensidad" id="dolor_moderado" value="moderado"><label class="form-check-label" for="dolor_moderado">Moderado</label></div><div class="form-check form-check-inline"><input class="form-check-input" type="radio" name="dolor_intensidad" id="dolor_intenso" value="intenso"><label class="form-check-label" for="dolor_intenso">Intenso</label></div></div></div>
+                                    <div class="row mt-2"><div class="col-12"><label class="form-label small">Tipo:</label><div class="form-check form-check-inline"><input class="form-check-input" type="radio" name="dolor_tipo" id="dolor_continuo" value="continuo"><label class="form-check-label" for="dolor_continuo">Continuo</label></div><div class="form-check form-check-inline"><input class="form-check-input" type="radio" name="dolor_tipo" id="dolor_intermitente" value="intermitente"><label class="form-check-label" for="dolor_intermitente">Intermitente</label></div><div class="form-check form-check-inline"><input class="form-check-input" type="radio" name="dolor_tipo" id="dolor_provocado" value="provocado"><label class="form-check-label" for="dolor_provocado">Provocado</label></div></div></div>
+                                    <div class="row mt-2"><div class="col-12"><label class="form-label small">Localización:</label><div class="form-check form-check-inline"><input class="form-check-input" type="radio" name="dolor_localizacion" id="dolor_localizado" value="localizado"><label class="form-check-label" for="dolor_localizado">Localizado</label></div><div class="form-check form-check-inline"><input class="form-check-input" type="radio" name="dolor_localizacion" id="dolor_irradiado" value="irradiado"><label class="form-check-label" for="dolor_irradiado">Irradiado</label></div></div></div>
+                                    <textarea class="form-control mt-2" id="dolor_detalle" name="dolor_detalle" rows="2" placeholder="Puede calmarlo con algo?"></textarea>
                                 </div>
-
                                 <div class="mb-3">
                                     <label class="form-label">Sufrió un golpe en los dientes?</label>
-                                    <div class="form-check">
-                                        <input class="form-check-input" type="checkbox" id="golpe_dientes_si">
-                                        <label class="form-check-label" for="golpe_dientes_si">Sí</label>
-                                    </div>
+                                    <div class="form-check"><input class="form-check-input" type="checkbox" id="golpe_dientes_si" name="golpe_dientes"><label class="form-check-label" for="golpe_dientes_si">Sí</label></div>
                                     <div class="row mt-2">
-                                        <div class="col-6">
-                                            <input type="text" class="form-control" id="golpe_cuando" placeholder="Cuándo?">
-                                        </div>
-                                        <div class="col-6">
-                                            <input type="text" class="form-control" id="golpe_como" placeholder="Cómo?">
-                                        </div>
+                                        <div class="col-6"><input type="text" class="form-control" id="golpe_cuando" name="golpe_cuando" placeholder="Cuándo?"></div>
+                                        <div class="col-6"><input type="text" class="form-control" id="golpe_como" name="golpe_como" placeholder="Cómo?"></div>
                                     </div>
-                                    <div class="form-check mt-2">
-                                        <input class="form-check-input" type="checkbox" id="golpe_recibio_tratamiento">
-                                        <label class="form-check-label" for="golpe_recibio_tratamiento">Recibió tratamiento?</label>
-                                    </div>
+                                    <div class="form-check mt-2"><input class="form-check-input" type="checkbox" id="golpe_recibio_tratamiento" name="golpe_recibio_tratamiento"><label class="form-check-label" for="golpe_recibio_tratamiento">Recibió tratamiento?</label></div>
                                 </div>
-
-                                <div class="mb-3">
-                                    <label class="form-label">Presenta dificultad para hablar, tragar, abrir la boca?</label>
-                                    <textarea class="form-control" id="dificultades_funcionales" rows="2" placeholder="Describir dificultades"></textarea>
-                                </div>
-
-                                <div class="mb-3">
-                                    <label class="form-label">Examen de tejidos blandos</label>
-                                    <textarea class="form-control" id="examen_tejidos_blandos" rows="2" placeholder="Resultados del examen"></textarea>
-                                </div>
+                                <div class="mb-3"><label class="form-label">Dificultad para hablar, tragar, abrir la boca?</label><textarea class="form-control" id="dificultades_funcionales" name="dificultades_funcionales" rows="2" placeholder="Describir dificultades"></textarea></div>
+                                <div class="mb-3"><label class="form-label">Examen de tejidos blandos</label><textarea class="form-control" id="examen_tejidos_blandos" name="examen_tejidos_blandos" rows="2" placeholder="Resultados del examen"></textarea></div>
                             </div>
                         </div>
-
-                        <!-- Declaración -->
                         <div class="alert alert-declaration mt-4">
-                            <p class="mb-0">
-                                <strong>Declaración:</strong> Declaro que he contestado todas las preguntas con honestidad y según mi consentimiento. 
-                                Asimismo, he sido informado que los datos suministrados quedan reservados en la presente historia clínica y amparados en secreto profesional.
-                            </p>
+                            <p class="mb-0"><strong>Declaración:</strong> Declaro que he contestado todas las preguntas con honestidad y según mi consentimiento...</p>
                         </div>
                     </div>
                 </div>
 
-                <!-- Sección 3: Historia Clínica Dental -->
                 <div class="card mb-4">
                     <div class="card-header bg-warning text-dark">
-                        <h5 class="mb-0">
-                            <i class="bi bi-tooth me-2"></i>HISTORIA CLÍNICA DENTAL
-                        </h5>
+                        <h5 class="mb-0"><i class="bi bi-tooth me-2"></i>HISTORIA CLÍNICA DENTAL</h5>
                     </div>
                     <div class="card-body">
                         <div class="row">
                             <div class="col-md-6">
-                                <div class="mb-3">
-                                    <label class="form-label">Le sangran las encías?</label>
-                                    <div class="form-check">
-                                        <input class="form-check-input" type="checkbox" id="sangrado_encias_si">
-                                        <label class="form-check-label" for="sangrado_encias_si">Sí</label>
-                                    </div>
-                                </div>
-
-                                <div class="mb-3">
-                                    <label class="form-label">Movilidad dentaria?</label>
-                                    <div class="form-check">
-                                        <input class="form-check-input" type="checkbox" id="movilidad_dentaria_si">
-                                        <label class="form-check-label" for="movilidad_dentaria_si">Sí</label>
-                                    </div>
-                                </div>
-
-                                <!-- Odontograma Visual -->
+                                <div class="mb-3"><label class="form-label">Le sangran las encías?</label><div class="form-check"><input class="form-check-input" type="checkbox" id="sangrado_encias_si" name="sangrado_encias"><label class="form-check-label" for="sangrado_encias_si">Sí</label></div></div>
+                                <div class="mb-3"><label class="form-label">Movilidad dentaria?</label><div class="form-check"><input class="form-check-input" type="checkbox" id="movilidad_dentaria_si" name="movilidad_dentaria"><label class="form-check-label" for="movilidad_dentaria_si">Sí</label></div></div>
                                 <div class="mb-3">
                                     <label class="form-label">Odontograma:</label>
-                                    <div class="border rounded p-3 bg-light text-center">
-                                        <i class="bi bi-tooth text-muted" style="font-size: 2rem;"></i>
-                                        <p class="text-muted mt-2 mb-0">Odontograma Visual</p>
-                                        <small class="text-muted">El odontograma interactivo estará disponible próximamente</small>
+                                    <div class="odontograma-container border rounded p-2">
+                                        {% include 'odontologo/_odontograma_svg.html' with context %}
                                     </div>
+                                    <small class="text-muted d-block text-center mt-2">Haga clic en una cara del diente para registrar hallazgos.</small>
                                 </div>
-
-                                <!-- Referencias del Odontograma -->
                                 <div class="mb-3">
                                     <label class="form-label">Referencias:</label>
                                     <div class="dental-references">
@@ -392,96 +203,68 @@
                                                 <small>CANTIDAD DE DIENTES EXISTENTES:</small>
                                             </div>
                                         </div>
-                                        <input type="text" class="form-control mt-2" id="cantidad_dientes" placeholder="Número de dientes existentes">
+                                        <input type="text" class="form-control mt-2" id="cantidad_dientes" name="cantidad_dientes" placeholder="Número de dientes existentes">
                                     </div>
                                 </div>
                             </div>
-
                             <div class="col-md-6">
-                                <div class="mb-3">
-                                    <label class="form-label">Presencia de cálculo?</label>
-                                    <textarea class="form-control" id="calculo_detalle" rows="2" placeholder="Detalles sobre presencia de cálculo"></textarea>
-                                </div>
-
-                                <div class="mb-3">
-                                    <label class="form-label">Enfermedad periodontal?</label>
-                                    <textarea class="form-control" id="enfermedad_periodontal_detalle" rows="2" placeholder="Detalles sobre enfermedad periodontal"></textarea>
-                                </div>
-
-                                <div class="mb-3">
-                                    <label for="observaciones_dentales" class="form-label">Observaciones:</label>
-                                    <textarea class="form-control" id="observaciones_dentales" rows="4" placeholder="Observaciones sobre el estado dental"></textarea>
-                                </div>
-
-                                <!-- Firmas -->
+                                <div class="mb-3"><label class="form-label">Presencia de cálculo?</label><textarea class="form-control" id="calculo_detalle" name="calculo_detalle" rows="2" placeholder="Detalles sobre presencia de cálculo"></textarea></div>
+                                <div class="mb-3"><label class="form-label">Enfermedad periodontal?</label><textarea class="form-control" id="enfermedad_periodontal_detalle" name="enfermedad_periodontal_detalle" rows="2" placeholder="Detalles sobre enfermedad periodontal"></textarea></div>
+                                <div class="mb-3"><label for="observaciones_dentales" class="form-label">Observaciones:</label><textarea class="form-control" id="observaciones_dentales" name="observaciones_dentales" rows="4" placeholder="Observaciones sobre el estado dental"></textarea></div>
                                 <div class="signature-section">
-                                    <div class="mb-3">
-                                        <label for="firma_paciente" class="form-label">Firma del paciente:</label>
-                                        <input type="text" class="form-control" id="firma_paciente" placeholder="Firma del paciente">
-                                    </div>
-
-                                    <div class="mb-3">
-                                        <label for="firma_profesional" class="form-label">Firma y sello del profesional:</label>
-                                        <input type="text" class="form-control" id="firma_profesional" placeholder="Firma y sello del profesional">
-                                    </div>
+                                    <div class="mb-3"><label for="firma_paciente" class="form-label">Firma del paciente:</label><input type="text" class="form-control" id="firma_paciente" name="firma_paciente" placeholder="Firma del paciente"></div>
+                                    <div class="mb-3"><label for="firma_profesional" class="form-label">Firma y sello del profesional:</label><input type="text" class="form-control" id="firma_profesional" name="firma_profesional" placeholder="Firma y sello del profesional"></div>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <!-- Sección 4: Motivo de Consulta -->
                 <div class="card mb-4">
                     <div class="card-header bg-info text-white">
-                        <h5 class="mb-0">
-                            <i class="bi bi-chat-dots me-2"></i>MOTIVO DE CONSULTA
-                        </h5>
+                        <h5 class="mb-0"><i class="bi bi-chat-dots me-2"></i>MOTIVO DE CONSULTA</h5>
                     </div>
                     <div class="card-body">
                         <div class="mb-3">
                             <label for="motivo_consulta" class="form-label required-field">Motivo de consulta</label>
-                            <textarea class="form-control" id="motivo_consulta" rows="4" placeholder="Describa el motivo de la consulta..." required></textarea>
+                            <textarea class="form-control" id="motivo_consulta" name="motivo_consulta" rows="4" placeholder="Describa el motivo de la consulta..." required></textarea>
                         </div>
                     </div>
                 </div>
 
-                <!-- Sección 5: Diagnóstico y Plan de Tratamiento -->
                 <div class="card mb-4">
                     <div class="card-header bg-danger text-white">
-                        <h5 class="mb-0">
-                            <i class="bi bi-clipboard-data me-2"></i>DIAGNÓSTICO Y PLAN DE TRATAMIENTO
-                        </h5>
+                        <h5 class="mb-0"><i class="bi bi-clipboard-data me-2"></i>DIAGNÓSTICO Y PLAN DE TRATAMIENTO</h5>
                     </div>
                     <div class="card-body">
                         <div class="row">
                             <div class="col-md-6">
                                 <div class="mb-3">
                                     <label for="diagnostico_presuntivo" class="form-label">Diagnóstico presuntivo:</label>
-                                    <textarea class="form-control" id="diagnostico_presuntivo" rows="4" placeholder="Diagnóstico presuntivo"></textarea>
+                                    <textarea class="form-control" id="diagnostico_presuntivo" name="diagnostico_presuntivo" rows="4" placeholder="Diagnóstico presuntivo"></textarea>
                                 </div>
                             </div>
                             <div class="col-md-6">
                                 <div class="mb-3">
                                     <label for="plan_tratamiento" class="form-label">Plan de tratamiento:</label>
-                                    <textarea class="form-control" id="plan_tratamiento" rows="4" placeholder="Plan de tratamiento"></textarea>
+                                    <textarea class="form-control" id="plan_tratamiento" name="plan_tratamiento" rows="4" placeholder="Plan de tratamiento"></textarea>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <!-- Botones de Acción -->
                 <div class="card">
                     <div class="card-body">
                         <div class="d-flex justify-content-between">
-                            <a href="{{ url_for('odontologo_consulta', patient_id=patient.id) }}" class="btn btn-secondary">
+                            <a href="{{ url_for('odontologo_consulta', patient_id=patient.id) if appointment_info else url_for('odontologo_pacientes') }}" class="btn btn-secondary">
                                 <i class="bi bi-arrow-left me-1"></i>Cancelar
                             </a>
                             <div>
                                 <button type="button" class="btn btn-outline-primary me-2" onclick="guardarBorrador()">
                                     <i class="bi bi-save me-1"></i>Guardar Borrador
                                 </button>
-                                <button type="button" class="btn btn-primary" onclick="guardarHistoriaClinica()">
+                                <button type="button" class="btn btn-primary" id="btnGuardarHistoria">
                                     <i class="bi bi-check-circle me-1"></i>Guardar Historia Clínica
                                 </button>
                             </div>
@@ -492,61 +275,113 @@
         </div>
     </div>
 </div>
-{% endblock %}
+
+<div class="modal fade" id="dienteModal" tabindex="-1" aria-labelledby="dienteModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="dienteModalLabel">
+                    <i class="bi bi-tooth me-2"></i>Editar Diente
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>Seleccione la condición o procedimiento para <strong id="dienteModalInfo"></strong>:</p>
+
+                <div class="mb-3">
+                    <input type="text" class="form-control" id="modalSearchInput" oninput="filtrarModalOpciones()" placeholder="Buscar por nombre o SNOMED...">
+                </div>
+
+                <div class="list-group" id="modalOptionsList" style="max-height: 400px; overflow-y: auto;">
+
+                    <button type="button" class="list-group-item list-group-item-action modal-option"
+                            data-nombre="Sano" data-snomed="sano"
+                            onclick="aplicarEstado('sano', 'Sano')">
+                        <i class="bi bi-check-circle-fill text-success me-2"></i>Marcar como Sano
+                    </button>
+
+                    <hr class="my-2">
+                    <h6 class="text-muted ps-3">Afecciones</h6>
+                    {% for afeccion in afecciones_list %}
+                    <button type="button" class="list-group-item list-group-item-action modal-option"
+                            data-nombre="{{ afeccion.NombreAfeccion }}" data-snomed="{{ afeccion.CodigoSNOMED }}"
+                            onclick="aplicarEstado('afeccion', '{{ afeccion.NombreAfeccion | escapejs }}')">
+                        {# Filtro escapejs #}
+                        <i class="bi bi-exclamation-triangle text-danger me-2"></i>
+                        {{ afeccion.NombreAfeccion }} <small class="text-muted">({{ afeccion.CodigoSNOMED }})</small>
+                    </button>
+                    {% endfor %}
+
+                    <hr class="my-2">
+                    <h6 class="text-muted ps-3">Procedimientos Realizados</h6>
+                    {% for proc in procedimientos_list %}
+                    {% set clase_css = 'procedimiento' %}
+                    {% set estado = 'realizado' %}
+                    {% set afecta_diente_completo = 'false' %}
+                    {% if 'Tratamiento de conducto' in proc.NombreProcedimiento %}{% set clase_css = 'endodoncia' %}
+                    {% elif 'Corona' in proc.NombreProcedimiento %}{% set clase_css = 'corona' %}{% set afecta_diente_completo = 'true' %}
+                    {% elif 'Extracción' in proc.NombreProcedimiento %}{% set clase_css = 'extraccion' %}{% set afecta_diente_completo = 'true' %}
+                    {% endif %}
+                    <button type="button" class="list-group-item list-group-item-action modal-option"
+                            data-nombre="{{ proc.NombreProcedimiento }}" data-snomed="{{ proc.CodigoSNOMED }}"
+                            onclick="aplicarEstado('{{ clase_css }}', '{{ proc.NombreProcedimiento | escapejs }}', '{{ estado }}', {{ afecta_diente_completo }})">
+                        {# Filtro escapejs #}
+                        <i class="bi bi-shield-check text-primary me-2"></i>
+                        {{ proc.NombreProcedimiento }} <small class="text-muted">({{ proc.CodigoSNOMED }})</small>
+                    </button>
+                    {% endfor %}
+
+                    <hr class="my-2">
+                    <h6 class="text-muted ps-3">Procedimientos Pendientes</h6>
+                    <button type="button" class="list-group-item list-group-item-action modal-option"
+                            data-nombre="Extracción simple" data-snomed="234952009"
+                            onclick="aplicarEstado('extraccion-indicada', 'Extracción simple', 'pendiente', true)">
+                        <i class="bi bi-sign-stop-fill text-danger me-2"></i>
+                        Extracción (Indicada/Pendiente) <small class="text-muted">(234952009)</small>
+                    </button>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %} {# Fin del bloque content #}
+
 
 {% block styles %}
 <style>
-    .form-section {
-        border-left: 4px solid #007bff;
-        padding-left: 15px;
-        margin-bottom: 20px;
-    }
-    
-    .form-section h5 {
-        color: #007bff;
-        font-weight: bold;
-        text-transform: uppercase;
-        letter-spacing: 1px;
-    }
-    
     .checkbox-group {
         background-color: #f8f9fa;
         padding: 10px;
         border-radius: 5px;
         margin-bottom: 15px;
     }
-    
-    .checkbox-group .form-check {
-        margin-bottom: 5px;
-    }
-    
-    .form-label {
-        font-weight: 600;
-        color: #495057;
-    }
-    
+
+        .checkbox-group .form-check {
+            margin-bottom: 5px;
+        }
+
     .required-field::after {
         content: " *";
         color: #dc3545;
     }
-    
+
     .dental-references {
         background-color: #e9ecef;
         border: 1px solid #dee2e6;
         border-radius: 5px;
         padding: 15px;
     }
-    
-    .dental-references small {
-        font-weight: 600;
-    }
-    
+
     .signature-section {
         border-top: 2px solid #dee2e6;
         padding-top: 20px;
         margin-top: 20px;
     }
-    
+
     .alert-declaration {
         background-color: #d1ecf1;
         border-color: #bee5eb;
@@ -556,171 +391,254 @@
 </style>
 {% endblock %}
 
-{% block scripts %}
+{% block extra_js %}
+{{ super() if super }} {# Heredar JS de base_improved si existe #}
 <script>
-// Variables globales
-const patientId = {{ patient.id }};
+    console.log("SCRIPT START: Bloque extra_js en nueva_historia_clinica.html");
 
-// Función para guardar la historia clínica
-function guardarHistoriaClinica() {
-    const formData = collectFormData();
-    
-    if (!formData.motivo_consulta.trim()) {
-        notifications.warning('Campo requerido', 'El motivo de consulta es obligatorio.');
-        return;
-    }
-    
-    // Mostrar loading
-    const saveBtn = event.target;
-    const originalText = saveBtn.innerHTML;
-    saveBtn.innerHTML = '<i class="bi bi-hourglass-split me-1"></i>Guardando...';
-    saveBtn.disabled = true;
-    
-    fetch('/odontologo/historia-clinica/guardar', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(formData)
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            notifications.success('Historia clínica guardada', 'La historia clínica se ha guardado exitosamente.');
-            setTimeout(() => {
-                window.location.href = `/odontologo/consulta/${patientId}`;
-            }, 2000);
-        } else {
-            notifications.error('Error al guardar', data.message || 'Error desconocido');
+    // --- LÓGICA DEL ODONTOGRAMA INTERACTIVO (Definiciones de funciones) ---
+    let odontogramaState = {{ odontograma.dientes | tojson | safe }};
+    let currentEditing = { numero: null, cara: null };
+    let dienteModal;
+    console.log("Estado del odontograma inicializado");
+
+    function abrirModalDiente(numero, cara, nombreCara) {
+        currentEditing.numero = numero;
+        currentEditing.cara = cara;
+        document.getElementById('dienteModalLabel').innerText = `Editar Diente ${numero}`;
+        document.getElementById('dienteModalInfo').innerText = `Cara ${nombreCara} (${cara})`;
+        document.getElementById('modalSearchInput').value = '';
+        filtrarModalOpciones();
+        if (!dienteModal) {
+            dienteModal = new bootstrap.Modal(document.getElementById('dienteModal'));
         }
-    })
-    .catch(error => {
-        notifications.error('Error de conexión', 'No se pudo guardar la historia clínica.');
-        console.error('Error:', error);
-    })
-    .finally(() => {
-        saveBtn.innerHTML = originalText;
-        saveBtn.disabled = false;
-    });
-}
-
-// Función para guardar borrador
-function guardarBorrador() {
-    const formData = collectFormData();
-    formData.es_borrador = true;
-    
-    // Implementar guardado de borrador
-    notifications.info('Funcionalidad en desarrollo', 'El guardado de borradores estará disponible próximamente.');
-}
-
-// Función para recopilar datos del formulario
-function collectFormData() {
-    return {
-        paciente_id: patientId,
-        fecha: new Date().toISOString().split('T')[0],
-        
-        // Datos personales
-        obra_social: document.getElementById('obra_social').value,
-        domicilio: document.getElementById('domicilio').value,
-        edad: document.getElementById('edad').value,
-        plan: document.getElementById('plan').value,
-        
-        // Historia clínica general
-        enfermedades: document.getElementById('enfermedades').value,
-        medicamentos_actuales: document.getElementById('medicamentos_actuales').value,
-        alergias: document.getElementById('alergias').value,
-        tratamiento_odontologico: document.getElementById('tratamiento_odontologico_si').checked,
-        tratamiento_odontologico_detalle: document.getElementById('tratamiento_odontologico_detalle').value,
-        
-        // Checkboxes de enfermedades
-        colageno: document.getElementById('colageno_si').checked,
-        fiebre_reumatica: document.getElementById('fiebre_reumatica_si').checked,
-        diabetes: document.getElementById('diabetes_si').checked,
-        cardiaco: document.getElementById('cardiaco_si').checked,
-        hipertension: document.getElementById('hipertension_si').checked,
-        sifilis: document.getElementById('sifilis_si').checked,
-        transfusiones: document.getElementById('transfusiones_si').checked,
-        embarazada: document.getElementById('embarazada_si').checked,
-        meses_embarazo: document.getElementById('meses_embarazo').value,
-        chagas: document.getElementById('chagas_si').checked,
-        hepatitis: document.getElementById('hepatitis_si').checked,
-        renales: document.getElementById('renales_si').checked,
-        ulcera: document.getElementById('ulcera_si').checked,
-        convulsiones: document.getElementById('convulsiones_si').checked,
-        drogas: document.getElementById('drogas_si').checked,
-        fuma: document.getElementById('fuma_si').checked,
-        tiempo_fumando: document.getElementById('tiempo_fumando').value,
-        otras_enfermedades: document.getElementById('otras_enfermedades').value,
-        
-        // Medicamentos y dolor
-        tomo_medicamento: document.getElementById('tomo_medicamento_si').checked,
-        medicamento_detalle: document.getElementById('medicamento_detalle').value,
-        dolor_intensidad: document.querySelector('input[name="dolor_intensidad"]:checked')?.value,
-        dolor_tipo: document.querySelector('input[name="dolor_tipo"]:checked')?.value,
-        dolor_localizacion: document.querySelector('input[name="dolor_localizacion"]:checked')?.value,
-        dolor_detalle: document.getElementById('dolor_detalle').value,
-        
-        // Golpe en dientes y dificultades funcionales
-        golpe_dientes: document.getElementById('golpe_dientes_si').checked,
-        golpe_cuando: document.getElementById('golpe_cuando').value,
-        golpe_como: document.getElementById('golpe_como').value,
-        golpe_recibio_tratamiento: document.getElementById('golpe_recibio_tratamiento').checked,
-        dificultades_funcionales: document.getElementById('dificultades_funcionales').value,
-        examen_tejidos_blandos: document.getElementById('examen_tejidos_blandos').value,
-        
-        // Historia clínica dental
-        sangrado_encias: document.getElementById('sangrado_encias_si').checked,
-        movilidad_dentaria: document.getElementById('movilidad_dentaria_si').checked,
-        calculo_detalle: document.getElementById('calculo_detalle').value,
-        enfermedad_periodontal_detalle: document.getElementById('enfermedad_periodontal_detalle').value,
-        observaciones_dentales: document.getElementById('observaciones_dentales').value,
-        cantidad_dientes: document.getElementById('cantidad_dientes').value,
-        firma_paciente: document.getElementById('firma_paciente').value,
-        firma_profesional: document.getElementById('firma_profesional').value,
-        
-        // Motivo de consulta
-        motivo_consulta: document.getElementById('motivo_consulta').value,
-        
-        // Diagnóstico y tratamiento
-        diagnostico_presuntivo: document.getElementById('diagnostico_presuntivo').value,
-        plan_tratamiento: document.getElementById('plan_tratamiento').value
-    };
-}
-
-// Calcular edad automáticamente
-document.getElementById('fecha_nacimiento').addEventListener('change', function() {
-    const fechaNacimiento = new Date(this.value);
-    const hoy = new Date();
-    const edad = hoy.getFullYear() - fechaNacimiento.getFullYear();
-    const mes = hoy.getMonth() - fechaNacimiento.getMonth();
-    
-    if (mes < 0 || (mes === 0 && hoy.getDate() < fechaNacimiento.getDate())) {
-        edad--;
+        dienteModal.show();
     }
-    
-    document.getElementById('edad').value = edad > 0 ? edad : '';
-});
+    console.log("Función abrirModalDiente definida");
 
-// Auto-guardar cada 5 minutos
-setInterval(function() {
-    const motivo = document.getElementById('motivo_consulta').value;
-    if (motivo.trim()) {
-        console.log('Auto-guardando borrador...');
-        // Implementar auto-guardado
-    }
-}, 300000); // 5 minutos
+    function aplicarEstado(claseCss, nombre, estado = null, afectaDienteCompleto = false) {
+        // ... (código completo de la función aplicarEstado como lo tenías) ...
+         const { numero, cara } = currentEditing;
+        if (!numero) return;
 
-// Inicialización
-document.addEventListener('DOMContentLoaded', function() {
-    // Establecer fecha actual
-    const today = new Date().toISOString().split('T')[0];
-    document.getElementById('fecha_nacimiento').value = today;
-    
-    // Calcular edad si hay fecha de nacimiento
-    if (document.getElementById('fecha_nacimiento').value) {
-        document.getElementById('fecha_nacimiento').dispatchEvent(new Event('change'));
+        const numStr = String(numero);
+        if (!odontogramaState[numStr]) {
+            odontogramaState[numStr] = { afecciones: [], procedimientos: [] };
+        }
+
+        if (afectaDienteCompleto) {
+            odontogramaState[numStr].afecciones = [];
+            odontogramaState[numStr].procedimientos = [];
+        } else {
+            odontogramaState[numStr].afecciones = odontogramaState[numStr].afecciones.filter(a => a.zona !== cara);
+            odontogramaState[numStr].procedimientos = odontogramaState[numStr].procedimientos.filter(p => p.zona !== cara);
+        }
+
+        if (claseCss !== 'sano') {
+            if (estado === null) {
+                odontogramaState[numStr].afecciones.push({ nombre: nombre, zona: cara });
+            } else {
+                odontogramaState[numStr].procedimientos.push({
+                    nombre: nombre,
+                    zona: (afectaDienteCompleto ? null : cara),
+                    estado: estado
+                });
+            }
+        }
+        console.log("Estado actualizado:", numStr, odontogramaState[numStr]);
+
+        const dienteElement = document.querySelector(`g.diente[data-diente="${numero}"]`);
+        if (!dienteElement) return;
+
+        const clasesColor = ['sano', 'afeccion', 'procedimiento', 'caries', 'fractura', 'obturacion', 'endodoncia', 'corona', 'extraccion', 'extraccion-indicada', 'afeccion-default', 'proc-default', 'mordida-cruzada'];
+
+        const actualizarCaraUI = (caraElement, clase, titulo) => {
+            caraElement.classList.remove(...clasesColor);
+            if (clase && clase !== 'sano') {
+                caraElement.classList.add(clase);
+            }
+            caraElement.setAttribute('title', titulo);
+
+            const tooltipInstance = bootstrap.Tooltip.getInstance(caraElement);
+            if (tooltipInstance) {
+                tooltipInstance.setContent({ '.tooltip-inner': titulo });
+                tooltipInstance.update();
+            }
+        };
+
+        if (afectaDienteCompleto) {
+            dienteElement.querySelectorAll('.cara').forEach(caraEl => {
+                actualizarCaraUI(caraEl, claseCss, nombre);
+            });
+            dienteElement.classList.remove(...clasesColor.filter(c => c !== 'cara'));
+            if (claseCss && claseCss !== 'sano') {
+                dienteElement.classList.add(claseCss);
+            }
+        } else {
+            const caraElement = dienteElement.querySelector(`.cara[data-cara="${cara}"]`);
+            if (caraElement) {
+                actualizarCaraUI(caraElement, claseCss, (claseCss === 'sano' ? 'Sano' : nombre));
+            }
+             dienteElement.classList.remove(...clasesColor.filter(c => c !== 'cara' && c !== 'afeccion' && c !== 'procedimiento'));
+        }
+        dienteModal.hide();
     }
-});
+    console.log("Función aplicarEstado definida");
+
+    function filtrarModalOpciones() {
+        // ... (código completo de la función filtrarModalOpciones como lo tenías) ...
+        const searchTerm = document.getElementById('modalSearchInput').value.toLowerCase().trim();
+        const options = document.querySelectorAll('#modalOptionsList .modal-option');
+        // ... resto de la lógica de filtrado ...
+         options.forEach(option => {
+            const nombre = option.dataset.nombre.toLowerCase();
+            const snomed = option.dataset.snomed.toLowerCase();
+            let prevElement = option.previousElementSibling;
+            // Ocultar separadores/headers previos temporalmente
+            while (prevElement && (prevElement.tagName === 'HR' || prevElement.tagName === 'H6')) {
+                prevElement.style.display = 'none';
+                prevElement = prevElement.previousElementSibling;
+            }
+            // Mostrar/ocultar opción
+            if (searchTerm === '' || nombre.includes(searchTerm) || snomed.includes(searchTerm)) {
+                option.style.display = '';
+            } else {
+                option.style.display = 'none';
+            }
+        });
+        // Mostrar/ocultar headers/separadores finales
+        document.querySelectorAll('#modalOptionsList h6, #modalOptionsList hr').forEach(header => {
+            let nextElement = header.nextElementSibling;
+            let hasVisibleOption = false;
+            while (nextElement && (nextElement.tagName === 'BUTTON' || nextElement.tagName === 'A')) {
+                if (nextElement.classList.contains('modal-option') && nextElement.style.display !== 'none') {
+                    hasVisibleOption = true;
+                    break;
+                }
+                nextElement = nextElement.nextElementSibling;
+            }
+            header.style.display = (hasVisibleOption || searchTerm === '') ? '' : 'none';
+        });
+    }
+    console.log("Función filtrarModalOpciones definida");
+    // --- FIN LÓGICA ODONTOGRAMA ---
+
+
+    // --- LÓGICA DE HISTORIA CLÍNICA (Definiciones de funciones) ---
+    const patientId = {{ patient.id }};
+    console.log("Patient ID:", patientId);
+
+    function guardarHistoriaClinica(event) {
+        // ... (código completo de la función guardarHistoriaClinica como lo tenías) ...
+        console.log("Función guardarHistoriaClinica LLAMADA");
+        const formData = collectFormData();
+        formData.odontograma_data = odontogramaState;
+        // ... resto de la lógica de validación, fetch, etc. ...
+         let missingFields = [];
+        if (!formData.motivo_consulta.trim()) { missingFields.push('Motivo de consulta'); }
+        // Añadir aquí validación para diagnostico y plan si los haces obligatorios
+        // if (!formData.diagnostico_presuntivo.trim()) { missingFields.push('Diagnóstico presuntivo'); }
+        // if (!formData.plan_tratamiento.trim()) { missingFields.push('Plan de tratamiento'); }
+
+
+        if (missingFields.length > 0) {
+            notifications.warning('Campos Requeridos', 'Por favor, complete: ' + missingFields.join(', '));
+            // Enfocar el primer campo faltante
+            if (missingFields.includes('Motivo de consulta')) document.getElementById('motivo_consulta').focus();
+            // else if (missingFields.includes('Diagnóstico presuntivo')) document.getElementById('diagnostico_presuntivo').focus();
+            // else if (missingFields.includes('Plan de tratamiento')) document.getElementById('plan_tratamiento').focus();
+            return;
+        }
+
+        const saveBtn = event.target.closest('button');
+        const originalText = saveBtn.innerHTML;
+        LoadingUtils.showButtonLoading(saveBtn.id, 'Guardando...'); // Usar LoadingUtils
+
+        fetch('/odontologo/historia-clinica/guardar', { /* ... fetch options ... */ body: JSON.stringify(formData) })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                notifications.success('Historia guardada', data.message || 'La historia clínica se ha guardado exitosamente.');
+                setTimeout(() => { window.location.href = "{{ url_for('odontologo_dashboard') }}"; }, 2000);
+            } else {
+                notifications.error('Error al guardar', data.message || 'Error desconocido');
+            }
+        })
+        .catch(error => { /* ... error handling ... */ notifications.error('Error de conexión', 'No se pudo guardar la historia clínica.'); })
+        .finally(() => { LoadingUtils.hideButtonLoading(saveBtn.id, originalText); }); // Usar LoadingUtils
+    }
+    console.log("Función guardarHistoriaClinica definida");
+
+    function guardarBorrador() {
+        // ... (código función) ...
+    }
+    console.log("Función guardarBorrador definida");
+
+    function collectFormData() {
+        // ... (código completo de la función collectFormData como lo tenías) ...
+         const appointmentId = "{{ appointment_info.id if appointment_info else '' }}";
+        return {
+            paciente_id: patientId,
+            appointment_id: appointmentId ? parseInt(appointmentId) : null,
+            // ... resto de los campos ...
+            motivo_consulta: document.getElementById('motivo_consulta').value,
+            diagnostico_presuntivo: document.getElementById('diagnostico_presuntivo').value,
+            plan_tratamiento: document.getElementById('plan_tratamiento').value
+        };
+    }
+    console.log("Función collectFormData definida");
+    // --- FIN LÓGICA HISTORIA CLÍNICA ---
+
+
+    // --- EJECUCIÓN CUANDO EL DOM ESTÁ LISTO ---
+    document.addEventListener('DOMContentLoaded', function () {
+        console.log("Evento DOMContentLoaded disparado.");
+
+        // --- MOVER LISTENER DE fecha_nacimiento AQUÍ ---
+        const fechaNacimientoInput = document.getElementById('fecha_nacimiento');
+        if (fechaNacimientoInput) {
+            console.log("Adjuntando listener a fecha_nacimiento");
+            fechaNacimientoInput.addEventListener('change', function() {
+                if (this.value) {
+                    const fechaNacimiento = new Date(this.value);
+                    const hoy = new Date();
+                    let edadCalculada = hoy.getFullYear() - fechaNacimiento.getFullYear();
+                    const mes = hoy.getMonth() - fechaNacimiento.getMonth();
+                    if (mes < 0 || (mes === 0 && hoy.getDate() < fechaNacimiento.getDate())) { edadCalculada--; }
+                    document.getElementById('edad').value = edadCalculada >= 0 ? edadCalculada : '';
+                } else {
+                    document.getElementById('edad').value = '';
+                }
+            });
+            // Disparar cambio inicial si hay valor
+            if (fechaNacimientoInput.value) { fechaNacimientoInput.dispatchEvent(new Event('change')); }
+        } else {
+            console.warn("WARN: Input fecha_nacimiento no encontrado");
+        }
+        // --- FIN MOVER LISTENER ---
+
+        // --- ADJUNTAR LISTENER AL BOTÓN GUARDAR ---
+        const saveButton = document.getElementById('btnGuardarHistoria');
+        if (saveButton) {
+            console.log("Botón Guardar encontrado. Adjuntando listener...");
+            saveButton.addEventListener('click', guardarHistoriaClinica);
+            console.log("Listener adjuntado al botón Guardar.");
+        } else {
+            console.error("ERROR: Botón #btnGuardarHistoria no encontrado!");
+        }
+        // --- FIN ADJUNTAR LISTENER ---
+
+        // --- ELIMINAR INICIALIZACIÓN DE TOOLTIPS ESPECÍFICA ---
+        // Confiamos en la inicialización global de common.js
+        console.log("Inicialización específica de Tooltips omitida.");
+        // --- FIN ELIMINAR ---
+
+        // Puedes añadir más código que necesite el DOM aquí
+        // Inicializar el modal (solo necesario si no se abre con data-bs-toggle)
+        // dienteModal = new bootstrap.Modal(document.getElementById('dienteModal'));
+
+    }); // Fin DOMContentLoaded
+
+    console.log("SCRIPT END: Bloque extra_js");
 </script>
 {% endblock %}
-

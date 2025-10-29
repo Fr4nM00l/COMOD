@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("ODONTOGRAMA_TEST")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+6940eefa9ac9e068de513adf0649a341736b9535")]
 [assembly: System.Reflection.AssemblyProductAttribute("ODONTOGRAMA_TEST")]
 [assembly: System.Reflection.AssemblyTitleAttribute("ODONTOGRAMA_TEST")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
